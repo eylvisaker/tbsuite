@@ -11,6 +11,7 @@ namespace RPA
 		{
 			new MainClass().Run(args);
 
+			Console.WriteLine("Done.  Press a key to exit.");
 			Console.ReadKey(false);
 
 		}
@@ -298,10 +299,16 @@ namespace RPA
 			Matrix[,,] xc = new Matrix[input.QptMesh.Length, input.FrequencyMesh.Length, input.TemperatureMesh.Length];
 			Matrix ident = Matrix.Identity(input.OrbitalCount * input.OrbitalCount);
 
+			Console.WriteLine("Calculating dressed susceptibilities.");
+				
 			for (int tempIndex = 0; tempIndex < input.TemperatureMesh.Length; tempIndex++)
 			{
+				Console.WriteLine("Temperature: {0}", tempIndex);
+				
 				for (int qIndex = 0; qIndex < input.QptMesh.Length; qIndex++)
 				{
+					Console.WriteLine("q: {0}", input.QptMesh[qIndex]);
+				
 					for (int freqIndex = 0; freqIndex < input.FrequencyMesh.Length; freqIndex++)
 					{
 						Matrix s_denom = (ident - S * x0[qIndex, freqIndex, tempIndex]);

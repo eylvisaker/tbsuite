@@ -235,7 +235,7 @@ namespace RPA
 				if (qptMesh != null)
 					return qptMesh;
 
-				qptMesh = GenerateMesh(qmesh);
+				qptMesh = GenerateMesh(qmesh, 0.5, true);
 				return qptMesh;
 			}
 		}
@@ -246,29 +246,45 @@ namespace RPA
 				if (kptMesh != null)
 					return kptMesh;
 
-				kptMesh = GenerateMesh(mesh);
+				kptMesh = GenerateMesh(mesh, 1.0, false);
 				return kptMesh;
 
 			}
 		}
 
-		private Vector3[] GenerateMesh(int[] mesh)
+		private Vector3[] GenerateMesh(int[] mesh, double norm, bool includeEnds)
 		{
 			int index = 0;
 
-			Vector3[] retval = new Vector3[mesh[2] * mesh[1] * mesh[0]];
-
-			for (int z = 0; z < mesh[2]; z++)
+			Vector3[] retval;
+			
+			if (includeEnds)
 			{
-				double dz = z / (double)mesh[2];
+				retval = new Vector3[(mesh[2]+1) * (mesh[1]+1) * (mesh[0]+1)];
+			}
+			else
+				retval = new Vector3[mesh[2] * mesh[1] * mesh[0]];
 
-				for (int y = 0; y < mesh[1]; y++)
+			for (int z = 0; z <= mesh[2]; z++)
+			{
+				if (includeEnds == false && z == mesh[2])
+					continue;
+				
+				double dz = z / (double)mesh[2] * norm;
+
+				for (int y = 0; y <= mesh[1]; y++)
 				{
-					double dy = y / (double)mesh[1];
+					if (includeEnds == false && y == mesh[1])
+						continue;
+				
+					double dy = y / (double)mesh[1] * norm;
 
-					for (int x = 0; x < mesh[0]; x++)
+					for (int x = 0; x <= mesh[0]; x++)
 					{
-						double dx = x / (double)mesh[0];
+						if (includeEnds == false && x == mesh[0])
+							continue;
+				
+						double dx = x / (double)mesh[0] * norm;
 
 						Vector3 v = new Vector3(dx, dy, dz);
 
