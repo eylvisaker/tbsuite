@@ -1,0 +1,8 @@
+C:\Users\Erik\Documents\devel\Physics\TightBinding\bin\Debug\tb.in
+C:\Users\Erik\Documents\devel\Physics\TightBinding\bin\Debug\TightBinding.exe
+C:\Users\Erik\Documents\devel\Physics\TightBinding\bin\Debug\TightBinding.pdb
+C:\Users\Erik\Documents\devel\Physics\TightBinding\bin\Debug\ErikMath.dll
+C:\Users\Erik\Documents\devel\Physics\TightBinding\bin\Debug\ErikMath.pdb
+C:\Users\Erik\Documents\devel\Physics\TightBinding\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\Erik\Documents\devel\Physics\TightBinding\obj\Debug\TightBinding.exe
+C:\Users\Erik\Documents\devel\Physics\TightBinding\obj\Debug\TightBinding.pdb
