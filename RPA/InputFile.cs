@@ -271,6 +271,8 @@ namespace RPA
 					continue;
 				
 				double dz = z / (double)mesh[2] * norm;
+				if (mesh[2] == 0) 
+					dz = 0;
 
 				for (int y = 0; y <= mesh[1]; y++)
 				{
@@ -278,6 +280,8 @@ namespace RPA
 						continue;
 				
 					double dy = y / (double)mesh[1] * norm;
+					if (mesh[1] == 0)
+						dy = 0;
 
 					for (int x = 0; x <= mesh[0]; x++)
 					{
@@ -285,6 +289,8 @@ namespace RPA
 							continue;
 				
 						double dx = x / (double)mesh[0] * norm;
+						if (mesh[0] == 0)
+							dx = 0;
 
 						Vector3 v = new Vector3(dx, dy, dz);
 
@@ -473,6 +479,9 @@ namespace RPA
 			// check that k and q are commensurate
 			for (int i = 0; i < 3; i++)
 			{
+				if (qmesh[i] == 0) 
+					continue;
+
 				double d = mesh[i] / (double)qmesh[i];
 				int di = mesh[i] / qmesh[i];
 

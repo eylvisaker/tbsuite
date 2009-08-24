@@ -298,6 +298,8 @@ namespace RPA
 			Matrix[,,] xs = new Matrix[input.QptMesh.Length, input.FrequencyMesh.Length, input.TemperatureMesh.Length];
 			Matrix[,,] xc = new Matrix[input.QptMesh.Length, input.FrequencyMesh.Length, input.TemperatureMesh.Length];
 			Matrix ident = Matrix.Identity(input.OrbitalCount * input.OrbitalCount);
+			List<Complex>[,,] xs_evals = new List<Complex>[input.QptMesh.Length, input.FrequencyMesh.Length, input.TemperatureMesh.Length];
+			List<Complex>[, ,] xc_evals = new List<Complex>[input.QptMesh.Length, input.FrequencyMesh.Length, input.TemperatureMesh.Length];
 
 			Console.WriteLine("Calculating dressed susceptibilities.");
 				
@@ -314,11 +316,17 @@ namespace RPA
 						Matrix s_denom = (ident - S * x0[qIndex, freqIndex, tempIndex]);
 						Matrix c_denom = (ident + C * x0[qIndex, freqIndex, tempIndex]);
 
+						StoreEigenValues(s_denom, xs_evals, tempIndex, qIndex, freqIndex);
+						StoreEigenValues(c_denom, xc_evals, tempIndex, qIndex, freqIndex);
+
 						xs[qIndex, freqIndex, tempIndex] = s_denom.Invert() * x0[qIndex, freqIndex, tempIndex];
 						xc[qIndex, freqIndex, tempIndex] = c_denom.Invert() * x0[qIndex, freqIndex, tempIndex];
 					}
 				}
 			}
+
+			SaveEigenValues(input, xs_evals, "s", "1 - SX_0");
+			SaveEigenValues(input, xc_evals, "c", "1 + CX_0");
 
 			SaveMatrices(input, x0, "chi_0");
 			SaveMatrices(input, xs, "chi_s");
@@ -326,6 +334,56 @@ namespace RPA
 
 		}
 
+		private static void StoreEigenValues(Matrix mat, List<Complex>[, ,] xs_evals, int tempIndex, int qIndex, int freqIndex)
+		{
+			Matrix evals, evecs;
+
+			// currently we can't calculate eigenvalues/vectors for a regular matrix, 
+			// so instead we construct a hermitian matrix where the eigenvalues are
+			// real part of the desired eigenvalues.  All we care about here
+			// is whether they are close to zero anyway.
+			Matrix r = mat.HermitianConjugate() * mat;
+			r.EigenValsVecs(out evals, out evecs);
+
+			xs_evals[qIndex, freqIndex, tempIndex] = new List<Complex>();
+			for (int i = 0; i < evals.Rows; i++)
+				xs_evals[qIndex, freqIndex, tempIndex].Add(Complex.Sqrt(evals[i, 0]));
+		}
+
+
+		private void SaveEigenValues(InputFile input, List<Complex>[, ,] xs_evals, string name, string equation)
+		{
+			string filename = string.Format(
+				"evals.{0}", name);
+
+
+			using (StreamWriter w = new StreamWriter(filename))
+			{
+				w.WriteLine("# Eigenvalues for {0}", equation);
+
+				for (int wi = 0; wi < input.FrequencyMesh.Length; wi++)
+				{
+					w.WriteLine("# Frequency: {0}", input.FrequencyMesh[wi]);
+
+					for (int qi = 0; qi < input.QptMesh.Length; qi++)
+					{
+						w.WriteLine("# Q: {0}", input.QptMesh[qi]);
+
+						for (int ti = 0; ti < input.TemperatureMesh.Length; ti++)
+						{
+							w.WriteLine("# Temperature: {0}", input.TemperatureMesh[ti]);
+
+							var list = xs_evals[qi,wi,ti];
+							
+							for (int i = 0; i < list.Count; i++)
+								w.Write("{0}   ", list[i]);
+
+							w.WriteLine();
+						}
+					}
+				}
+			}
+		}
 		private void SaveMatrices(InputFile input, Matrix[,,] chi, string name)
 		{
 			for (int l1 = 0; l1 < input.OrbitalCount; l1++)

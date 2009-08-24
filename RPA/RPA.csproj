@@ -86,7 +86,7 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\ErikMath\ErikMath.csproj">
+    <ProjectReference Include="..\..\ErikMath\ErikMath\ErikMath.csproj">
       <Project>{9B79B5F7-1EEC-4473-B3CA-93A2FBB05E51}</Project>
       <Name>ErikMath</Name>
     </ProjectReference>

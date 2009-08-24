@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RPA", "RPA\RPA.csproj", "{3A47DC61-1F0C-4870-A871-F91843505A4B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ErikMath", "..\ErikMath\ErikMath.csproj", "{9B79B5F7-1EEC-4473-B3CA-93A2FBB05E51}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ErikMath", "..\ErikMath\ErikMath\ErikMath.csproj", "{9B79B5F7-1EEC-4473-B3CA-93A2FBB05E51}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
