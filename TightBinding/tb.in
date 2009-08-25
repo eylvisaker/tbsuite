@@ -10,18 +10,36 @@
 # Number of orbitals / sites and their locations 
 # Positions are in cartesian coordinates
 [Sites]
-(0 0 0)   Hubbard
+(0 0 0)   px
+(0 0 0)   py
+
+# Symmetries in the crystal.
+# The numbers following the symmetry name indicate how the orbitals transform 
+# under the symmetry.  If you specify the symmetry operation, you must specify
+# one number for each orbital.  The orbital transforms are optional if the 
+# orbitals transform into themselves.
+[Symmetry]
+Identity    1 2
+ReflectX
+ReflectY
+ReflectZ
+Inversion
+RotateZ     2 1  # Rotation of 90 around the z axis swaps px and py.
 
 # Each hopping is followed by a list of Bravais lattice vectors.
 # Those vectors must be composed of integer values.
 [Hoppings]
 :1 1:
   1  0  0      1
-  -1 0  0      1
+ -1  0  0      1
+:2 2:
   0  1  0      1
   0 -1  0      1
-# 0  0  1      1
-# 0  0 -1      1
+:1 2:
+#  1  1  0      1
+# -1  1  0      1
+#  1 -1  0      1
+# -1 -1  0      1
   
 # Optional section
 # The path through K-space for integration is given as a series of points
@@ -34,9 +52,10 @@ R     1         1        1
 G     0         0        0
 
 # Optional section
-# Gives a k-mesh for calculating the density of states.
+# Gives a k-mesh for calculating the density of states and doing RPA.
 # The second line gives the gaussian smearing used in the DOS calculation.
 # It is optional.
 [KMesh]
-50 50 4
-0.05
+40 40 40 1 1 1
+0.4
+

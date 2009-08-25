@@ -49,7 +49,7 @@ namespace TightBinding
 			DoBandStructure(inp, outputfile);
 			DoDensityOfStates(inp, outputfile);
 		}
-		void DoDensityOfStates(TbInputFile inp, string outputfile)
+		void tet_DoDensityOfStates(TbInputFile inp, string outputfile)
 		{
 			KptList ks = inp.KMesh;
 			StreamWriter outf = new StreamWriter(outputfile + ".dos");
@@ -176,108 +176,124 @@ namespace TightBinding
 
 		}
 
-		void old_DoDensityOfStates(TbInputFile inp, string outputfile)
+		void DoDensityOfStates(TbInputFile inp, string outputfile)
 		{
-			KptList ks = inp.KMesh;			
-			StreamWriter outf = new StreamWriter(outputfile + ".dos");
-			
-			double smearing = inp.Smearing;
-			double smearNorm = 1 / smearing * Math.Pow(Math.PI , -0.5);
-			double oneOverSmearSquared = Math.Pow(smearing, -2);
-			
-			double emin, emax;
-			inp.Hoppings.EnergyScale(out emin, out emax);
-			
-			emin -= smearing * 5;
-			emax += smearing * 5;
-			
-			
-			int epts = 2000;
-			
-			double[] energyGrid = new double[epts];
-			double[,] dos = new double[epts, inp.Sites.Count+1];
-			
-			smearNorm /= ks.Kpts.Count;
-			
-			for (int i = 0; i < epts; i++)
+			KptList ks = inp.KMesh;
+			using (StreamWriter outf = new StreamWriter(outputfile + ".dos"))
 			{
-				energyGrid[i] = emin + (emax - emin) * i / (double)(epts - 1);	
-			}
-			
-			Console.WriteLine("Calculating DOS from {0} to {1} with smearing {2}.", 
-			                  emin, emax, smearing);
-			
-			Console.WriteLine("Using {0} kpts.", ks.Kpts.Count);
-			
-			if (inp.PoleStates.Count > 0)
-				Console.WriteLine("Pole states present: {0}", inp.PoleStates.Count);
-			
-			try
-			{
+
+				double smearing = inp.Smearing;
+				double smearNorm = 1 / smearing * Math.Pow(Math.PI, -0.5);
+				double oneOverSmearSquared = Math.Pow(smearing, -2);
+
+				double emin, emax;
+				inp.Hoppings.EnergyScale(out emin, out emax);
+
+				emin -= smearing * 5;
+				emax += smearing * 5;
+
+				int epts = 2000;
+
+				double[] energyGrid = new double[epts];
+				double[,] dos = new double[epts, inp.Sites.Count + 1];
+
+				for (int i = 0; i < epts; i++)
+				{
+					energyGrid[i] = emin + (emax - emin) * i / (double)(epts - 1);
+				}
+
+				Console.WriteLine("Calculating DOS from {0} to {1} with smearing {2}.",
+								  emin, emax, smearing);
+
+				Console.WriteLine("Using {0} kpts.", ks.Kpts.Count);
+
+				if (inp.PoleStates.Count > 0)
+					Console.WriteLine("Pole states present: {0}", inp.PoleStates.Count);
+
 				for (int i = 0; i < ks.Kpts.Count; i++)
 				{
 					Matrix m = CalcHamiltonian(inp, ks.Kpts[i]);
 					Matrix vals, vecs;
 					m.EigenValsVecs(out vals, out vecs);
-					
+
 					for (int j = 0; j < vals.Rows; j++)
 					{
-						double energy = vals[j,0].RealPart;
-						
+						double energy = vals[j, 0].RealPart;
+
 						int startIndex = FindIndex(energyGrid, energy - smearing * 10);
 						int endIndex = FindIndex(energyGrid, energy + smearing * 10);
 
 						for (int k = startIndex; k <= endIndex; k++)
 						{
 							double gaus = Math.Exp(
-							    -Math.Pow(energyGrid[k] - energy, 2) * oneOverSmearSquared);
+								-Math.Pow(energyGrid[k] - energy, 2) * oneOverSmearSquared);
 							gaus *= smearNorm;
 							gaus *= ks.Kpts[i].Weight;
-							
+
 							double weight = 0;
 							for (int l = 0; l < vecs.Rows; l++)
 							{
-								if (inp.PoleStates.Contains(l)) 
+								if (inp.PoleStates.Contains(l))
 									continue;
-								
-								double stateval = vecs[l,j].MagnitudeSquared;
+
+								double stateval = vecs[l, j].MagnitudeSquared;
 								weight += stateval;
 							}
 							if (inp.PoleStates.Count == 0 && Math.Abs(weight - 1) > 1e-8)
 								throw new Exception("Eigenvector not normalized!");
-							
+
 							dos[k, 0] += gaus * weight;
-							
+
 							for (int l = 0; l < vecs.Rows; l++)
 							{
-								if (inp.PoleStates.Contains(l)) 
+								if (inp.PoleStates.Contains(l))
 									continue;
-								
-								double state = vecs[l,j].MagnitudeSquared;
-								
-								dos[k,l+1] += gaus * state;
+
+								double wtk = GetWeight(ks.Kpts[i], vecs, j, l);
+
+								dos[k, l + 1] += gaus * wtk;
 							}
 						}
-						
+
 					}
 				}
-				
+
 				for (int i = 0; i < epts; i++)
 				{
 					outf.Write("{0}     ", energyGrid[i]);
-					
+
 					for (int j = 0; j < inp.Sites.Count + 1; j++)
 					{
-						outf.Write("{0}  ", dos[i,j]);
+						outf.Write("{0}  ", dos[i, j]);
 					}
-					
+
 					outf.WriteLine();
 				}
 			}
-			finally
+		}
+
+		private static double GetWeight(KPoint kpt, Matrix vecs, int j, int state)
+		{
+			if (kpt.OrbitalMap(state) != state)
 			{
-				outf.Dispose();	
-			}		
+				int count = 0;
+				double wtk = 0;
+				int thisOrb = state;
+
+				do
+				{
+					wtk += vecs[thisOrb, j].MagnitudeSquared;
+					count++;
+					thisOrb = kpt.OrbitalMap(thisOrb);
+
+				} while (thisOrb != state);
+
+				return wtk / count;
+			}
+			else
+			{
+				return vecs[state, j].MagnitudeSquared;
+			}
 		}
 		int FindIndex(double[] grid, double value)
 		{
@@ -343,7 +359,9 @@ namespace TightBinding
 		public Matrix CalcHamiltonian(TbInputFile inp, Vector3 kpt)
 		{
 			Matrix m = new Matrix(inp.Sites.Count, inp.Sites.Count);
-			
+
+			kpt *= 2 * Math.PI;
+
 			for (int i = 0; i < inp.Sites.Count; i++)
 			{
 				for (int j = 0; j < inp.Sites.Count; j++)

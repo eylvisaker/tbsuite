@@ -57,6 +57,8 @@
     <Compile Include="Main.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="InputReader.cs" />
+    <Compile Include="Symmetry.cs" />
+    <Compile Include="SymmetryList.cs" />
     <Compile Include="TbInputFile.cs" />
     <Compile Include="Lattice.cs" />
     <Compile Include="SiteList.cs" />

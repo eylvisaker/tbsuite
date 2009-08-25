@@ -30,9 +30,11 @@ namespace TightBinding
 			}
 			
 			Validate();
+			PostProcess();
 		}
 		protected abstract void Validate();
-	
+		protected abstract void PostProcess();
+
 		protected void ThrowEx(string message)
 		{
 			throw new Exception(string.Format(
@@ -73,7 +75,8 @@ namespace TightBinding
 			
 			lineIndex++;			        
 			line = reader.ReadLine().Trim();
-						
+			line = line.Replace('\t', ' ');
+
 			if (line.Contains("#"))
 			{
 				line = line.Substring(0, line.IndexOf("#"));

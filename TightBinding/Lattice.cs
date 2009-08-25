@@ -60,15 +60,18 @@ namespace TightBinding
 			m.SetRow(2, g3);
 			
 			Vector3 retval = m * a;
-			
-			if (retval.X < 0) retval.X += (int)retval.X + 1;
-			if (retval.Y < 0) retval.Y += (int)retval.Y + 1;
-			if (retval.Z < 0) retval.Z += (int)retval.Z + 1;
-			
-			retval.X %= 1;
-			retval.Y %= 1;
-			retval.Z %= 1;
-			
+
+			if (translate)
+			{
+				if (retval.X < 0) retval.X += (int)retval.X + 1;
+				if (retval.Y < 0) retval.Y += (int)retval.Y + 1;
+				if (retval.Z < 0) retval.Z += (int)retval.Z + 1;
+
+				retval.X %= 1;
+				retval.Y %= 1;
+				retval.Z %= 1;
+			}
+
 			return retval;
 		}
 	}
