@@ -57,6 +57,7 @@
     <Compile Include="Main.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="InputReader.cs" />
+    <Compile Include="RPA.cs" />
     <Compile Include="Symmetry.cs" />
     <Compile Include="SymmetryList.cs" />
     <Compile Include="TbInputFile.cs" />
@@ -66,6 +67,8 @@
     <Compile Include="KptList.cs" />
     <Compile Include="KPoint.cs" />
     <Compile Include="Tetrahedron.cs" />
+    <Compile Include="TightBinding.cs" />
+    <Compile Include="Wavefunction.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">

@@ -12,22 +12,31 @@ namespace TightBinding
 		Lattice lattice;
 		SiteList sites;
 		HoppingPairList hoppings;
-		KptList kpath;
-		KptList kmesh;
+		KptList kpath, kmesh;
+		KptList qpath, qmesh;
 		List<int> poles = new List<int>();
 		double smearing = 0.04;
 
+		public double ChemicalPotential { get; private set; }
 		public Lattice Lattice { get { return lattice; } }
 		public SiteList Sites { get { return sites; } }
 		public HoppingPairList Hoppings { get { return hoppings; } }
 		public KptList KPath { get { return kpath; } }
 		public KptList KMesh { get { return kmesh; } }
+		public KptList QPath { get { return qpath; } }
+		public KptList QMesh { get { return qmesh; } }
+		public double[] FrequencyMesh { get; private set; }
+		public double[] TemperatureMesh { get; private set; }
 		public double Smearing { get { return smearing; } }
 		public List<int> PoleStates { get { return poles; } }
+
+		public double HubU, HubUp, HubJ, HubJp;
 
 		int[] kgrid = new int[3];
 		int[] shift = new int[] { 1, 1, 1 };
 		SymmetryList symmetries = new SymmetryList();
+
+		int[] qgrid = new int[3];
 
 		public TbInputFile(string filename)
 			: base(filename)
@@ -87,11 +96,19 @@ namespace TightBinding
 					break;
 
 				case "KPath":
-					ReadKPathSection();
+					ReadKPathSection("KPath", ref kpath);
 					break;
 
 				case "KMesh":
-					ReadKMeshSection();
+					ReadKMeshSection("KMesh", kgrid);
+					break;
+
+				case "QPath":
+					ReadKPathSection("QPath", ref qpath);
+					break;
+
+				case "QMesh":
+					ReadKMeshSection("QMesh", qgrid);
 					break;
 
 				case "Poles":
@@ -102,10 +119,36 @@ namespace TightBinding
 					ReadSymmetrySection();
 					break;
 
+				case "Frequency":
+					ReadFrequencySection();
+					break;
+
+				case "Temperature":
+					ReadTemperatureSection();
+					break;
+
+				case "Chemical Potential":
+					ReadChemicalPotential();
+					break;
+
 				default:
 					ThrowEx("Unrecognized section " + sectionName);
 					break;
 			}
+		}
+
+		private void ReadChemicalPotential()
+		{
+			ChemicalPotential = double.Parse(Line);
+		}
+
+		private void ReadFrequencySection()
+		{
+		}
+
+		private void ReadTemperatureSection()
+		{
+			throw new NotImplementedException();
 		}
 
 		void ReadPolesSection()
@@ -115,16 +158,16 @@ namespace TightBinding
 			foreach (string v in vals)
 				poles.Add(int.Parse(v) - 1);
 		}
-		void ReadKPathSection()
+		void ReadKPathSection(string section, ref KptList path)
 		{
-			if (kpath != null)
-				ThrowEx("KPath found twice.");
+			if (path != null)
+				ThrowEx(section + " found twice.");
 
 			Vector3 lastKpt = Vector3.Zero;
 			char[] array = new char[] { ' ' };
 			const double ptScale = 100;
 
-			kpath = new KptList();
+			path = new KptList();
 			while (EOF == false && LineType != LineType.NewSection)
 			{
 				double dummy;
@@ -146,15 +189,15 @@ namespace TightBinding
 				Vector3 kpt = vecval;
 				double length = (kpt - lastKpt).Magnitude;
 
-				kpath.AddPts(lastKpt, kpt, Math.Max((int)(ptScale * length), 1));
-				kpath.Kpts[kpath.Kpts.Count - 1].Name = name;
+				path.AddPts(lastKpt, kpt, Math.Max((int)(ptScale * length), 1));
+				path.Kpts[path.Kpts.Count - 1].Name = name;
 
 				lastKpt = kpt;
 
 				ReadNextLine();
 			}
 		}
-		void ReadKMeshSection()
+		void ReadKMeshSection(string section, int[] kgrid)
 		{
 			char[] array = new char[] { ' ' };
 			string[] vals = Line.Split(array, StringSplitOptions.RemoveEmptyEntries);
@@ -606,6 +649,34 @@ namespace TightBinding
 			}
 
 			return true;
+		}
+
+		public int GetKindex(Vector3 kpt, out List<int> orbitalMap)
+		{
+			for (int i = 0; i < 3; i++)
+				kpt[i] = Math.Round(kpt[i], 9) % 1;
+
+			for (int i = 0; i < KMesh.Kpts.Count; i++)
+			{
+				for (int s = 0; s < symmetries.Count; s++)
+				{
+					Vector3 newKpt = symmetries[s].Value * kmesh.Kpts[i].Value;
+					double dist = GetDist(KMesh.Kpts[i], kpt);
+
+					if (dist < 1e-5)
+					{
+						orbitalMap = symmetries[s].OrbitalTransform;
+						return i;
+					}
+				}
+			}
+
+			throw new Exception(string.Format("Could not find k-point {0}", kpt));
+		}
+
+		private double GetDist(Vector3 a, Vector3 b)
+		{
+			return (a - b).MagnitudeSquared;
 		}
 	}
 }

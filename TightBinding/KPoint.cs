@@ -10,6 +10,7 @@ namespace TightBinding
 		public double Weight = 1;
 		public string Name;
 		List<int> OrbitalTransform = new List<int>();
+		List<Wavefunction> wfk = new List<Wavefunction>();
 
 		public KPoint(Vector3 v)
 		{
@@ -66,5 +67,7 @@ namespace TightBinding
 			}
 
 		}
+
+		public List<Wavefunction> Wavefunctions { get { return wfk; } }
 	}
 }
