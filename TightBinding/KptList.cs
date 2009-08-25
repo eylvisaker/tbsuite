@@ -9,6 +9,9 @@ namespace TightBinding
 	{
 		List<KPoint>  kpts = new List<KPoint>();
 		List<Tetrahedron> tets = new List<Tetrahedron>();
+		int[] mesh;
+		int[] shift;
+		Dictionary<int, int> Nvalues = new Dictionary<int, int>();
 
 		public KptList()
 		{
@@ -151,7 +154,14 @@ namespace TightBinding
 			int ymax = kgrid[1] * 2;
 			int xmax = kgrid[0] * 2;
 
-			Dictionary<int, int> values = new Dictionary<int, int>();
+			if (shift == null)
+			{
+				shift = new int[3];
+			}
+
+			retval.mesh = (int[])kgrid.Clone();
+			retval.shift = (int[])shift.Clone();
+
 			int index = 0;
 
 			for (int k = 0; k < zmax; k+=2)
@@ -160,7 +170,7 @@ namespace TightBinding
 				{
 					for (int i = 0; i < xmax; i += 2)
 					{
-						int N = CalcN(kgrid, shift, i, j, k);
+						int N = retval.CalcN(i, j, k);
 						bool foundSym = false;
 
 						double dx = (i + shift[0]) / (double)xmax;
@@ -186,7 +196,7 @@ namespace TightBinding
 							int newj = (int)Math.Round(ymax * red.Y - shift[1]);
 							int newk = (int)Math.Round(zmax * red.Z - shift[2]);
 
-							symN = CalcN(kgrid, shift, newi, newj, newk);
+							symN = retval.CalcN(newi, newj, newk);
 
 							if (symN < N)
 							{
@@ -205,16 +215,16 @@ namespace TightBinding
 						if (foundSym == false)
 						{
 							retval.kpts.Add(new KPoint(CalcK(lattice, dx, dy, dz)));
-							values.Add(N, index);
+							retval.Nvalues.Add(N, index);
 							index++;
 						}
 						else
 						{
-							int newIndex = values[symN];
+							int newIndex = retval.Nvalues[symN];
 							retval.kpts[newIndex].Weight++;
-							retval.kpts[newIndex].SetOrbitalSymmetry(orbitals);
+							retval.kpts[newIndex].AddOrbitalSymmetry(orbitals);
 
-							values.Add(N, newIndex);
+							retval.Nvalues.Add(N, newIndex);
 
 						}
 					}
@@ -238,16 +248,51 @@ namespace TightBinding
 			return retval;
 		}
 
-		private static int CalcN(int[] kgrid, int[] shift, int i, int j, int k)
+		private int CalcN(int i, int j, int k)
 		{
-			int zmax = kgrid[2] * 2;
-			int ymax = kgrid[1] * 2;
-			int xmax = kgrid[0] * 2;
+			int zmax = mesh[2] * 2;
+			int ymax = mesh[1] * 2;
+			int xmax = mesh[0] * 2;
 			int zsh = shift[2];
 			int ysh = shift[1];
 			int xsh = shift[0];
 
 			return 1 + (i + xsh) + xmax * ((j + ysh) + ymax * (k + zsh));
+		}
+
+		public int GetKindex(Lattice lattice, Vector3 kpt, out List<int> orbitalMap, SymmetryList symmetries)
+		{
+			for (int s = 0; s < symmetries.Count; s++)
+			{
+				int newi, newj, newk;
+				Vector3 newKpt = symmetries[s].Inverse * kpt;
+
+				ReduceKpt(lattice, newKpt, out newi, out newj, out newk);
+
+				int N = CalcN(newi, newj, newk);
+
+				if (Nvalues.ContainsKey(N))
+				{
+					int index = Nvalues[N];
+
+					orbitalMap = symmetries[s].OrbitalTransform;
+					return index;
+				}
+			}
+
+			throw new Exception(string.Format("Could not find k-point {0}", kpt));
+		}
+
+		private void ReduceKpt(Lattice lattice, Vector3 kpt, out int newi, out int newj, out int newk)
+		{
+			Vector3 red = lattice.ReducedCoords(kpt, true);
+			int zmax = mesh[2] * 2;
+			int ymax = mesh[1] * 2;
+			int xmax = mesh[0] * 2;
+
+			newi = (int)Math.Round(xmax * red.X - shift[0]);
+			newj = (int)Math.Round(ymax * red.Y - shift[1]);
+			newk = (int)Math.Round(zmax * red.Z - shift[2]);
 		}
 	}
 }

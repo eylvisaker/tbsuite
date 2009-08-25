@@ -18,14 +18,14 @@ namespace TightBinding
 
 			bool ranRPA = false;
 
-			if (r.QPath.Kpts.Count > 0)
+			if (r.QPath != null && r.QPath.Kpts.Count > 0)
 			{
-				RunRPA(r.QPath);
+				RunRPA(r, r.QPath);
 				ranRPA = true;
 			}
-			if (r.QMesh.Kpts.Count > 0)
+			if (r.QMesh != null && r.QMesh.Kpts.Count > 0)
 			{
-				RunRPA(r.QMesh);
+				RunRPA(r, r.QMesh);
 				ranRPA = true;
 			}
 
@@ -33,9 +33,11 @@ namespace TightBinding
 				Console.WriteLine("No q-points defined, so we will not run the RPA.");
 		}
 
-		private void RunRPA(KptList qptList)
+		private void RunRPA(TbInputFile r , KptList qptList)
 		{
+			RPA rpa = new RPA();
 
+			rpa.RunRpa(this, r, qptList);
 		}
 		
 		public void CalcValues(TbInputFile inp, string outputfile)
@@ -190,19 +192,25 @@ namespace TightBinding
 
 				double[] energyGrid = new double[epts];
 				double[,] dos = new double[epts, inp.Sites.Count + 1];
+				int zeroIndex = 0;
 
 				for (int i = 0; i < epts; i++)
 				{
 					energyGrid[i] = emin + (emax - emin) * i / (double)(epts - 1);
-				}
 
+					if (energyGrid[i] < 0)
+						zeroIndex = i;
+				}
 				Console.WriteLine("Calculating DOS from {0} to {1} with smearing {2}.",
 								  emin, emax, smearing);
 
 				Console.WriteLine("Using {0} kpts.", ks.Kpts.Count);
 
+				/*
 				if (inp.PoleStates.Count > 0)
 					Console.WriteLine("Pole states present: {0}", inp.PoleStates.Count);
+				*/
+
 
 				for (int i = 0; i < ks.Kpts.Count; i++)
 				{
@@ -212,7 +220,7 @@ namespace TightBinding
 
 					for (int j = 0; j < vals.Rows; j++)
 					{
-						double energy = vals[j, 0].RealPart;
+						double energy = vals[j, 0].RealPart - inp.ChemicalPotential;
 
 						int startIndex = FindIndex(energyGrid, energy - smearing * 10);
 						int endIndex = FindIndex(energyGrid, energy + smearing * 10);
@@ -238,19 +246,47 @@ namespace TightBinding
 
 							dos[k, 0] += gaus * weight;
 
-							for (int l = 0; l < vecs.Rows; l++)
+							for (int state = 0; state < vecs.Rows; state++)
 							{
-								if (inp.PoleStates.Contains(l))
+								if (inp.PoleStates.Contains(state))
 									continue;
 
-								double wtk = GetWeight(ks.Kpts[i], vecs, j, l);
+								double wtk = vecs[state, j].MagnitudeSquared;//GetWeight(ks.Kpts[i], vecs, j, l);
 
-								dos[k, l + 1] += gaus * wtk;
+								dos[k, state + 1] += gaus * wtk;
 							}
 						}
 
 					}
 				}
+
+				// symmetrize DOS for equivalent orbitals.
+				for (int k = 0; k < epts; k++)
+				{
+					for (int i = 0; i < inp.Sites.Count; i++)
+					{
+						double wtk = dos[k, i + 1];
+						int count = 1;
+
+						foreach (int equiv in inp.Sites[i].Equivalent)
+						{
+							wtk += dos[k, equiv + 1];
+							count++;
+						}
+
+						dos[k, i + 1] = wtk / count;
+
+						foreach (int equiv in inp.Sites[i].Equivalent)
+						{
+							dos[k, equiv + 1] = wtk / count;
+						}
+					}
+				}
+
+				double slope = (dos[zeroIndex, 0] - dos[zeroIndex + 1, 0]) / (energyGrid[zeroIndex] - energyGrid[zeroIndex + 1]);
+				double dosEF = slope * (-energyGrid[zeroIndex]) + dos[zeroIndex, 0];
+
+				Console.WriteLine("Density of states at chemical potential: {0}", dosEF);
 
 				for (int i = 0; i < epts; i++)
 				{
@@ -268,26 +304,16 @@ namespace TightBinding
 
 		private static double GetWeight(KPoint kpt, Matrix vecs, int j, int state)
 		{
-			if (kpt.OrbitalMap(state) != state)
+			int count = 1;
+			double wtk = vecs[state, j].MagnitudeSquared;
+
+			foreach (int orb in kpt.GetEquivalentOrbitals(state))
 			{
-				int count = 0;
-				double wtk = 0;
-				int thisOrb = state;
-
-				do
-				{
-					wtk += vecs[thisOrb, j].MagnitudeSquared;
-					count++;
-					thisOrb = kpt.OrbitalMap(thisOrb);
-
-				} while (thisOrb != state);
-
-				return wtk / count;
+				wtk += vecs[orb, j].MagnitudeSquared;
+				count++;
 			}
-			else
-			{
-				return vecs[state, j].MagnitudeSquared;
-			}
+
+			return wtk / count;
 		}
 		int FindIndex(double[] grid, double value)
 		{

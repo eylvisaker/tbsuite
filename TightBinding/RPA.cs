@@ -76,7 +76,8 @@ namespace TightBinding
 				Vector3 kq = input.KMesh.Kpts[i].Value + q;
 				List<int> orbitalMap;
 
-				int index = input.GetKindex(kq, out orbitalMap);
+				int index = input.KMesh.GetKindex(
+					input.Lattice, kq, out orbitalMap, input.Symmetries);
 
 				for (int n = 0; n < bands[i].Length; n++)
 				{
@@ -85,7 +86,7 @@ namespace TightBinding
 			}
 		}
 		
-		void RunRpa(TightBinding tb, TbInputFile input, KptList qpts)
+		public void RunRpa(TightBinding tb, TbInputFile input, KptList qpts)
 		{
 			CalculateBands(tb, input);
 
@@ -114,7 +115,7 @@ namespace TightBinding
 				for (int qIndex = 0; qIndex < QMesh.Count; qIndex++)
 				{
 					CreateKQbands(tb, input, QMesh[qIndex]);
-					Console.WriteLine("q = {0}", QMesh[qIndex]);
+					Console.WriteLine("q = {0}", QMesh[qIndex].Value);
 
 					for (int freqIndex = 0; freqIndex < input.FrequencyMesh.Length; freqIndex++)
 					{
@@ -122,7 +123,6 @@ namespace TightBinding
 
 						Matrix s_denom = (ident - S * x0[qIndex, freqIndex, tempIndex]);
 						Matrix c_denom = (ident + C * x0[qIndex, freqIndex, tempIndex]);
-
 					}
 				}
 			}
@@ -142,7 +142,7 @@ namespace TightBinding
 
 				for (int qIndex = 0; qIndex < QMesh.Count; qIndex++)
 				{
-					Console.WriteLine("q: {0}", QMesh[qIndex]);
+					Console.WriteLine("q: {0}", QMesh[qIndex].Value);
 
 					for (int freqIndex = 0; freqIndex < input.FrequencyMesh.Length; freqIndex++)
 					{
@@ -399,6 +399,8 @@ namespace TightBinding
 										val += contrib;
 									}
 								}
+
+								val *= input.KMesh.Kpts[kindex].Weight;
 							}
 
 							// get rid of small imaginary parts

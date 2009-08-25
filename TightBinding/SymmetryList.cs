@@ -5,12 +5,16 @@ using ERY.EMath;
 
 namespace TightBinding
 {
-	class SymmetryList : List<Symmetry>
+	public class SymmetryList : List<Symmetry>
 	{
 		public void Add(Matrix m, IEnumerable<int> orbitals)
 		{
 			Symmetry s = new Symmetry(m);
-			s.OrbitalTransform.AddRange(orbitals);
+			if (orbitals != null)
+			{
+				s.OrbitalTransform.AddRange(orbitals);
+			}
+
 			Add(s);
 		}
 	}

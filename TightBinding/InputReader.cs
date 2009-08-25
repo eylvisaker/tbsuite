@@ -73,7 +73,7 @@ namespace TightBinding
 			if (reader.EndOfStream)
 				throw new EndOfInputException();
 			
-			lineIndex++;			        
+			lineIndex++;
 			line = reader.ReadLine().Trim();
 			line = line.Replace('\t', ' ');
 
@@ -91,6 +91,10 @@ namespace TightBinding
 		protected string Line
 		{
 			get { return line; }
+		}
+		protected string[] LineWords
+		{
+			get { return Line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries); }
 		}
 		protected int LineIndex
 		{

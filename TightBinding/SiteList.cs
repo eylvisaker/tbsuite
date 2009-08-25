@@ -32,6 +32,7 @@ namespace TightBinding
 	{
 		Vector3 vec;
 		string name;
+		List<int> equivalentSites = new List<int>();
 
 		public Site(Vector3 vec)
 		{
@@ -45,6 +46,7 @@ namespace TightBinding
 
 		public string Name { get { return name; } set { name = value; } }
 		public Vector3 Location { get { return vec; } set { vec = value; } }
+		public List<int> Equivalent { get { return equivalentSites; } }
 
 		public double X { get { return vec.X; } set { vec.X = value; } }
 		public double Y { get { return vec.Y; } set { vec.Y = value; } }

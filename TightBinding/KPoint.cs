@@ -9,7 +9,7 @@ namespace TightBinding
 		public Vector3 Value;
 		public double Weight = 1;
 		public string Name;
-		List<int> OrbitalTransform = new List<int>();
+		List<List<int>> mOrbitalTransform = new List<List<int>>();
 		List<Wavefunction> wfk = new List<Wavefunction>();
 
 		public KPoint(Vector3 v)
@@ -21,19 +21,19 @@ namespace TightBinding
 			return p.Value;	
 		}
 
-		public int OrbitalMap(int orbital)
+		public IEnumerable<int> GetEquivalentOrbitals(int orbital)
 		{
-			if (OrbitalTransform.Count == 0)
-				return orbital;
-
-			return OrbitalTransform[orbital];
+			foreach (var xform in mOrbitalTransform)
+			{
+				foreach (int orb in xform)
+				{
+					if (orb != orbital)
+						yield return orb;
+				}
+			}
 		}
 
-		bool HaveOrbitalTransform
-		{
-			get { return OrbitalTransform.Count != 0; }
-		}
-		internal void SetOrbitalSymmetry(List<int> orbitals)
+		public void AddOrbitalSymmetry(List<int> orbitals)
 		{
 			bool significant = false;
 
@@ -49,25 +49,10 @@ namespace TightBinding
 			if (!significant)
 				return;
 
-			if (HaveOrbitalTransform == false)
-			{
-				OrbitalTransform.AddRange(orbitals);
-			}
-			else
-			{
-				if (orbitals.Count != OrbitalTransform.Count)
-				{
-					throw new Exception("Incomplete symmetry information detected!");
-				}
-				for (int i = 0; i < OrbitalTransform.Count; i++)
-				{
-					if (OrbitalTransform[i] != orbitals[i])
-						throw new Exception("Incompatible symmetry detected!");
-				}
-			}
-
+			mOrbitalTransform.Add(orbitals);
 		}
 
 		public List<Wavefunction> Wavefunctions { get { return wfk; } }
+		public IEnumerable<List<int>> OrbitalTransform { get { return mOrbitalTransform; } }
 	}
 }

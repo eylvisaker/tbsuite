@@ -5,8 +5,10 @@ using ERY.EMath;
 
 namespace TightBinding
 {
-	class Symmetry
+	public class Symmetry
 	{
+		Matrix mInverse;
+
 		public Symmetry(Matrix val)
 		{
 			Value = val;
@@ -15,5 +17,16 @@ namespace TightBinding
 
 		public Matrix Value { get; private set; }
 		public List<int> OrbitalTransform { get; private set; }
+
+		public Matrix Inverse
+		{
+			get
+			{
+				if (mInverse == null)
+					mInverse = Value.Invert();
+
+				return mInverse;
+			}
+		}
 	}
 }

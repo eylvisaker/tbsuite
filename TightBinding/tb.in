@@ -59,10 +59,8 @@ G     0         0        0
 40 40 40 1 1 1
 0.4
 
-[QPath]
-G    0   0   0
-X    1   0   0
-M    1   1   0
+[QMesh]
+4 4 4
 
 [Frequency]
 0 0 1
@@ -73,5 +71,5 @@ M    1   1   0
 [Hubbard]
 4 4 1 1 
 
-[Chemical potential]
+[Mu]
 0

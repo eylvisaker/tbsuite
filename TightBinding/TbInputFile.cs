@@ -29,6 +29,7 @@ namespace TightBinding
 		public double[] TemperatureMesh { get; private set; }
 		public double Smearing { get { return smearing; } }
 		public List<int> PoleStates { get { return poles; } }
+		public SymmetryList Symmetries { get { return symmetries; } }
 
 		public double HubU, HubUp, HubJ, HubJp;
 
@@ -77,6 +78,7 @@ namespace TightBinding
 		private void GenerateKmesh()
 		{
 			kmesh = KptList.GenerateMesh(lattice, kgrid, shift, symmetries);
+			qmesh = KptList.GenerateMesh(lattice, qgrid, null, symmetries);
 		}
 
 		protected override void ReadSection(string sectionName)
@@ -93,6 +95,10 @@ namespace TightBinding
 
 				case "Hoppings":
 					ReadHoppingsSection();
+					break;
+
+				case "Hubbard":
+					ReadHubbardSection();
 					break;
 
 				case "KPath":
@@ -127,7 +133,7 @@ namespace TightBinding
 					ReadTemperatureSection();
 					break;
 
-				case "Chemical Potential":
+				case "Mu":
 					ReadChemicalPotential();
 					break;
 
@@ -137,6 +143,15 @@ namespace TightBinding
 			}
 		}
 
+		private void ReadHubbardSection()
+		{
+			HubU = double.Parse(LineWords[0]);
+			HubUp = double.Parse(LineWords[1]);
+			HubJ = double.Parse(LineWords[2]);
+			HubJp = double.Parse(LineWords[3]);
+		}
+
+
 		private void ReadChemicalPotential()
 		{
 			ChemicalPotential = double.Parse(Line);
@@ -144,16 +159,53 @@ namespace TightBinding
 
 		private void ReadFrequencySection()
 		{
+			FrequencyMesh = ReadDoubleMesh();
 		}
 
 		private void ReadTemperatureSection()
 		{
-			throw new NotImplementedException();
+			TemperatureMesh = ReadDoubleMesh();
+		}
+
+		private double[] ReadDoubleMesh()
+		{
+			double[] array = new double[1];
+			string[] words = LineWords;
+			bool singlePoint = false;
+
+			if (words.Length > 1)
+			{
+				double f1 = double.Parse(words[0]);
+				double f2 = double.Parse(words[1]);
+				int count = int.Parse(words[2]);
+
+				if (count > 1)
+				{
+					array = new double[count];
+					double delta = (f2 - f1) / (count - 1);
+
+					for (int i = 0; i < count; i++)
+					{
+						array[i] = f1 + delta * i;
+					}
+				}
+				else
+					singlePoint = true;
+			}
+			else
+				singlePoint = true;
+
+			if (singlePoint)
+			{
+				array = new double[1];
+				array[0] = double.Parse(words[0]);
+			}
+			return array;
 		}
 
 		void ReadPolesSection()
 		{
-			string[] vals = Line.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+			string[] vals = LineWords;
 
 			foreach (string v in vals)
 				poles.Add(int.Parse(v) - 1);
@@ -333,6 +385,8 @@ namespace TightBinding
 			if (symmetries.Count > 0)
 				ThrowEx("Second symmetries section encountered.");
 
+			symmetries.Add(Matrix.Identity(3), null);
+
 			while (!EOF && LineType != LineType.NewSection)
 			{
 				List<string> words = new List<string>();
@@ -347,6 +401,8 @@ namespace TightBinding
 
 				Matrix m = Matrix.Identity(3);
 				Matrix n = Matrix.Zero(3);
+
+				StoreEquivalentOrbitals(orbitals);
 
 				switch (words[0].ToLowerInvariant())
 				{
@@ -375,6 +431,8 @@ namespace TightBinding
 						symmetries.Add(n, orbitals);
 						symmetries.Add(n * n, SwapOrbitals(orbitals, 1));
 						symmetries.Add(n * n * n, SwapOrbitals(orbitals, 2));
+						StoreEquivalentOrbitals(SwapOrbitals(orbitals, 1));
+						StoreEquivalentOrbitals(SwapOrbitals(orbitals, 2));
 						break;
 
 					case "rotatey":
@@ -384,6 +442,8 @@ namespace TightBinding
 						symmetries.Add(n, orbitals);
 						symmetries.Add(n * n, SwapOrbitals(orbitals, 1));
 						symmetries.Add(n * n * n, SwapOrbitals(orbitals, 2));
+						StoreEquivalentOrbitals(SwapOrbitals(orbitals, 1));
+						StoreEquivalentOrbitals(SwapOrbitals(orbitals, 2));
 						break;
 
 					case "rotatex":
@@ -411,6 +471,20 @@ namespace TightBinding
 				}
 
 				ReadNextLine();
+			}
+		}
+
+		private void StoreEquivalentOrbitals(List<int> orbitals)
+		{
+			for (int i = 0; i < orbitals.Count; i++)
+			{
+				if (orbitals[i] == i)
+					continue;
+
+				if (sites[i].Equivalent.Contains(orbitals[i]) == false)
+					sites[i].Equivalent.Add(orbitals[i]);
+				if (sites[orbitals[i]].Equivalent.Contains(i) == false)
+					sites[orbitals[i]].Equivalent.Add(i);
 			}
 		}
 
@@ -651,28 +725,6 @@ namespace TightBinding
 			return true;
 		}
 
-		public int GetKindex(Vector3 kpt, out List<int> orbitalMap)
-		{
-			for (int i = 0; i < 3; i++)
-				kpt[i] = Math.Round(kpt[i], 9) % 1;
-
-			for (int i = 0; i < KMesh.Kpts.Count; i++)
-			{
-				for (int s = 0; s < symmetries.Count; s++)
-				{
-					Vector3 newKpt = symmetries[s].Value * kmesh.Kpts[i].Value;
-					double dist = GetDist(KMesh.Kpts[i], kpt);
-
-					if (dist < 1e-5)
-					{
-						orbitalMap = symmetries[s].OrbitalTransform;
-						return i;
-					}
-				}
-			}
-
-			throw new Exception(string.Format("Could not find k-point {0}", kpt));
-		}
 
 		private double GetDist(Vector3 a, Vector3 b)
 		{
