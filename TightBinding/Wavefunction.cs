@@ -35,6 +35,9 @@ namespace TightBinding
 		{
 			Wavefunction retval = new Wavefunction(coeffs.Length);
 
+			retval.Energy = Energy;
+			retval.FermiFunction = FermiFunction;
+
 			if (orbitalMap != null && orbitalMap.Count > 0)
 			{
 				for (int i = 0; i < coeffs.Length; i++)

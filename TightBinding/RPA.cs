@@ -51,7 +51,7 @@ namespace TightBinding
 				}
 			}
 		}
-		void SetTemperature(double temperature)
+		void SetTemperature(double temperature, double mu)
 		{
 			//currentTemperature = value;
 			double beta = 1 / temperature;
@@ -60,7 +60,7 @@ namespace TightBinding
 			{
 				foreach (Wavefunction wfk in k)
 				{
-					wfk.FermiFunction = FermiFunction(beta, wfk.Energy);
+					wfk.FermiFunction = FermiFunction(beta, wfk.Energy - mu);
 				}
 			}
 		}
@@ -108,14 +108,14 @@ namespace TightBinding
 
 			for (int tempIndex = 0; tempIndex < TemperatureMesh.Length; tempIndex++)
 			{
-				SetTemperature(TemperatureMesh[tempIndex]);
+				SetTemperature(TemperatureMesh[tempIndex], input.ChemicalPotential);
 				Console.WriteLine("Temperature: {1}    Beta: {0}",
 					1 / TemperatureMesh[tempIndex], TemperatureMesh[tempIndex]);
 
 				for (int qIndex = 0; qIndex < QMesh.Count; qIndex++)
 				{
-					CreateKQbands(tb, input, QMesh[qIndex]);
 					Console.WriteLine("q = {0}", QMesh[qIndex].Value);
+					CreateKQbands(tb, input, QMesh[qIndex]);
 
 					for (int freqIndex = 0; freqIndex < input.FrequencyMesh.Length; freqIndex++)
 					{
@@ -244,7 +244,7 @@ namespace TightBinding
 
 									for (int qi = 0; qi < QMesh.Count; qi++)
 									{
-										w.WriteLine("#{0}\tTemp\tRe(Chi)\tIm(Chi)", QMesh[qi]);
+										w.WriteLine("#{0}\tTemp\tRe(Chi)\tIm(Chi)", QMesh[qi].Value);
 
 										for (int ti = 0; ti < input.TemperatureMesh.Length; ti++)
 										{
@@ -361,7 +361,45 @@ namespace TightBinding
 						{
 							int i = GetIndex(input, l1, l2);
 							int j = GetIndex(input, l3, l4);
+							bool foundSymmetry = false;
 
+							for (int s = 0; s < input.Symmetries.Count; s++)
+							{
+								Symmetry sym = input.Symmetries[s];
+								
+								if (sym.OrbitalTransform == null || sym.OrbitalTransform.Count == 0)
+									continue;
+
+								int newL1 = sym.OrbitalTransform[l1];
+								int newL2 = sym.OrbitalTransform[l2];
+								int newL3 = sym.OrbitalTransform[l3];
+								int newL4 = sym.OrbitalTransform[l4];
+
+								int newI = GetIndex(input, newL1, newL2);
+								int newJ = GetIndex(input, newL3, newL4);
+
+								if (newI == i && newJ == j)
+									continue;
+
+								foundSymmetry = true;
+
+								if (newL1 > l1) foundSymmetry = false;
+								if (newL2 > l2) foundSymmetry = false;
+								if (newL3 > l3) foundSymmetry = false;
+								if (newL4 > l4) foundSymmetry = false;
+
+								if (foundSymmetry)
+								{
+									x[i, j] = x[newI, newJ];
+									x[j, i] = x[i, j].Conjugate();
+
+									break;
+								}
+							}
+
+							if (foundSymmetry)
+								continue;
+							
 							Complex val = 0;
 
 							for (int kindex = 0; kindex < input.KMesh.Kpts.Count; kindex++)
@@ -375,7 +413,7 @@ namespace TightBinding
 									if (e1 < en_min) continue;
 									if (e1 > en_max) break;
 
-									for (int n2 = 0; n2 < input.Sites.Count; n2++)
+									for (int n2 = 0; n2 < orbitalCount; n2++)
 									{
 										Wavefunction wfq = BandsKQ(kindex, n2);
 										double e2 = wfq.Energy;
@@ -392,9 +430,9 @@ namespace TightBinding
 
 										if (coeff == 0) continue;
 
-										Complex denom = (e2 - e1 - freq - denom_factor);
-										Complex lindhard = (f1 - f2) / denom;
-										Complex contrib = coeff * lindhard;
+										Complex denom = (e2 - e1 + freq - denom_factor);
+										Complex lindhardt = (f1 - f2) / denom;
+										Complex contrib = coeff * lindhardt;
 
 										val += contrib;
 									}

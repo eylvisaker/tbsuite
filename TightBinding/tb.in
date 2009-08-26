@@ -30,16 +30,21 @@ RotateZ     2 1  # Rotation of 90 around the z axis swaps px and py.
 # Those vectors must be composed of integer values.
 [Hoppings]
 :1 1:
-  1  0  0      1
- -1  0  0      1
+  1  0  0      .2
+ -1  0  0      .2
+  0  0  1      .2
+  0  0 -1      .2
+
 :2 2:
-  0  1  0      1
-  0 -1  0      1
+  0  1  0      .2
+  0 -1  0      .2
+  0  0  1      .2
+  0  0 -1      .2
 :1 2:
-#  1  1  0      1
-# -1  1  0      1
-#  1 -1  0      1
-# -1 -1  0      1
+  1  1  0      -.1
+ -1  1  0      -.1
+  1 -1  0      .1
+ -1 -1  0      .1
   
 # Optional section
 # The path through K-space for integration is given as a series of points
@@ -57,7 +62,7 @@ G     0         0        0
 # It is optional.
 [KMesh]
 40 40 40 1 1 1
-0.4
+0.2
 
 [QMesh]
 4 4 4

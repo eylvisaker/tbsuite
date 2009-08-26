@@ -402,14 +402,14 @@ namespace TightBinding
 					
 					if (Math.Abs(val.ImagPart) > 1e-7)
 					{
-						Console.WriteLine("Imaginary part detected.  Check translation vectors: ");
+						//Console.WriteLine("Imaginary part detected.  Check translation vectors: ");
 						
-						for (int k = 0; k < p.Hoppings.Count; k++)
-						{
-							HoppingValue hop = p.Hoppings[k];
+						//for (int k = 0; k < p.Hoppings.Count; k++)
+						//{
+						//    HoppingValue hop = p.Hoppings[k];
 							
-							Console.WriteLine(hop.R);
-						}
+						//    Console.WriteLine(hop.R);
+						//}
 					}
 					
 					m[i,j] = val;
