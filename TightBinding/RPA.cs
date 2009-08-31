@@ -10,6 +10,7 @@ namespace TightBinding
 		Wavefunction[][] bands;
 		Wavefunction[][] kqbands;
 
+		double Beta;
 
 		public Wavefunction Bands(int kpt, int band)
 		{
@@ -54,19 +55,19 @@ namespace TightBinding
 		void SetTemperature(double temperature, double mu)
 		{
 			//currentTemperature = value;
-			double beta = 1 / temperature;
+			Beta = 1 / temperature;
 
 			foreach (var k in bands)
 			{
 				foreach (Wavefunction wfk in k)
 				{
-					wfk.FermiFunction = FermiFunction(beta, wfk.Energy - mu);
+					wfk.FermiFunction = FermiFunction(wfk.Energy - mu);
 				}
 			}
 		}
-		public double FermiFunction(double beta, double energy)
+		public double FermiFunction(double energy)
 		{
-			return 1.0 / (Math.Exp(beta * energy) + 1);
+			return 1.0 / (Math.Exp(Beta * energy) + 1);
 		}
 
 		internal void CreateKQbands(TightBinding tb, TbInputFile input, Vector3 q)
@@ -115,11 +116,11 @@ namespace TightBinding
 				for (int qIndex = 0; qIndex < QMesh.Count; qIndex++)
 				{
 					Console.WriteLine("q = {0}", QMesh[qIndex].Value);
-					CreateKQbands(tb, input, QMesh[qIndex]);
+					//CreateKQbands(tb, input, QMesh[qIndex]);
 
 					for (int freqIndex = 0; freqIndex < input.FrequencyMesh.Length; freqIndex++)
 					{
-						x0[qIndex, freqIndex, tempIndex] = CalcX0(input, input.FrequencyMesh[freqIndex]);
+						x0[qIndex, freqIndex, tempIndex] = CalcX0(input, input.FrequencyMesh[freqIndex], QMesh[qIndex].Value);
 
 						Matrix s_denom = (ident - S * x0[qIndex, freqIndex, tempIndex]);
 						Matrix c_denom = (ident + C * x0[qIndex, freqIndex, tempIndex]);
@@ -138,7 +139,7 @@ namespace TightBinding
 
 			for (int tempIndex = 0; tempIndex < input.TemperatureMesh.Length; tempIndex++)
 			{
-				Console.WriteLine("Temperature: {0}", tempIndex);
+				Console.WriteLine("Temperature: {0}", input.TemperatureMesh[tempIndex]);
 
 				for (int qIndex = 0; qIndex < QMesh.Count; qIndex++)
 				{
@@ -233,6 +234,7 @@ namespace TightBinding
 							int i = GetIndex(input, l1, l2);
 							int j = GetIndex(input, l3, l4);
 
+							// organize by temperature
 							string filename = string.Format(
 								"{0}.{1}{2}{3}{4}.T", name, l1, l2, l3, l4);
 
@@ -250,8 +252,64 @@ namespace TightBinding
 										{
 											Complex val = chi[qi, wi, ti][i, j];
 
-											w.WriteLine("\t{0:0.000000}\t{1:0.000000}\t{2:0.000000}",
+											w.WriteLine("\t{0:0.000000}\t{1:0.0000000}\t{2:0.0000000}",
 												input.TemperatureMesh[ti],
+												val.RealPart, val.ImagPart);
+										}
+										w.WriteLine();
+									}
+								}
+							}
+
+							// organize by q
+							filename = string.Format("{0}.{1}{2}{3}{4}.q", name, l1, l2, l3, l4);
+
+							using (StreamWriter w = new StreamWriter(filename))
+							{
+								for (int wi = 0; wi < input.FrequencyMesh.Length; wi++)
+								{
+									w.WriteLine("# Frequency: {0}", input.FrequencyMesh[wi]);
+
+									for (int ti = 0; ti < input.TemperatureMesh.Length; ti++)
+									{
+										w.WriteLine("# Temperature: {0}", input.TemperatureMesh[ti]);
+										w.WriteLine("#\tQx, Qy, Qz\tRe(Chi)\tIm(Chi)");
+
+										for (int qi = 0; qi < QMesh.Count; qi++)
+										{
+											Complex val = chi[qi, wi, ti][i, j];
+
+											w.WriteLine("\t{0}\t{1:0.0000000}\t{2:0.0000000}",
+												input.QMesh.Kpts[qi].Value,
+												val.RealPart, val.ImagPart);
+										}
+										w.WriteLine();
+									}
+								}
+							}
+
+
+							// organize by w
+							filename = string.Format(
+								"{0}.{1}{2}{3}{4}.w", name, l1, l2, l3, l4);
+
+							using (StreamWriter w = new StreamWriter(filename))
+							{
+								for (int qi = 0; qi < QMesh.Count; qi++)
+								{
+									w.WriteLine("#{0}", QMesh[qi].Value);
+
+									for (int ti = 0; ti < input.TemperatureMesh.Length; ti++)
+									{
+										w.WriteLine("# Temperature: {0}", input.TemperatureMesh[ti]);
+										w.WriteLine("#\tFrequency\tRe(Chi)\tIm(Chi)");
+
+										for (int wi = 0; wi < input.FrequencyMesh.Length; wi++)
+										{
+											Complex val = chi[qi, wi, ti][i, j];
+
+											w.WriteLine("\t{0:0.000000}\t{1:0.0000000}\t{2:0.0000000}",
+												input.FrequencyMesh[wi],
 												val.RealPart, val.ImagPart);
 										}
 										w.WriteLine();
@@ -340,7 +398,7 @@ namespace TightBinding
 			}
 		}
 
-		Matrix CalcX0(TbInputFile input, double freq)
+		Matrix CalcX0(TbInputFile input, double freq, Vector3 q)
 		{
 			int orbitalCount = input.Sites.Count;
 			int size = orbitalCount * orbitalCount;
@@ -349,7 +407,7 @@ namespace TightBinding
 			double en_min = -10;
 			double en_max = 10;
 
-			Complex denom_factor = new Complex(0, input.Smearing);
+			Complex denom_factor = new Complex(0, input.Smearing / 100);
 
 			for (int l1 = 0; l1 < orbitalCount; l1++)
 			{
@@ -402,8 +460,24 @@ namespace TightBinding
 							
 							Complex val = 0;
 
-							for (int kindex = 0; kindex < input.KMesh.Kpts.Count; kindex++)
+							for (int allkindex = 0; allkindex < input.KMesh.AllKpts.Count; allkindex++)
 							{
+								Vector3 k = input.KMesh.AllKpts[allkindex];
+								Vector3 kq = k + q;
+
+								List<int> kOrbitalMap;
+								List<int> kqOrbitalMap;
+
+								int kindex = input.KMesh.GetKindex(
+									input.Lattice, k, out kOrbitalMap, input.Symmetries);
+								int kqindex = input.KMesh.GetKindex(
+									input.Lattice, kq, out kqOrbitalMap, input.Symmetries);
+
+								int newL1 = TransformOrbital(kqOrbitalMap, l1);
+								int newL2 = TransformOrbital(kOrbitalMap, l2);
+								int newL3 = TransformOrbital(kqOrbitalMap, l3);
+								int newL4 = TransformOrbital(kOrbitalMap, l4);
+
 								for (int n1 = 0; n1 < orbitalCount; n1++)
 								{
 									Wavefunction wfk = Bands(kindex, n1);
@@ -415,30 +489,42 @@ namespace TightBinding
 
 									for (int n2 = 0; n2 < orbitalCount; n2++)
 									{
-										Wavefunction wfq = BandsKQ(kindex, n2);
+										Wavefunction wfq = Bands(kqindex, n2);//BandsKQ(kindex, n2);
 										double e2 = wfq.Energy;
 										double f2 = wfq.FermiFunction;
 
 										if (e2 < en_min) continue;
 										if (e2 > en_max) break;
 
-										if (f1 == f2) continue;
-
 										Complex coeff =
-											wfq.Coeffs[l1] * wfq.Coeffs[l3].Conjugate() *
-											wfk.Coeffs[l4] * wfk.Coeffs[l2].Conjugate();
+											wfq.Coeffs[newL1] * wfq.Coeffs[newL3].Conjugate() *
+											wfk.Coeffs[newL4] * wfk.Coeffs[newL2].Conjugate();
 
 										if (coeff == 0) continue;
 
-										Complex denom = (e2 - e1 + freq - denom_factor);
-										Complex lindhardt = (f1 - f2) / denom;
-										Complex contrib = coeff * lindhardt;
+										Complex denom_p = (e2 - e1 + freq + denom_factor);
+										//Complex denom_n = (e2 - e1 - freq - denom_factor);
+										//Complex lindhard = (f1 - f2) * (1.0 / denom_p + 1.0 / denom_n);
+										Complex lindhard = (f1 - f2) * (1.0 / denom_p);
+										Complex contrib = coeff * lindhard;
+
+										if (f1 == f2 && freq == 0.0)
+										{
+											const double epsilon = 1e-5;
+											denom_p += epsilon;
+											lindhard = epsilon * (1.0 / denom_p);
+											contrib = coeff * lindhard;
+
+											contrib = coeff * f1 * (1 - f1) * Beta;
+											Console.WriteLine(contrib.ToString());
+										}
 
 										val += contrib;
 									}
 								}
 
-								val *= input.KMesh.Kpts[kindex].Weight;
+								//Console.WriteLine(input.KMesh.AllKpts[kindex].Weight.ToString());
+								val *= input.KMesh.AllKpts[kindex].Weight;
 							}
 
 							// get rid of small imaginary parts
@@ -452,6 +538,14 @@ namespace TightBinding
 			}
 
 			return x;
+		}
+
+		private int TransformOrbital(List<int> kqOrbitalMap, int l1)
+		{
+			if (kqOrbitalMap.Count > 0)
+				return kqOrbitalMap[l1];
+			else
+				return l1;
 		}
 
 

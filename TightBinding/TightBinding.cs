@@ -172,6 +172,10 @@ namespace TightBinding
 
 		}
 
+		void FermiFunction(double omega, double mu, double beta)
+		{
+			return 1.0 / Math.Exp(beta * omega + mu);
+		}
 		void DoDensityOfStates(TbInputFile inp, string outputfile)
 		{
 			KptList ks = inp.KMesh;
@@ -182,6 +186,7 @@ namespace TightBinding
 				double smearNorm = 1 / smearing * Math.Pow(Math.PI, -0.5);
 				double oneOverSmearSquared = Math.Pow(smearing, -2);
 
+				
 				double emin, emax;
 				inp.Hoppings.EnergyScale(out emin, out emax);
 

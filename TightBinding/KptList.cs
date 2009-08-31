@@ -7,7 +7,8 @@ namespace TightBinding
 {
 	public class KptList
 	{
-		List<KPoint>  kpts = new List<KPoint>();
+		List<KPoint> allKpts = new List<KPoint>();
+		List<KPoint> kpts = new List<KPoint>();
 		List<Tetrahedron> tets = new List<Tetrahedron>();
 		int[] mesh;
 		int[] shift;
@@ -16,19 +17,19 @@ namespace TightBinding
 		public KptList()
 		{
 		}
-		
+
 		public static KptList DefaultPath(Lattice l)
 		{
 			const int pts = 40;
 			KptList retval = new KptList();
-			
+
 			retval.Kpts.Add(new KPoint(Vector3.Zero));
 			retval.AddPts(Vector3.Zero, l.G1 * Math.PI, pts);
 			retval.AddPts(l.G1 * Math.PI, (l.G1 + l.G2) * Math.PI, pts);
 			retval.AddPts((l.G1 + l.G2) * Math.PI, l.G2 * Math.PI, pts);
 			retval.AddPts(l.G2 * Math.PI, l.G3 * Math.PI, pts);
 			retval.AddPts(l.G3 * Math.PI, Vector3.Zero, pts);
-			
+
 			return retval;
 		}
 		public static Vector3 CalcK(Lattice l, double dx, double dy, double dz)
@@ -41,18 +42,18 @@ namespace TightBinding
 			for (int i = start; i < kpts.Count; i++)
 			{
 				Vector3 diff = kpts[i].Value - kpt;
-				
+
 				if (diff.X > 0.01) continue;
 				if (diff.Y > 0.01) continue;
 				if (diff.Z > 0.01) continue;
-				
+
 				if (diff.MagnitudeSquared < 1e-6)
 					return i;
 			}
-			
+
 			return -1;
 		}
-		
+
 		/// <summary>
 		/// Adds "count" points from the start to the end vectors.
 		/// The start point is not added, and the end point is.
@@ -70,20 +71,22 @@ namespace TightBinding
 		{
 			if (count <= 0)
 				throw new ArgumentException("Count must be positive.");
-			
+
 			Vector3 step = (end - start) / count;
-			
+
 			for (int i = 1; i < count; i++)
 			{
 				Kpts.Add(new KPoint(start + step * i));
 			}
-			
+
 			Kpts.Add(new KPoint(end));
 		}
-		
-		public List<KPoint> Kpts { get { return kpts; } }
-		public List<Tetrahedron> Tetrahedrons { get { return tets; } }
 
+		public List<KPoint> Kpts { get { return kpts; } }
+		public List<KPoint> AllKpts { get { return allKpts; } }
+
+		public List<Tetrahedron> Tetrahedrons { get { return tets; } }
+		/*
 		public static KptList GenerateMesh(Lattice L, int x, int y, int z)
 		{
 			KptList retval = new KptList();
@@ -95,7 +98,7 @@ namespace TightBinding
 			for (int k = 0; k < z; k++)
 			{
 				double dz = k * zz;
-				
+
 				for (int j = 0; j < y; j++)
 				{
 					double dy = j * yy;
@@ -146,7 +149,7 @@ namespace TightBinding
 
 			return retval;
 		}
-
+		*/
 		internal static KptList GenerateMesh(Lattice lattice, int[] kgrid, int[] shift, SymmetryList syms)
 		{
 			KptList retval = new KptList();
@@ -163,10 +166,11 @@ namespace TightBinding
 			retval.shift = (int[])shift.Clone();
 
 			int index = 0;
+			Vector3 gridVector = new Vector3(kgrid[0], kgrid[1], kgrid[2]);
 
-			for (int k = 0; k < zmax; k+=2)
+			for (int k = 0; k < zmax; k += 2)
 			{
-				for (int j = 0; j < ymax; j+=2)
+				for (int j = 0; j < ymax; j += 2)
 				{
 					for (int i = 0; i < xmax; i += 2)
 					{
@@ -182,6 +186,13 @@ namespace TightBinding
 						foreach (var symmetry in syms)
 						{
 							if (symmetry.Value.IsIdentity)
+								continue;
+
+							Vector3 grid2 = symmetry.Value * gridVector;
+							for (int gi = 0 ; gi < 3; gi++)
+								grid2[gi] = Math.Abs(grid2[gi]);
+
+							if (grid2 != gridVector)
 								continue;
 
 							Vector3 pt = CalcK(lattice, dx, dy, dz);
@@ -212,9 +223,13 @@ namespace TightBinding
 								break;
 						}
 
+						Vector3 kptValue = CalcK(lattice, dx, dy, dz);
+
+						retval.allKpts.Add(new KPoint(kptValue));
+
 						if (foundSym == false)
 						{
-							retval.kpts.Add(new KPoint(CalcK(lattice, dx, dy, dz)));
+							retval.kpts.Add(new KPoint(kptValue));
 							retval.Nvalues.Add(N, index);
 							index++;
 						}
@@ -225,7 +240,6 @@ namespace TightBinding
 							retval.kpts[newIndex].AddOrbitalSymmetry(orbitals);
 
 							retval.Nvalues.Add(N, newIndex);
-
 						}
 					}
 				}
@@ -233,7 +247,10 @@ namespace TightBinding
 
 			int count = kgrid[0] * kgrid[1] * kgrid[2];
 			for (int i = 0; i < retval.kpts.Count; i++)
+			{
 				retval.kpts[i].Weight /= count;
+				retval.allKpts[i].Weight /= count;
+			}
 
 #if DEBUG
 			double check = 0;

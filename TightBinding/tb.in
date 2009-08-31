@@ -10,8 +10,7 @@
 # Number of orbitals / sites and their locations 
 # Positions are in cartesian coordinates
 [Sites]
-(0 0 0)   px
-(0 0 0)   py
+(0 0 0)   s
 
 # Symmetries in the crystal.
 # The numbers following the symmetry name indicate how the orbitals transform 
@@ -19,32 +18,27 @@
 # one number for each orbital.  The orbital transforms are optional if the 
 # orbitals transform into themselves.
 [Symmetry]
-Identity    1 2
+Identity
 ReflectX
 ReflectY
 ReflectZ
 Inversion
-RotateZ     2 1  # Rotation of 90 around the z axis swaps px and py.
+RotateX
+RotateY
+RotateZ
+#RotateZ     2 1  # Rotation of 90 around the z axis swaps px and py.
 
 # Each hopping is followed by a list of Bravais lattice vectors.
 # Those vectors must be composed of integer values.
 [Hoppings]
 :1 1:
-  1  0  0      .2
- -1  0  0      .2
-  0  0  1      .2
-  0  0 -1      .2
-
-:2 2:
-  0  1  0      .2
-  0 -1  0      .2
-  0  0  1      .2
-  0  0 -1      .2
-:1 2:
-  1  1  0      -.1
- -1  1  0      -.1
-  1 -1  0      .1
- -1 -1  0      .1
+  0  0  0       0
+  1  0  0       0
+ -1  0  0       0
+  0  1  0       0
+  0 -1  0       0
+  0  0  1       0
+  0  0 -1       0
   
 # Optional section
 # The path through K-space for integration is given as a series of points
@@ -65,13 +59,13 @@ G     0         0        0
 0.2
 
 [QMesh]
-4 4 4
+10 1 1
 
 [Frequency]
-0 0 1
+0  
 
 [Temperature]
-0.2 0.2 1
+0.1 
 
 [Hubbard]
 4 4 1 1 
