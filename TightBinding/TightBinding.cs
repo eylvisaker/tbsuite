@@ -172,9 +172,9 @@ namespace TightBinding
 
 		}
 
-		void FermiFunction(double omega, double mu, double beta)
+		double FermiFunction(double omega, double mu, double beta)
 		{
-			return 1.0 / Math.Exp(beta * omega + mu);
+			return 1.0 / (Math.Exp(beta * (omega - mu)) + 1);
 		}
 		void DoDensityOfStates(TbInputFile inp, string outputfile)
 		{
@@ -183,15 +183,13 @@ namespace TightBinding
 			{
 
 				double smearing = inp.Smearing;
-				double smearNorm = 1 / smearing * Math.Pow(Math.PI, -0.5);
-				double oneOverSmearSquared = Math.Pow(smearing, -2);
-
+				double effBeta = 1 / smearing;
 				
 				double emin, emax;
 				inp.Hoppings.EnergyScale(out emin, out emax);
 
-				emin -= smearing * 5;
-				emax += smearing * 5;
+				emin -= smearing * 10;
+				emax += smearing * 10;
 
 				int epts = 2000;
 
@@ -206,16 +204,11 @@ namespace TightBinding
 					if (energyGrid[i] < 0)
 						zeroIndex = i;
 				}
-				Console.WriteLine("Calculating DOS from {0} to {1} with smearing {2}.",
-								  emin, emax, smearing);
+				Console.WriteLine(
+					"Calculating DOS from {0} to {1} with finite temperature smearing {2}.",
+					emin, emax, smearing);
 
 				Console.WriteLine("Using {0} kpts.", ks.Kpts.Count);
-
-				/*
-				if (inp.PoleStates.Count > 0)
-					Console.WriteLine("Pole states present: {0}", inp.PoleStates.Count);
-				*/
-
 
 				for (int i = 0; i < ks.Kpts.Count; i++)
 				{
@@ -232,10 +225,9 @@ namespace TightBinding
 
 						for (int k = startIndex; k <= endIndex; k++)
 						{
-							double gaus = Math.Exp(
-								-Math.Pow(energyGrid[k] - energy, 2) * oneOverSmearSquared);
-							gaus *= smearNorm;
-							gaus *= ks.Kpts[i].Weight;
+							double ferm = FermiFunction(energyGrid[k], energy, effBeta);
+							double smearWeight = ferm * (1 - ferm) * effBeta;
+							smearWeight *= ks.Kpts[i].Weight;
 
 							double weight = 0;
 							for (int l = 0; l < vecs.Rows; l++)
@@ -249,7 +241,7 @@ namespace TightBinding
 							if (inp.PoleStates.Count == 0 && Math.Abs(weight - 1) > 1e-8)
 								throw new Exception("Eigenvector not normalized!");
 
-							dos[k, 0] += gaus * weight;
+							dos[k, 0] += smearWeight * weight;
 
 							for (int state = 0; state < vecs.Rows; state++)
 							{
@@ -258,7 +250,7 @@ namespace TightBinding
 
 								double wtk = vecs[state, j].MagnitudeSquared;//GetWeight(ks.Kpts[i], vecs, j, l);
 
-								dos[k, state + 1] += gaus * wtk;
+								dos[k, state + 1] += smearWeight * wtk;
 							}
 						}
 

@@ -407,7 +407,7 @@ namespace TightBinding
 			double en_min = -10;
 			double en_max = 10;
 
-			Complex denom_factor = new Complex(0, input.Smearing / 100);
+			Complex denom_factor = new Complex(0, input.Smearing);
 
 			for (int l1 = 0; l1 < orbitalCount; l1++)
 			{
@@ -458,10 +458,11 @@ namespace TightBinding
 							if (foundSymmetry)
 								continue;
 							
-							Complex val = 0;
+							Complex total = 0;
 
 							for (int allkindex = 0; allkindex < input.KMesh.AllKpts.Count; allkindex++)
 							{
+								Complex val = 0;
 								Vector3 k = input.KMesh.AllKpts[allkindex];
 								Vector3 kq = k + q;
 
@@ -501,6 +502,7 @@ namespace TightBinding
 											wfk.Coeffs[newL4] * wfk.Coeffs[newL2].Conjugate();
 
 										if (coeff == 0) continue;
+										if (f1 < 1e-15 && f2 < 1e-15) continue;
 
 										Complex denom_p = (e2 - e1 + freq + denom_factor);
 										//Complex denom_n = (e2 - e1 - freq - denom_factor);
@@ -510,13 +512,8 @@ namespace TightBinding
 
 										if (f1 == f2 && freq == 0.0)
 										{
-											const double epsilon = 1e-5;
-											denom_p += epsilon;
-											lindhard = epsilon * (1.0 / denom_p);
-											contrib = coeff * lindhard;
-
 											contrib = coeff * f1 * (1 - f1) * Beta;
-											Console.WriteLine(contrib.ToString());
+											//Console.WriteLine(contrib.ToString());
 										}
 
 										val += contrib;
@@ -525,13 +522,14 @@ namespace TightBinding
 
 								//Console.WriteLine(input.KMesh.AllKpts[kindex].Weight.ToString());
 								val *= input.KMesh.AllKpts[kindex].Weight;
+								total += val;
 							}
 
 							// get rid of small imaginary parts
-							val.ImagPart = Math.Round(val.ImagPart, 7);
+							total.ImagPart = Math.Round(total.ImagPart, 7);
 
-							x[i, j] = val;
-							x[j, i] = val.Conjugate();
+							x[i, j] = total;
+							x[j, i] = total.Conjugate();
 						}
 					}
 				}

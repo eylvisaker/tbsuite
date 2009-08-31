@@ -33,12 +33,12 @@ RotateZ
 [Hoppings]
 :1 1:
   0  0  0       0
-  1  0  0       0
- -1  0  0       0
-  0  1  0       0
-  0 -1  0       0
-  0  0  1       0
-  0  0 -1       0
+  1  0  0       1
+ -1  0  0       1
+  0  1  0       1
+  0 -1  0       1
+  0  0  1       1
+  0  0 -1       1
   
 # Optional section
 # The path through K-space for integration is given as a series of points
@@ -52,14 +52,14 @@ G     0         0        0
 
 # Optional section
 # Gives a k-mesh for calculating the density of states and doing RPA.
-# The second line gives the gaussian smearing used in the DOS calculation.
+# The second line gives the finite temperature smearing used in the DOS calculation.
 # It is optional.
 [KMesh]
-40 40 40 1 1 1
-0.2
+40 40 40 0 0 0
+0.1
 
 [QMesh]
-10 1 1
+40 1 1
 
 [Frequency]
 0  
