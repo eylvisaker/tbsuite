@@ -23,8 +23,8 @@ ReflectX
 ReflectY
 ReflectZ
 Inversion
-RotateX
-RotateY
+#RotateX
+#RotateY
 RotateZ
 #RotateZ     2 1  # Rotation of 90 around the z axis swaps px and py.
 
@@ -33,39 +33,47 @@ RotateZ
 [Hoppings]
 :1 1:
   0  0  0       0
-  1  0  0       1
- -1  0  0       1
-  0  1  0       1
-  0 -1  0       1
-  0  0  1       1
-  0  0 -1       1
+  1  0  0      -1
+ -1  0  0      -1
+  0  1  0      -1
+  0 -1  0      -1
+# 0  0  1      -1
+# 0  0 -1      -1
   
 # Optional section
 # The path through K-space for integration is given as a series of points
-# in Cartesian coordinates.
+# in Cartesian coordinates.  These values will be multiplied by 2*pi
+# internally.
 [KPath]
-G     0         0        0      
-X     1         0        0
-M     1         1        0
-R     1         1        1
-G     0         0        0
+G        0       0       0      
+X       .5       0       0
+M       .5      .5       0
+R       .5      .5      .5
+G        0       0       0
 
 # Optional section
 # Gives a k-mesh for calculating the density of states and doing RPA.
 # The second line gives the finite temperature smearing used in the DOS calculation.
 # It is optional.
 [KMesh]
-40 40 40 0 0 0
-0.1
+400 400 1 1 1 1
+0.02
 
-[QMesh]
-40 1 1
+# Gives data for a plane of q-points in the BZ to plot.
+# The first three numbers are the q-point mesh from which points are taken.
+# The next three groups of three numbers are q-points which are constrained to be
+# on the plane.
+[QPlane]
+40 40 1 
+0   0   0  
+0.5 0   0
+0   0.5 0
 
 [Frequency]
 0  
 
 [Temperature]
-0.1 
+0.01
 
 [Hubbard]
 4 4 1 1 

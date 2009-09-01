@@ -184,7 +184,6 @@ namespace TightBinding
 				xs_evals[qIndex, freqIndex, tempIndex].Add(Complex.Sqrt(evals[i, 0]));
 		}
 
-
 		private void SaveEigenValues(TbInputFile input, List<KPoint> QMesh, List<Complex>[, ,] xs_evals, string name, string equation)
 		{
 			string filename = string.Format(
@@ -261,11 +260,17 @@ namespace TightBinding
 								}
 							}
 
-							// organize by q
-							filename = string.Format("{0}.{1}{2}{3}{4}.q", name, l1, l2, l3, l4);
+							// organize by q index
+							filename = string.Format("{0}.{1}{2}{3}{4}.qi", name, l1, l2, l3, l4);
 
 							using (StreamWriter w = new StreamWriter(filename))
 							{
+								w.WriteLine("# qindex   qvalue");
+								for (int qi = 0; qi < QMesh.Count; qi++)
+								{
+									w.WriteLine("# {0}   {1}", qi, QMesh[qi].Value);
+								}
+							
 								for (int wi = 0; wi < input.FrequencyMesh.Length; wi++)
 								{
 									w.WriteLine("# Frequency: {0}", input.FrequencyMesh[wi]);
@@ -273,19 +278,76 @@ namespace TightBinding
 									for (int ti = 0; ti < input.TemperatureMesh.Length; ti++)
 									{
 										w.WriteLine("# Temperature: {0}", input.TemperatureMesh[ti]);
-										w.WriteLine("#\tQx, Qy, Qz\tRe(Chi)\tIm(Chi)");
+										w.WriteLine("#\tQindex\tRe(Chi)\tIm(Chi)");
 
 										for (int qi = 0; qi < QMesh.Count; qi++)
 										{
 											Complex val = chi[qi, wi, ti][i, j];
 
 											w.WriteLine("\t{0}\t{1:0.0000000}\t{2:0.0000000}",
-												input.QMesh.Kpts[qi].Value,
+												qi,
 												val.RealPart, val.ImagPart);
 										}
 										w.WriteLine();
 									}
 								}
+							}
+
+							// organize on qmesh
+							filename = string.Format("{0}.{1}{2}{3}{4}.qm", name, l1, l2, l3, l4);
+
+							using (StreamWriter w = new StreamWriter(filename))
+							{
+								for (int wi = 0; wi < input.FrequencyMesh.Length; wi++)
+								{
+									for (int ti = 0; ti < input.TemperatureMesh.Length; ti++)
+									{
+										double last_t;
+										double last_s;
+
+										input.QPlane.GetPlaneST(input.QPlane.AllKpts[0], out last_s, out last_t);
+
+										for (int qi = 0; qi < input.QPlane.AllKpts.Count; qi++)
+										{
+											Vector3 qpt = input.QPlane.AllKpts[qi];
+											List<int> orbitalMap;
+
+											double s, t;
+											input.QPlane.GetPlaneST(input.QPlane.AllKpts[qi], out s, out t);
+
+											if (Math.Abs(t - last_t) > 1e-6)
+												w.WriteLine();
+
+											int index = 
+												input.QPlane.GetKindex(input.Lattice, qpt, out orbitalMap, input.Symmetries);
+
+											int newL1 = TransformOrbital(orbitalMap, l1);
+											int newL2 = TransformOrbital(orbitalMap, l2);
+											int newL3 = TransformOrbital(orbitalMap, l3);
+											int newL4 = TransformOrbital(orbitalMap, l4);
+
+											int newii = GetIndex(input, newL1, newL2);
+											int newjj = GetIndex(input, newL1, newL2);
+
+											Complex val = chi[index, wi, ti][newii, newjj];
+
+											w.WriteLine(" {0}       {1}       {2}", 
+												s, t, val.RealPart);
+
+											last_t = t;
+											last_s = s;
+										}
+									}
+								}
+							}
+							
+							string gpfilename = "gnuplot." + filename;
+
+							using (StreamWriter w = new StreamWriter(gpfilename))
+							{
+								w.WriteLine("#!/usr/bin/gnuplot");
+								w.WriteLine("set pm3d map flush begin ftriangles scansbackward interpolate 5,5");
+								w.WriteLine("splot '{0}'", filename);
 							}
 
 
@@ -407,7 +469,7 @@ namespace TightBinding
 			double en_min = -10;
 			double en_max = 10;
 
-			Complex denom_factor = new Complex(0, input.Smearing);
+			Complex denom_factor = new Complex(0, 1e-4);
 
 			for (int l1 = 0; l1 < orbitalCount; l1++)
 			{
@@ -513,7 +575,6 @@ namespace TightBinding
 										if (f1 == f2 && freq == 0.0)
 										{
 											contrib = coeff * f1 * (1 - f1) * Beta;
-											//Console.WriteLine(contrib.ToString());
 										}
 
 										val += contrib;

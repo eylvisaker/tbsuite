@@ -13,7 +13,7 @@ namespace TightBinding
 		SiteList sites;
 		HoppingPairList hoppings;
 		KptList kpath, kmesh;
-		KptList qpath, qmesh;
+		KptList qplane;
 		List<int> poles = new List<int>();
 		double smearing = 0.04;
 
@@ -23,8 +23,7 @@ namespace TightBinding
 		public HoppingPairList Hoppings { get { return hoppings; } }
 		public KptList KPath { get { return kpath; } }
 		public KptList KMesh { get { return kmesh; } }
-		public KptList QPath { get { return qpath; } }
-		public KptList QMesh { get { return qmesh; } }
+		public KptList QPlane { get { return qplane; } }
 		public double[] FrequencyMesh { get; private set; }
 		public double[] TemperatureMesh { get; private set; }
 		public double Smearing { get { return smearing; } }
@@ -38,6 +37,8 @@ namespace TightBinding
 		SymmetryList symmetries = new SymmetryList();
 
 		int[] qgrid = new int[3];
+		Vector3[] qplaneDef = new Vector3[3];
+		bool setQplane = false;
 
 		public TbInputFile(string filename)
 			: base(filename)
@@ -54,7 +55,8 @@ namespace TightBinding
 				ThrowEx(@"""Hoppings"" section missing.");
 			if (kpath == null)
 				kpath = KptList.DefaultPath(lattice);
-
+			if (kgrid == null || kgrid[0] == 0 || kgrid[1] == 0 || kgrid[2] == 0)
+				ThrowEx(@"KMesh was not defined properly.");
 
 			if (sites.Count == 0)
 				ThrowEx(@"There are no sites.");
@@ -77,8 +79,17 @@ namespace TightBinding
 
 		private void GenerateKmesh()
 		{
-			kmesh = KptList.GenerateMesh(lattice, kgrid, shift, symmetries);
-			qmesh = KptList.GenerateMesh(lattice, qgrid, null, symmetries);
+			kmesh = KptList.GenerateMesh(lattice, kgrid, shift, symmetries, false);
+
+			Console.WriteLine("Applied {0} symmetries to get {1} irreducible kpoints from {2}.",
+				symmetries.Count, kmesh.Kpts.Count, kmesh.AllKpts.Count);
+
+			if (setQplane)
+			{
+				qplane = KptList.GeneratePlane(lattice, qplaneDef, symmetries, qgrid);
+				Console.WriteLine("Found {0} irreducible qpoints in the plane of {1} qpoints.",
+					qplane.Kpts.Count, qplane.AllKpts.Count);
+			}
 		}
 
 		protected override void ReadSection(string sectionName)
@@ -109,12 +120,8 @@ namespace TightBinding
 					ReadKMeshSection("KMesh", kgrid);
 					break;
 
-				case "QPath":
-					ReadKPathSection("QPath", ref qpath);
-					break;
-
-				case "QMesh":
-					ReadKMeshSection("QMesh", qgrid);
+				case "QPlane":
+					ReadQPlaneSection();
 					break;
 
 				case "Poles":
@@ -141,6 +148,25 @@ namespace TightBinding
 					ThrowEx("Unrecognized section " + sectionName);
 					break;
 			}
+		}
+
+		private void ReadQPlaneSection()
+		{
+			for (int i = 0; i < 3; i++)
+			{
+				qgrid[i] = int.Parse(LineWords[i]);
+			}
+
+			ReadNextLine();
+
+			for (int i = 0; i < 3; i++)
+			{
+				qplaneDef[i] = Vector3.Parse(Line);
+
+				ReadNextLine();
+			}
+
+			setQplane = true;
 		}
 
 		private void ReadHubbardSection()

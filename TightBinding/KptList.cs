@@ -14,6 +14,8 @@ namespace TightBinding
 		int[] shift;
 		Dictionary<int, int> Nvalues = new Dictionary<int, int>();
 
+		Vector3 sdir, tdir, origin;
+ 
 		public KptList()
 		{
 		}
@@ -36,6 +38,8 @@ namespace TightBinding
 		{
 			return dx * l.G1 + dy * l.G2 + dz * l.G3;
 		}
+
+		public int[] Mesh { get { return mesh; } }
 
 		public int IndexOf(Vector3 kpt, int start)
 		{
@@ -86,71 +90,88 @@ namespace TightBinding
 		public List<KPoint> AllKpts { get { return allKpts; } }
 
 		public List<Tetrahedron> Tetrahedrons { get { return tets; } }
-		/*
-		public static KptList GenerateMesh(Lattice L, int x, int y, int z)
+
+		public static KptList GeneratePlane(Lattice lattice, Vector3[] points, SymmetryList syms, int[] qgrid)
 		{
+			KptList qmesh = GenerateMesh(lattice, qgrid, null, syms, true);
+
+			Vector3 diff_1 = points[1] - points[0];
+			Vector3 diff_2 = points[2] - points[0];
+			Vector3 norm = Vector3.CrossProduct(diff_1, diff_2);
+
 			KptList retval = new KptList();
+			Dictionary<int,int> indexMap = new Dictionary<int,int>();
 
-			double xx = 1 / (double)x,
-				yy = 1 / (double)y,
-				zz = 1 / (double)z;
+			retval.mesh = (int[])qgrid.Clone();
+			retval.shift = new int[3];
 
-			for (int k = 0; k < z; k++)
+			int index = 0;
+			for (int i = 0; i < qmesh.AllKpts.Count; i++)
 			{
-				double dz = k * zz;
+				var qpt = qmesh.AllKpts[i];
 
-				for (int j = 0; j < y; j++)
+				Vector3 diff = qpt.Value - points[0];
+				double dot = Math.Abs(diff.DotProduct(norm));
+
+				if (dot < 1e-8)
 				{
-					double dy = j * yy;
+					retval.allKpts.Add(qpt);
 
-					for (int i = 0; i < x; i++)
+					int N = retval.CalcN(lattice, qpt);
+					int reducedIndex = qmesh.Nvalues[N];
+
+					if (indexMap.ContainsKey(reducedIndex) == false)
 					{
-						double dx = i * xx;
+						retval.kpts.Add(qmesh.kpts[reducedIndex]);
 
-						retval.kpts.Add(new KPoint(CalcK(L, dx, dy, dz)));
+						indexMap.Add(reducedIndex, index);
+						retval.Nvalues.Add(N, index);
 
-						// See J. Phys.: Condens. Matter 2 (1990) 7445-7452
-						// page 2 contains numbering of corners
-						// Using scheme S2.
-						// x axis is 1-2, y axis is 1-4, z axis is 1-7.
-						retval.tets.Add(new Tetrahedron(
-							CalcK(L, dx, dy, dz),        // 1238
-							CalcK(L, dx + xx, dy, dz),
-							CalcK(L, dx + xx, dy + yy, dz),
-							CalcK(L, dx + xx, dy, dz + zz)));
-						retval.tets.Add(new Tetrahedron(
-							CalcK(L, dx, dy, dz),        //1345
-							CalcK(L, dx + xx, dy + yy, dz),
-							CalcK(L, dx, dy + yy, dz),
-							CalcK(L, dx + xx, dy + yy, dz + zz)));
-						retval.tets.Add(new Tetrahedron(
-							CalcK(L, dx, dy, dz),        //1358
-							CalcK(L, dx + xx, dy + yy, dz),
-							CalcK(L, dx + xx, dy + yy, dz + zz),
-							CalcK(L, dx + xx, dy, dz + zz)));
-						retval.tets.Add(new Tetrahedron(
-							CalcK(L, dx, dy, dz),        //1457
-							CalcK(L, dx, dy + yy, dz),
-							CalcK(L, dx + xx, dy + yy, dz + zz),
-							CalcK(L, dx, dy, dz + zz)));
-						retval.tets.Add(new Tetrahedron(
-							CalcK(L, dx, dy, dz),        //1578
-							CalcK(L, dx + xx, dy + yy, dz + zz),
-							CalcK(L, dx, dy, dz + zz),
-							CalcK(L, dx + xx, dy, dz + zz)));
-						retval.tets.Add(new Tetrahedron(
-							CalcK(L, dx, dy + yy, dz),        //4567
-							CalcK(L, dx + xx, dy + yy, dz + zz),
-							CalcK(L, dx, dy + yy, dz + zz),
-							CalcK(L, dx, dy, dz + zz)));
+						index++;
+					}
+					else
+					{
+						if (retval.Nvalues.ContainsKey(N))
+						{
+							if (retval.Nvalues[N] != indexMap[reducedIndex])
+								throw new Exception("Mapping screwed up.");
+						}
+						else
+							retval.Nvalues.Add(N, indexMap[reducedIndex]);
 					}
 				}
 			}
 
+			retval.origin = points[0];
+			retval.sdir = diff_1;
+			retval.tdir = Vector3.CrossProduct(norm, diff_1);
+
+			retval.sdir /= retval.sdir.Magnitude;
+			retval.tdir /= retval.tdir.Magnitude;
+
+			// now sort k-points.
+			retval.allKpts.Sort((x, y) =>
+				{
+					double s_x,s_y,t_x,t_y;
+					
+					retval.GetPlaneST(x, out s_x, out t_x);
+					retval.GetPlaneST(y, out s_y, out t_y);
+
+					if (Math.Abs(t_x - t_y) > 1e-6)
+						return t_x.CompareTo(t_y);
+					else
+						return s_x.CompareTo(s_y);
+				});
+
+
 			return retval;
 		}
-		*/
-		internal static KptList GenerateMesh(Lattice lattice, int[] kgrid, int[] shift, SymmetryList syms)
+		public void GetPlaneST(KPoint kpt, out double s, out double t)
+		{
+			s = (kpt.Value - origin).DotProduct(sdir);
+			t = (kpt.Value - origin).DotProduct(tdir);
+		}
+		public static KptList GenerateMesh(Lattice lattice, int[] kgrid, int[] shift, SymmetryList syms, bool includeEnds)
 		{
 			KptList retval = new KptList();
 			int zmax = kgrid[2] * 2;
@@ -168,12 +189,18 @@ namespace TightBinding
 			int index = 0;
 			Vector3 gridVector = new Vector3(kgrid[0], kgrid[1], kgrid[2]);
 
-			for (int k = 0; k < zmax; k += 2)
+			for (int k = 0; k <= zmax; k += 2)
 			{
-				for (int j = 0; j < ymax; j += 2)
+				for (int j = 0; j <= ymax; j += 2)
 				{
-					for (int i = 0; i < xmax; i += 2)
+					for (int i = 0; i <= xmax; i += 2)
 					{
+						if (includeEnds == false)
+						{
+							if (i == xmax || j == ymax || k == zmax)
+								break;
+						}
+
 						int N = retval.CalcN(i, j, k);
 						bool foundSym = false;
 
@@ -185,9 +212,6 @@ namespace TightBinding
 
 						foreach (var symmetry in syms)
 						{
-							if (symmetry.Value.IsIdentity)
-								continue;
-
 							Vector3 grid2 = symmetry.Value * gridVector;
 							for (int gi = 0 ; gi < 3; gi++)
 								grid2[gi] = Math.Abs(grid2[gi]);
@@ -253,30 +277,20 @@ namespace TightBinding
 			}
 
 #if DEBUG
-			double check = 0;
-			for (int i = 0; i < retval.kpts.Count; i++)
-				check += retval.kpts[i].Weight;
+			if (!includeEnds)
+			{
+				double check = 0;
+				for (int i = 0; i < retval.kpts.Count; i++)
+					check += retval.kpts[i].Weight;
 
-			System.Diagnostics.Debug.Assert(Math.Abs(check - 1) < 1e-8);
+				System.Diagnostics.Debug.Assert(Math.Abs(check - 1) < 1e-8);
+			}
 #endif
-			Console.WriteLine("Applied {0} symmetries to get {1} irreducible kpoints from {2}.",
-				syms.Count, retval.kpts.Count, count);
-
+			
 			return retval;
 		}
 
-		private int CalcN(int i, int j, int k)
-		{
-			int zmax = mesh[2] * 2;
-			int ymax = mesh[1] * 2;
-			int xmax = mesh[0] * 2;
-			int zsh = shift[2];
-			int ysh = shift[1];
-			int xsh = shift[0];
-
-			return 1 + (i + xsh) + xmax * ((j + ysh) + ymax * (k + zsh));
-		}
-
+		
 		public int GetKindex(Lattice lattice, Vector3 kpt, out List<int> orbitalMap, SymmetryList symmetries)
 		{
 			for (int s = 0; s < symmetries.Count; s++)
@@ -311,5 +325,24 @@ namespace TightBinding
 			newj = (int)Math.Round(ymax * red.Y - shift[1]);
 			newk = (int)Math.Round(zmax * red.Z - shift[2]);
 		}
+		private int CalcN(int i, int j, int k)
+		{
+			int zmax = mesh[2] * 2;
+			int ymax = mesh[1] * 2;
+			int xmax = mesh[0] * 2;
+			int zsh = shift[2];
+			int ysh = shift[1];
+			int xsh = shift[0];
+
+			return 1 + (i + xsh) + xmax * ((j + ysh) + ymax * (k + zsh));
+		}
+		private int CalcN(Lattice lattice, Vector3 kpt)
+		{
+			int i, j, k;
+
+			ReduceKpt(lattice, kpt, out i, out j, out k);
+			return CalcN(i, j, k);
+		}
+
 	}
 }

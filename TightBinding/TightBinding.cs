@@ -18,14 +18,9 @@ namespace TightBinding
 
 			bool ranRPA = false;
 
-			if (r.QPath != null && r.QPath.Kpts.Count > 0)
+			if (r.QPlane != null && r.QPlane.Kpts.Count > 0)
 			{
-				RunRPA(r, r.QPath);
-				ranRPA = true;
-			}
-			if (r.QMesh != null && r.QMesh.Kpts.Count > 0)
-			{
-				RunRPA(r, r.QMesh);
+				RunRPA(r, r.QPlane);
 				ranRPA = true;
 			}
 
@@ -44,132 +39,6 @@ namespace TightBinding
 		{
 			DoBandStructure(inp, outputfile);
 			DoDensityOfStates(inp, outputfile);
-		}
-		void tet_DoDensityOfStates(TbInputFile inp, string outputfile)
-		{
-			KptList ks = inp.KMesh;
-			StreamWriter outf = new StreamWriter(outputfile + ".dos");
-
-			double smearing = inp.Smearing;
-			double smearNorm = 1 / smearing * Math.Pow(Math.PI, -0.5);
-			double oneOverSmearSquared = Math.Pow(smearing, -2);
-
-			double emin, emax;
-			inp.Hoppings.EnergyScale(out emin, out emax);
-
-			emin -= smearing * 5;
-			emax += smearing * 5;
-
-
-			int epts = 2000;
-
-			double[] energyGrid = new double[epts];
-			double[,] dos = new double[epts, inp.Sites.Count + 1];
-
-			smearNorm /= ks.Kpts.Count;
-
-			for (int i = 0; i < epts; i++)
-			{
-				energyGrid[i] = emin + (emax - emin) * i / (double)(epts - 1);
-			}
-
-			Console.WriteLine("Calculating DOS from {0} to {1} with tetrahedron method.",
-							  emin, emax, smearing);
-
-			Console.WriteLine("Using {0} tetrahedrons.", ks.Tetrahedrons.Count);
-
-			for (int tetindex = 0; tetindex < ks.Tetrahedrons.Count; tetindex++)
-			{
-				Tetrahedron tet = ks.Tetrahedrons[tetindex];
-				if (tetindex % (ks.Tetrahedrons.Count / 10) == 0 && tetindex > 0)
-					Console.WriteLine("At {0}...", tetindex);
-
-				Matrix[] eigenvals = new Matrix[4];
-				
-				for (int i = 0; i < 4; i++)
-				{
-					Matrix m = CalcHamiltonian(inp, tet.Corners[i]);
-					Matrix vals, vecs;
-					m.EigenValsVecs(out vals, out vecs);
-
-					eigenvals[i] = vals;
-				}
-
-				for (int nband = 0; nband < eigenvals[0].Rows; nband++)
-				{
-					for (int i = 0; i < 4; i++)
-					{
-						tet.Values[i] = eigenvals[i][nband, 0].RealPart;
-					}
-
-					tet.SortCorners();
-
-					int estart = FindIndex(energyGrid, tet.Values[0]);
-					int eend = FindIndex(energyGrid, tet.Values[3]);
-
-					for (int ei = estart; ei < eend; ei++)
-					{
-						dos[ei, 0] += tet.IntegrateArea(energyGrid[ei]);
-					}
-				}
-			}
-
-			for (int i = 0; i < epts; i++)
-			{
-				dos[i, 0] /= ks.Tetrahedrons.Count;
-			}
-
-			for (int i = 0; i < epts; i++)
-			{
-				outf.Write("{0}     ", energyGrid[i]);
-
-				for (int j = 0; j < inp.Sites.Count + 1; j++)
-				{
-					outf.Write("{0}  ", dos[i, j]);
-				}
-
-				outf.WriteLine();
-			}
-
-			outf.Close();
-
-			Console.WriteLine("Creating +coeff file.");
-			outf = new StreamWriter(Path.Combine(Path.GetDirectoryName(outputfile), "+coeff"));
-
-			outf.WriteLine("#\t1\t0\t" + ks.Kpts.Count.ToString());
-			outf.Write("# band index\te(k,n)\t");
-
-			for (int i = 0; i < inp.Sites.Count; i++)
-			{
-				if (string.IsNullOrEmpty(inp.Sites[i].Name))
-				{
-					outf.Write("TB{0}\t", i);
-				}
-				else
-					outf.Write("{0}\t", inp.Sites[i].Name);
-			}
-			outf.WriteLine();
-
-			for (int kindex = 0; kindex < ks.Kpts.Count; kindex++)
-			{
-				Matrix m = CalcHamiltonian(inp, ks.Kpts[kindex]);
-				Matrix vals, vecs;
-				m.EigenValsVecs(out vals, out vecs);
-
-				outf.WriteLine("# spin=    1 k={0}", ks.Kpts[kindex].Value);
-
-				for (int i = 0; i < vals.Rows; i++)
-				{
-					outf.Write("{0}     {1}    ", i+1, vals[i,0].RealPart);
-
-					for (int j = 0; j < vecs.Columns; j++)
-					{
-						outf.Write("{0}    {1}    ", vecs[i, j].RealPart, vecs[i, j].ImagPart);
-					}
-					outf.WriteLine();
-				}
-			}
-
 		}
 
 		double FermiFunction(double omega, double mu, double beta)
@@ -324,38 +193,42 @@ namespace TightBinding
 			
 			return trial;
 		}
-		
+
 		void DoBandStructure(TbInputFile inp, string outputfile)
 		{
 			KptList kpath = inp.KPath;
-			
-			StreamWriter band = new StreamWriter(outputfile + ".band");
-			StreamWriter pts = new StreamWriter(outputfile + ".bandpts");
-			
+
 			Console.WriteLine("Computing band structure with {0} k-points.",
-			                  kpath.Kpts.Count);
-			
-			try
+							  kpath.Kpts.Count);
+
+			List<Matrix> eigenvals = new List<Matrix>();
+
+			for (int i = 0; i < kpath.Kpts.Count; i++)
 			{
-				for (int i = 0; i < kpath.Kpts.Count; i++)
-				{
-					Matrix m = CalcHamiltonian(inp, kpath.Kpts[i]);
-					Matrix vals, vecs;
-					m.EigenValsVecs(out vals, out vecs);
-					
-					WriteEigvals(band, i, vals);
-					
-					if (string.IsNullOrEmpty(kpath.Kpts[i].Name) == false)
-					{
-						pts.WriteLine("{0}   {1}", i, kpath.Kpts[i].Name);
-					}
-				}
-				
+				Matrix m = CalcHamiltonian(inp, kpath.Kpts[i]);
+				Matrix vals, vecs;
+				m.EigenValsVecs(out vals, out vecs);
+				eigenvals.Add(vals);
 			}
-			finally
+			int datasets = eigenvals[0].Rows;
+
+			using (AgrWriter writer = new AgrWriter(outputfile + ".band.agr"))
 			{
-				band.Dispose();	
-				pts.Dispose();
+				int[] colors = new int[datasets];
+				for(int i = 0; i < colors.Length; i++)
+					colors[i] = 1;
+
+				writer.WriteGraceHeader(kpath);
+				writer.WriteGraceDottedSetStyle(0);
+				writer.WriteGraceSetLineColor(0);
+				writer.WriteGraceSetLineColor(1, colors);
+				writer.WriteGraceBaseline(kpath.Kpts.Count);
+
+				for (int i = 0; i < datasets; i++)
+				{
+					writer.WriteGraceDataset(kpath.Kpts.Count,
+						x => eigenvals[x][i, 0].RealPart);
+				}
 			}
 		}
 
@@ -419,5 +292,138 @@ namespace TightBinding
 			
 			return m;
 		}
+
+		/// <summary>
+		/// This function does not work with symmetries, so it is unused.
+		/// </summary>
+		/// <param name="inp"></param>
+		/// <param name="outputfile"></param>
+		void tet_DoDensityOfStates(TbInputFile inp, string outputfile)
+		{
+			KptList ks = inp.KMesh;
+			StreamWriter outf = new StreamWriter(outputfile + ".dos");
+
+			double smearing = inp.Smearing;
+			double smearNorm = 1 / smearing * Math.Pow(Math.PI, -0.5);
+			double oneOverSmearSquared = Math.Pow(smearing, -2);
+
+			double emin, emax;
+			inp.Hoppings.EnergyScale(out emin, out emax);
+
+			emin -= smearing * 5;
+			emax += smearing * 5;
+
+
+			int epts = 2000;
+
+			double[] energyGrid = new double[epts];
+			double[,] dos = new double[epts, inp.Sites.Count + 1];
+
+			smearNorm /= ks.Kpts.Count;
+
+			for (int i = 0; i < epts; i++)
+			{
+				energyGrid[i] = emin + (emax - emin) * i / (double)(epts - 1);
+			}
+
+			Console.WriteLine("Calculating DOS from {0} to {1} with tetrahedron method.",
+							  emin, emax, smearing);
+
+			Console.WriteLine("Using {0} tetrahedrons.", ks.Tetrahedrons.Count);
+
+			for (int tetindex = 0; tetindex < ks.Tetrahedrons.Count; tetindex++)
+			{
+				Tetrahedron tet = ks.Tetrahedrons[tetindex];
+				if (tetindex % (ks.Tetrahedrons.Count / 10) == 0 && tetindex > 0)
+					Console.WriteLine("At {0}...", tetindex);
+
+				Matrix[] eigenvals = new Matrix[4];
+
+				for (int i = 0; i < 4; i++)
+				{
+					Matrix m = CalcHamiltonian(inp, tet.Corners[i]);
+					Matrix vals, vecs;
+					m.EigenValsVecs(out vals, out vecs);
+
+					eigenvals[i] = vals;
+				}
+
+				for (int nband = 0; nband < eigenvals[0].Rows; nband++)
+				{
+					for (int i = 0; i < 4; i++)
+					{
+						tet.Values[i] = eigenvals[i][nband, 0].RealPart;
+					}
+
+					tet.SortCorners();
+
+					int estart = FindIndex(energyGrid, tet.Values[0]);
+					int eend = FindIndex(energyGrid, tet.Values[3]);
+
+					for (int ei = estart; ei < eend; ei++)
+					{
+						dos[ei, 0] += tet.IntegrateArea(energyGrid[ei]);
+					}
+				}
+			}
+
+			for (int i = 0; i < epts; i++)
+			{
+				dos[i, 0] /= ks.Tetrahedrons.Count;
+			}
+
+			for (int i = 0; i < epts; i++)
+			{
+				outf.Write("{0}     ", energyGrid[i]);
+
+				for (int j = 0; j < inp.Sites.Count + 1; j++)
+				{
+					outf.Write("{0}  ", dos[i, j]);
+				}
+
+				outf.WriteLine();
+			}
+
+			outf.Close();
+
+			Console.WriteLine("Creating +coeff file.");
+			outf = new StreamWriter(Path.Combine(Path.GetDirectoryName(outputfile), "+coeff"));
+
+			outf.WriteLine("#\t1\t0\t" + ks.Kpts.Count.ToString());
+			outf.Write("# band index\te(k,n)\t");
+
+			for (int i = 0; i < inp.Sites.Count; i++)
+			{
+				if (string.IsNullOrEmpty(inp.Sites[i].Name))
+				{
+					outf.Write("TB{0}\t", i);
+				}
+				else
+					outf.Write("{0}\t", inp.Sites[i].Name);
+			}
+			outf.WriteLine();
+
+			for (int kindex = 0; kindex < ks.Kpts.Count; kindex++)
+			{
+				Matrix m = CalcHamiltonian(inp, ks.Kpts[kindex]);
+				Matrix vals, vecs;
+				m.EigenValsVecs(out vals, out vecs);
+
+				outf.WriteLine("# spin=    1 k={0}", ks.Kpts[kindex].Value);
+
+				for (int i = 0; i < vals.Rows; i++)
+				{
+					outf.Write("{0}     {1}    ", i + 1, vals[i, 0].RealPart);
+
+					for (int j = 0; j < vecs.Columns; j++)
+					{
+						outf.Write("{0}    {1}    ", vecs[i, j].RealPart, vecs[i, j].ImagPart);
+					}
+					outf.WriteLine();
+				}
+			}
+
+		}
+
 	}
 }
