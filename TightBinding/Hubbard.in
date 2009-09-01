@@ -51,15 +51,20 @@ M       .5      .5       0
 R       .5      .5      .5
 G        0       0       0
 
+# Chemical potential for both tightbinding and RPA calculation.
+[Mu]
+0
+
 # Optional section
 # Gives a k-mesh for calculating the density of states and doing RPA.
 # The second line gives the finite temperature smearing used in the DOS calculation.
 # It is optional.
 [KMesh]
-400 400 1 1 1 1
+200 200 1 1 1 1
 0.02
 
-# Gives data for a plane of q-points in the BZ to plot.
+# Gives data for a plane of q-points in the BZ to plot.  There must be
+# four sets of three numbers here.
 # The first three numbers are the q-point mesh from which points are taken.
 # The next three groups of three numbers are q-points which are constrained to be
 # on the plane.
@@ -69,14 +74,22 @@ G        0       0       0
 0.5 0   0
 0   0.5 0
 
+# Frequency mesh for RPA calculation
+# You may enter just a single number to calculate a single frequency,
+# or something of the form:
+#    lower_bound  upper_bound  num_points
 [Frequency]
-0  
+0.0
 
+# Temperature mesh for RPA calculation
+# You may enter just a single number to calculate a single frequency,
+# or something of the form:
+#    lower_bound  upper_bound  num_points
 [Temperature]
-0.01
+0.005
 
+# Hubbard model parameters for RPA calculation
+# U, U prime, J, J prime. (don't enter commas).
 [Hubbard]
 4 4 1 1 
 
-[Mu]
-0

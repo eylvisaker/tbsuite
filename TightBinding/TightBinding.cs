@@ -227,7 +227,7 @@ namespace TightBinding
 				for (int i = 0; i < datasets; i++)
 				{
 					writer.WriteGraceDataset(kpath.Kpts.Count,
-						x => eigenvals[x][i, 0].RealPart);
+						x => eigenvals[x][i, 0].RealPart - inp.ChemicalPotential);
 				}
 			}
 		}
