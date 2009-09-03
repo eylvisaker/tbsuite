@@ -90,6 +90,12 @@ namespace ERY.EMath
                               this[0] * r[1] - this[1] * r[0]);
         }
 
+		public static Vector3 CrossProduct(Vector3 left, Vector3 right)
+		{
+			return new Vector3(left[1] * right[2] - left[2] * right[1],
+							   left[2] * right[0] - left[0] * right[2],
+							   left[0] * right[1] - left[1] * right[0]);
+		}
 
         public static Vector3 operator +(Vector3 a, Vector3 b)
         {
@@ -209,5 +215,6 @@ namespace ERY.EMath
 			
 			return valid;
 		}
-    }
+
+	}
 }

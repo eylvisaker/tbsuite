@@ -277,15 +277,15 @@ namespace ERY.EMath
 		{
 			get
 			{
-				if (!IsDiagonal)
-					return false;
-
 				Matrix test = Round();
 
 				for (int i = 0; i < mRows; i++)
 				{
-					if (test[i, i] != 0)
-						return false;
+					for (int j = 0; j < mCols; j++)
+					{
+						if (test[i, j] != 0)
+							return false;
+					}
 				}
 
 				return true;
@@ -800,7 +800,7 @@ namespace ERY.EMath
 				for (int j = 0; j < mCols; j++)
 				{
 					retval += this[i, j].ToString(formatString);
-					retval += "; ";
+					retval += ", ";
 				}
 
 				retval += "] ";
@@ -969,7 +969,7 @@ namespace ERY.EMath
 				{
 					Complex value = retval[i, j];
 
-					retval[i, j] = retval[i, j].Round(relativeTo);
+					retval[i, j] = retval[i, j].Round(relativeTo * tolerance);
 
 				}
 			}
@@ -1187,12 +1187,15 @@ namespace ERY.EMath
 			for (int block = 1; block < this.Rows-1; block++)
 			{
 				Matrix x = retval.SubMatrix(block, block-1, this.Rows - block, 1);
+
 				const int sign = -1;
 				double alpha = x[0, 0].Argument;
 				Complex fact = Complex.Exp(new Complex(0, alpha));
 				Matrix u = x.Clone();
 				double xnorm = Math.Sqrt(x.CalcColumnNorm(0));
 				u[0, 0] += sign * xnorm * fact;
+				if (u.IsZero) continue;
+
 				double H = 0.5 * (u.HermitianConjugate() * u)[0, 0].RealPart;
 				double Halt = xnorm * xnorm + sign * xnorm * (x[0, 0] / fact).RealPart;
 
@@ -1324,7 +1327,7 @@ namespace ERY.EMath
 			bool foundNonzero = false;
 			for (int i = shiftStart+1; i < input.Rows; i++)
 			{
-				if (input[i, shiftStart].MagnitudeSquared > 1e-18)
+				if (input[i, shiftStart].MagnitudeSquared > 1e-6)
 				{
 					foundNonzero = true;
 					break;
@@ -1341,8 +1344,8 @@ namespace ERY.EMath
 			int b = a + 1;
 			bool bad = false;
 			if (input[a, b] != input[b,a].Conjugate())				bad = true;
-			if (input[a,a].RealPart != 0 && Math.Abs(input[a,a].ImagPart / input[a,a].RealPart) > 1e-13)				bad = true;
-			if (input[b, b].RealPart != 0 && Math.Abs(input[b, b].ImagPart / input[b, b].RealPart) > 1e-13)				bad = true;
+			if (input[a,a].RealPart != 0 && Math.Abs(input[a,a].ImagPart / input[a,a].RealPart) > 1e-10)				bad = true;
+			if (input[b, b].RealPart != 0 && Math.Abs(input[b, b].ImagPart / input[b, b].RealPart) > 1e-10)				bad = true;
 			if (input[a, a].RealPart == 0 && input[a, a].ImagPart != 0) bad = true;
 			if (input[b, b].RealPart == 0 && input[b, b].ImagPart != 0) bad = true;
 			if (bad)

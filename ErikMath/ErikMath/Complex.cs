@@ -72,8 +72,10 @@ namespace ERY.EMath
 				buffer = "(" + real + " + " + imag + "i)";
 			else if ((ry < 0 && imag != "") && (rx != 0 && real != ""))
 				buffer = "(" + real + " - " + imag + "i)";
-			else if (ry != 0 && imag != "")
+			else if (ry > 0 && imag != "")
 				buffer = imag + "i";
+			else if (ry < 0 && imag != "")
+				buffer = "-" + imag + "i";
 			else
 				buffer = real;
 
