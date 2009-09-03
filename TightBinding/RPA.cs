@@ -294,13 +294,14 @@ namespace TightBinding
 							}
 
 							// organize on qmesh
-							filename = string.Format("{0}.{1}{2}{3}{4}.qm", name, l1, l2, l3, l4);
-
-							using (StreamWriter w = new StreamWriter(filename))
+							for (int wi = 0; wi < input.FrequencyMesh.Length; wi++)
 							{
-								for (int wi = 0; wi < input.FrequencyMesh.Length; wi++)
+								for (int ti = 0; ti < input.TemperatureMesh.Length; ti++)
 								{
-									for (int ti = 0; ti < input.TemperatureMesh.Length; ti++)
+									filename = string.Format("{0}.{1}{2}{3}{4}.w{5}.T{6}.qm",
+											   name, l1, l2, l3, l4, wi, ti);
+
+									using (StreamWriter w = new StreamWriter(filename))
 									{
 										double last_t;
 										double last_s;
@@ -318,7 +319,7 @@ namespace TightBinding
 											if (Math.Abs(t - last_t) > 1e-6)
 												w.WriteLine();
 
-											int index = 
+											int index =
 												input.QPlane.GetKindex(input.Lattice, qpt, out orbitalMap, input.Symmetries);
 
 											int newL1 = TransformOrbital(orbitalMap, l1);
@@ -331,26 +332,26 @@ namespace TightBinding
 
 											Complex val = chi[index, wi, ti][newii, newjj];
 
-											w.WriteLine(" {0}       {1}       {2}", 
+											w.WriteLine(" {0}       {1}       {2}",
 												s, t, val.RealPart);
 
 											last_t = t;
 											last_s = s;
 										}
 									}
+
+									string gpfilename = "gnuplot." + filename;
+
+									using (StreamWriter w = new StreamWriter(gpfilename))
+									{
+										w.WriteLine("#!/usr/bin/gnuplot");
+										w.WriteLine("set pm3d map flush begin ftriangles scansbackward interpolate 5,5");
+										w.WriteLine("splot '{0}'", filename);
+									}
+
 								}
 							}
 							
-							string gpfilename = "gnuplot." + filename;
-
-							using (StreamWriter w = new StreamWriter(gpfilename))
-							{
-								w.WriteLine("#!/usr/bin/gnuplot");
-								w.WriteLine("set pm3d map flush begin ftriangles scansbackward interpolate 5,5");
-								w.WriteLine("splot '{0}'", filename);
-							}
-
-
 							// organize by w
 							filename = string.Format(
 								"{0}.{1}{2}{3}{4}.w", name, l1, l2, l3, l4);

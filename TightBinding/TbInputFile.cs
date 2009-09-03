@@ -199,7 +199,13 @@ namespace TightBinding
 			string[] words = LineWords;
 			bool singlePoint = false;
 
-			if (words.Length > 1)
+			if (words.Length > 3)
+			{
+				array = new double[words.Length];
+				for (int i = 0; i < array.Length; i++)
+					array[i] = double.Parse(words[i]);
+			}
+			else if (words.Length > 1)
 			{
 				double f1 = double.Parse(words[0]);
 				double f2 = double.Parse(words[1]);
@@ -243,7 +249,7 @@ namespace TightBinding
 
 			Vector3 lastKpt = Vector3.Zero;
 			char[] array = new char[] { ' ' };
-			const double ptScale = 100;
+			const double ptScale = 400;
 
 			path = new KptList();
 			while (EOF == false && LineType != LineType.NewSection)
@@ -263,7 +269,7 @@ namespace TightBinding
 					name = vals[0];
 				}
 
-				Vector3 vecval = Vector3.Parse(text);
+				Vector3 vecval = Vector3.Parse(text) / 2;
 				Vector3 kpt = vecval;
 				double length = (kpt - lastKpt).Magnitude;
 

@@ -209,6 +209,12 @@ namespace TightBinding
 				Matrix vals, vecs;
 				m.EigenValsVecs(out vals, out vecs);
 				eigenvals.Add(vals);
+
+				for (int j = 0; j < vals.Rows; j++)
+				{
+					if (double.IsNaN(vals[j,0].RealPart))
+						throw new Exception("NaN found while diagonalizing tight binding at kpt " + i.ToString()+ ".");
+				}
 			}
 			int datasets = eigenvals[0].Rows;
 
@@ -266,8 +272,10 @@ namespace TightBinding
 						
 						Vector3 R = hop.R;
 						
-						val += hop.Value * 
+						Complex newval = hop.Value * 
 							Complex.Exp(new Complex(0, kpt.DotProduct(R)));
+
+						val += newval;
 					}
 					
 					if (Math.Abs(val.ImagPart) > 1e-7)

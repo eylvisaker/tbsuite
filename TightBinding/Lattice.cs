@@ -55,9 +55,9 @@ namespace TightBinding
 		{
 			Matrix m = new Matrix(3,3);
 			
-			m.SetRow(0, g1);
-			m.SetRow(1, g2);
-			m.SetRow(2, g3);
+			m.SetRow(0, a1);
+			m.SetRow(1, a2);
+			m.SetRow(2, a3);
 			
 			Vector3 retval = m * a;
 

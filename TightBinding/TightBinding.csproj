@@ -106,6 +106,13 @@
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
+    <None Include="tb.in" />
+    <None Include="testHubbard.in">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="LiNbO2.in">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="FreeE.in">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

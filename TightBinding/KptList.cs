@@ -222,14 +222,17 @@ namespace TightBinding
 							Vector3 pt = CalcK(lattice, dx, dy, dz);
 							Vector3 Tpt = symmetry.Value * pt;
 
-							if (Tpt == pt)
-								continue;
+							//if (Tpt == pt)
+							//    continue;
 
 							Vector3 red = lattice.ReducedCoords(Tpt, true);
 
 							int newi = (int)Math.Round(xmax * red.X - shift[0]);
 							int newj = (int)Math.Round(ymax * red.Y - shift[1]);
 							int newk = (int)Math.Round(zmax * red.Z - shift[2]);
+
+							if (newi % 2 != 0 || newj % 2 != 0 || newk % 2 != 0)
+								continue;
 
 							symN = retval.CalcN(newi, newj, newk);
 

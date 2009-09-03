@@ -1,0 +1,142 @@
+
+# Lattice section
+# Enter direct lattice vectors in cartesian coordinates.
+# This section must be first.
+[Lattice]
+ 4.74600   -2.740105   0
+ 0.00000    5.480206   0
+ 0          0         19.7665352674
+ 
+# Number of orbitals / sites and their locations 
+# Positions are in cartesian coordinates
+[Sites]
+  1.581999136091590     -2.740102881240705      4.941633816858237   Nb1
+ -1.581999136091590      2.740102881240705     -4.941633816858237   Nb2
+
+# Symmetries in the crystal.
+# The numbers following the symmetry name indicate how the orbitals transform 
+# under the symmetry.  If you specify the symmetry operation, you must specify
+# one number for each orbital.  The orbital transforms are optional if the 
+# orbitals transform into themselves.
+[Symmetry]
+Identity
+#ReflectX
+#ReflectY
+ReflectZ
+Inversion
+#RotateZ
+
+# Each hopping is followed by a list of Bravais lattice vectors.
+# Those vectors must be composed of integer values.
+[Hoppings]
+:1 1:
+T=      4.74600      2.74010      0.00000  hop=             0.060512355209722
+T=     -4.74600     -2.74010      0.00000  hop=             0.060512355209722
+T=      0.00000      5.48021      0.00000  hop=             0.060512355209722
+T=     -4.74600      2.74010      0.00000  hop=             0.060512355209722
+T=      4.74600     -2.74010      0.00000  hop=             0.060512355209722
+T=      0.00000     -5.48021      0.00000  hop=             0.060512355209722
+T=     -4.74600      8.22031      0.00000  hop=             0.093048561967512
+T=      9.49199      0.00000      0.00000  hop=             0.093048561967512
+T=      4.74600     -8.22031      0.00000  hop=             0.093048561967512
+T=     -4.74600     -8.22031      0.00000  hop=             0.093048561967512
+T=     -9.49199      0.00000      0.00000  hop=             0.093048561967512
+T=      4.74600      8.22031      0.00000  hop=             0.093048561967512
+T=     -9.49199      5.48021      0.00000  hop=             0.040677263754090
+T=      9.49199      5.48021      0.00000  hop=             0.040677263754090
+T=      9.49199     -5.48021      0.00000  hop=             0.040677263754090
+T=      0.00000    -10.96041      0.00000  hop=             0.040677263754090
+T=      0.00000     10.96041      0.00000  hop=             0.040677263754090
+T=     -9.49199     -5.48021      0.00000  hop=             0.040677263754090
+
+:1 2:
+T=      1.58200      2.74010      9.88327  hop=             0.015914623720138
+T=      1.58200     -2.74010     -9.88327  hop=             0.015914623720138
+T=      1.58200      2.74010     -9.88327  hop=             0.015914623720138
+T=     -3.16400      0.00000      9.88327  hop=             0.015914623720138
+T=      1.58200     -2.74010      9.88327  hop=             0.015914623720138
+T=     -3.16400      0.00000     -9.88327  hop=             0.015914623720138
+T=     -3.16400      5.48021      9.88327  hop=            -0.021012087147136
+T=     -3.16400     -5.48021     -9.88327  hop=            -0.021012087147136
+T=      6.32800      0.00000      9.88327  hop=            -0.021012087147136
+T=      6.32800      0.00000     -9.88327  hop=            -0.021012087147136
+T=     -3.16400     -5.48021      9.88327  hop=            -0.021012087147136
+T=     -3.16400      5.48021     -9.88327  hop=            -0.021012087147136
+
+:2 2:
+T=      4.74600      2.74010      0.00000  hop=             0.060512355209722
+T=     -4.74600     -2.74010      0.00000  hop=             0.060512355209722
+T=      0.00000      5.48021      0.00000  hop=             0.060512355209722
+T=     -4.74600      2.74010      0.00000  hop=             0.060512355209722
+T=      4.74600     -2.74010      0.00000  hop=             0.060512355209722
+T=      0.00000     -5.48021      0.00000  hop=             0.060512355209722
+T=     -4.74600      8.22031      0.00000  hop=             0.093048561967512
+T=      9.49199      0.00000      0.00000  hop=             0.093048561967512
+T=      4.74600     -8.22031      0.00000  hop=             0.093048561967512
+T=     -4.74600     -8.22031      0.00000  hop=             0.093048561967512
+T=     -9.49199      0.00000      0.00000  hop=             0.093048561967512
+T=      4.74600      8.22031      0.00000  hop=             0.093048561967512
+T=     -9.49199      5.48021      0.00000  hop=             0.040677263754090
+T=      9.49199      5.48021      0.00000  hop=             0.040677263754090
+T=      9.49199     -5.48021      0.00000  hop=             0.040677263754090
+T=      0.00000    -10.96041      0.00000  hop=             0.040677263754090
+T=      0.00000     10.96041      0.00000  hop=             0.040677263754090
+T=     -9.49199     -5.48021      0.00000  hop=             0.040677263754090
+
+  
+# Optional section
+# The path through K-space for integration is given as a series of points
+# in Cartesian coordinates.  These values will be multiplied by 2*pi
+# internally.
+[KPath]
+G        0              0             0      
+M        0.105351928    0             0
+K        0.105351928    0.060824964   0
+G        0              0             0
+A        0              0             0.025295276665
+M        0.105351928    0             0.025295276665
+K        0.105351928    0.060824964   0.025295276665
+A        0              0             0.025295276665
+
+# Chemical potential for both tightbinding and RPA calculation.
+[Mu]
+0
+
+# Optional section
+# Gives a k-mesh for calculating the density of states and doing RPA.
+# The second line gives the finite temperature smearing used in the DOS calculation.
+# It is optional.
+[KMesh]
+200 200 100 1 1 1
+0.02
+
+# Gives data for a plane of q-points in the BZ to plot.  There must be
+# four sets of three numbers here.
+# The first three numbers are the q-point mesh from which points are taken.
+# The next three groups of three numbers are q-points which are constrained to be
+# on the plane.
+[QPlane]
+40 40 1
+0   0   0  
+0.5 0   0
+0   0.5 0
+
+# Frequency mesh for RPA calculation
+# You may enter just a single number to calculate a single frequency,
+# or something of the form:
+#    lower_bound  upper_bound  num_points
+[Frequency]
+0.0
+
+# Temperature mesh for RPA calculation
+# You may enter just a single number to calculate a single frequency,
+# or something of the form:
+#    lower_bound  upper_bound  num_points
+[Temperature]
+0.005
+
+# Hubbard model parameters for RPA calculation
+# U, U prime, J, J prime. (don't enter commas).
+[Hubbard]
+4 4 1 1 
+
