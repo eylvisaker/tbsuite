@@ -17,7 +17,7 @@ namespace TightBinding
 		List<int> poles = new List<int>();
 		double smearing = 0.04;
 
-		public double ChemicalPotential { get; private set; }
+		public double ChemicalPotential { get; set; }
 		public Lattice Lattice { get { return lattice; } }
 		public SiteList Sites { get { return sites; } }
 		public HoppingPairList Hoppings { get { return hoppings; } }
@@ -29,6 +29,7 @@ namespace TightBinding
 		public double Smearing { get { return smearing; } }
 		public List<int> PoleStates { get { return poles; } }
 		public SymmetryList Symmetries { get { return symmetries; } }
+		public double Nelec { get; private set; }
 
 		public double HubU, HubUp, HubJ, HubJp;
 
@@ -81,13 +82,13 @@ namespace TightBinding
 		{
 			kmesh = KptList.GenerateMesh(lattice, kgrid, shift, symmetries, false);
 
-			Console.WriteLine("Applied {0} symmetries to get {1} irreducible kpoints from {2}.",
+			Output.WriteLine("Applied {0} symmetries to get {1} irreducible kpoints from {2}.",
 				symmetries.Count, kmesh.Kpts.Count, kmesh.AllKpts.Count);
 
 			if (setQplane)
 			{
 				qplane = KptList.GeneratePlane(lattice, qplaneDef, symmetries, qgrid);
-				Console.WriteLine("Found {0} irreducible qpoints in the plane of {1} qpoints.",
+				Output.WriteLine("Found {0} irreducible qpoints in the plane of {1} qpoints.",
 					qplane.Kpts.Count, qplane.AllKpts.Count);
 			}
 		}
@@ -144,6 +145,10 @@ namespace TightBinding
 					ReadChemicalPotential();
 					break;
 
+				case "Nelec":
+					ReadNelec();
+					break;
+
 				default:
 					ThrowEx("Unrecognized section " + sectionName);
 					break;
@@ -181,6 +186,11 @@ namespace TightBinding
 		private void ReadChemicalPotential()
 		{
 			ChemicalPotential = double.Parse(Line);
+		}
+
+		private void ReadNelec()
+		{
+			Nelec = double.Parse(Line);
 		}
 
 		private void ReadFrequencySection()
@@ -371,7 +381,7 @@ namespace TightBinding
 				string pair = Line.Substring(1, Line.Length - 2);
 				string[] values = pair.Split(' ');
 
-				Console.WriteLine(Line);
+				Output.WriteLine(Line);
 
 				if (values.Length != 2)
 					ThrowEx("Could not understand hopping pair.");
@@ -382,7 +392,7 @@ namespace TightBinding
 				HoppingPair p = new HoppingPair(left, right);
 				hoppings.Add(p);
 
-				Console.WriteLine("Reading hoppings for {0}-{1}", left + 1, right + 1);
+				Output.WriteLine("Reading hoppings for {0}-{1}", left + 1, right + 1);
 
 				ReadNextLine();
 
@@ -407,7 +417,7 @@ namespace TightBinding
 					ReadNextLine();
 				}
 
-				Console.WriteLine("Count: {0}", p.Hoppings.Count);
+				Output.WriteLine("Count: {0}", p.Hoppings.Count);
 
 			}
 		}
@@ -438,66 +448,89 @@ namespace TightBinding
 
 				switch (words[0].ToLowerInvariant())
 				{
-					case "identity":
+					case "e":
 						break;
-					case "inversion":
-						symmetries.Add(-1 * m, orbitals);
-						break;
-					case "reflectx":
+					case "c2(y)":    //1
 						m[0, 0] = -1;
-						symmetries.Add(m, orbitals);
-						break;
-					case "reflecty":
-						m[1, 1] = -1;
-						symmetries.Add(m, orbitals);
-						break;
-					case "reflectz":
 						m[2, 2] = -1;
 						symmetries.Add(m, orbitals);
 						break;
-
-					case "rotatez":
-						n[1, 0] = -1;
+					case "c2(x)":    //2
+						m[1, 1] = -1;
+						m[2, 2] = -1;
+						symmetries.Add(m, orbitals);
+						break;
+					case "c2(z)":    //3
+						m[0, 0] = -1;
+						m[1, 1] = -1;
+						symmetries.Add(m, orbitals);
+						break;
+					case "c2(xy)":    //12
 						n[0, 1] = 1;
+						n[1, 0] = 1;
+						n[2, 2] = -1;
+						symmetries.Add(n, orbitals);
+						break;
+					case "c3/4(z)":    //13
+						n[0, 1] = 1;
+						n[1, 0] = -1;
 						n[2, 2] = 1;
 						symmetries.Add(n, orbitals);
-						symmetries.Add(n * n, SwapOrbitals(orbitals, 1));
-						symmetries.Add(n * n * n, SwapOrbitals(orbitals, 2));
-						StoreEquivalentOrbitals(SwapOrbitals(orbitals, 1));
-						StoreEquivalentOrbitals(SwapOrbitals(orbitals, 2));
 						break;
-
-					case "rotatey":
-						n[2, 0] = -1;
-						n[0, 2] = 1;
-						n[1, 1] = 1;
+					case "c1/4(z)":    //14
+						n[0, 1] = -1;
+						n[1, 0] = 1;
+						n[2, 2] = 1;
 						symmetries.Add(n, orbitals);
-						symmetries.Add(n * n, SwapOrbitals(orbitals, 1));
-						symmetries.Add(n * n * n, SwapOrbitals(orbitals, 2));
-						StoreEquivalentOrbitals(SwapOrbitals(orbitals, 1));
-						StoreEquivalentOrbitals(SwapOrbitals(orbitals, 2));
 						break;
-
-					case "rotatex":
-						n[2, 1] = -1;
-						n[1, 2] = 1;
-						n[0, 0] = 1;
+					case "c2(x-y)":    //15
+						n[0, 1] = -1;
+						n[1, 0] = -1;
+						n[2, 2] = -1;
 						symmetries.Add(n, orbitals);
-						symmetries.Add(n * n, SwapOrbitals(orbitals, 1));
-						symmetries.Add(n * n * n, SwapOrbitals(orbitals, 2));
+						break;
+					case "i":    //32
+						symmetries.Add(-1 * m, orbitals);
+						break;
+					case "s(y)":    //33
+						m[1, 1] = -1;
+						symmetries.Add(m, orbitals);
+						break;
+					case "s(x)":    //34
+						m[0, 0] = -1;
+						symmetries.Add(m, orbitals);
+						break;
+					case "s(z)":    //35
+						m[2, 2] = -1;
+						symmetries.Add(m, orbitals);
+						break;
+					case "s(xy)":    // 44
+						n[0, 1] = -1;
+						n[1, 0] = -1;
+						n[2, 2] = 1;
+						symmetries.Add(n, orbitals);
+						break;
+					case "s1/4(z)":    //45
+						n[0, 1] = -1;
+						n[1, 0] = 1;
+						n[2, 2] = -1;
+						symmetries.Add(n, orbitals);
+						break;
+					case "s3/4(z)":    //46
+						n[0, 1] = 1;
+						n[1, 0] = -1;
+						n[2, 2] = -1;
+						symmetries.Add(n, orbitals);
+						break;
+					case "s(x-y)":    //47
+						n[0, 1] = 1;
+						n[1, 0] = 1;
+						n[2, 2] = 1;
+						symmetries.Add(n, orbitals);
 						break;
 
 					default:
-						Console.WriteLine("Unrecognized Symmetry {0}.", words[0]);
-						Console.WriteLine("Valid Symmetries are:");
-						Console.WriteLine("    Identity");
-						Console.WriteLine("    Inversion");
-						Console.WriteLine("    ReflectX");
-						Console.WriteLine("    ReflectY");
-						Console.WriteLine("    ReflectZ");
-						Console.WriteLine("    RotateX");
-						Console.WriteLine("    RotateY");
-						Console.WriteLine("    RotateZ");
+						Output.WriteLine("Unrecognized Symmetry {0}.", words[0]);
 						ThrowEx("Invalid Symmetry");
 						break;
 				}
@@ -725,7 +758,7 @@ namespace TightBinding
 				string fmt = string.Format("{0} total kpts, {1} irreducible kpts.  Applying symmetries took {2} seconds.",
 										   initialKptCount, kmesh.Kpts.Count, watch.ElapsedMilliseconds / 1000);
 
-				Console.WriteLine(fmt);
+				Output.WriteLine(fmt);
 				s.WriteLine(fmt);
 			}
 		}

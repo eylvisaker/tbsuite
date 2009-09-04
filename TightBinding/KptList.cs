@@ -163,9 +163,27 @@ namespace TightBinding
 						return s_x.CompareTo(s_y);
 				});
 
+			Vector3 sd = retval.sdir / SmallestNonzero(retval.sdir);
+			Vector3 td = retval.tdir / SmallestNonzero(retval.tdir);
+
+			Output.WriteLine("Plane horizontal direction: {0}", sd);
+			Output.WriteLine("Plane vertical direction: {0}", td);
 
 			return retval;
 		}
+
+private static double SmallestNonzero(Vector3 vector3)
+{
+ 	double smallest = double.MaxValue;
+	for (int i = 0; i < 3; i++)
+	{
+		if (Math.Abs(vector3[i]) < smallest &&
+			Math.Abs(vector3[i]) > 1e-6)
+			smallest = vector3[i];
+	}
+
+	return smallest;
+}
 		public void GetPlaneST(KPoint kpt, out double s, out double t)
 		{
 			s = (kpt.Value - origin).DotProduct(sdir);

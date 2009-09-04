@@ -3,84 +3,131 @@
 # Enter direct lattice vectors in cartesian coordinates.
 # This section must be first.
 [Lattice]
-        7.352735379737558      0.000000000000000      0.000000000000000
-        0.000000000000000      6.047501545204486      0.000000000000000
-        0.000000000000000      0.000000000000000      14.170489293489432
-
+     -3.866750000000000      3.866750000000000      6.638150000000000
+      3.866750000000000     -3.866750000000000      6.638150000000000
+      3.866750000000000      3.866750000000000     -6.638150000000000
+ 
 # Number of orbitals / sites and their locations 
 # Positions are in cartesian coordinates
 [Sites]
-      1.838183844934389     -1.511875386301122      1.425409518032102    Ti1
-     -1.838183844934389      1.511875386301122     -1.425409518032102    Ti2
-      1.838183844934389      1.511875386301122     -0.739982950906018    N1 
-     -1.838183844934389     -1.511875386301122      0.739982950906018    N2
+ 0 0 0 pi_x
+ 0 0 0 pi_y
+ 
+# Symmetries in the crystal.
+# The numbers following the symmetry name indicate how the orbitals transform 
+# under the symmetry.  If you specify the symmetry operation, you must specify
+# one number for each orbital.  The orbital transforms are optional if the 
+# orbitals transform into themselves.
+[Symmetry]
+E
+C2(y)
+C2(x)
+C2(z)
+C2(xy)   2 1
+C3/4(z)  2 1
+C1/4(z)  2 1
+C2(x-y)  2 1
+I
+s(y)
+s(x)
+s(z)
+s(xy)    2 1
+S1/4(z)  2 1
+S3/4(z)  2 1
+s(x-y)   2 1
 
 # Each hopping is followed by a list of Bravais lattice vectors.
 # Those vectors must be composed of integer values.
 [Hoppings]
 :1 1:
-T=      0.00000      0.00000      0.00000  hop=             1.773695748911264
-T=      0.00000      6.04750      0.00000  hop=            -0.163129350659527
-T=      0.00000     -6.04750      0.00000  hop=            -0.163129350659527
-T=     -7.35274      0.00000      0.00000  hop=            -0.189078209999147
-T=      7.35274      0.00000      0.00000  hop=            -0.189078209999147
-:1 2:
-T=      3.67637      3.02375     -2.85082  hop=            -0.163544188587915
-T=      3.67637     -3.02375     -2.85082  hop=            -0.163544188587915
-T=     -3.67637     -3.02375     -2.85082  hop=            -0.163544188587915
-T=     -3.67637      3.02375     -2.85082  hop=            -0.163544188587916
-:1 3:
-T=      0.00000     -3.02375     -2.16539  hop=             0.334578732971367
-T=      0.00000      3.02375     -2.16539  hop=            -0.334578732971367
-:1 4:
-:2 2:
-T=      0.00000      0.00000      0.00000  hop=             1.773695748911264
-T=      0.00000      6.04750      0.00000  hop=            -0.163129350659527
-T=      0.00000     -6.04750      0.00000  hop=            -0.163129350659527
-T=     -7.35274      0.00000      0.00000  hop=            -0.189078209999147
-T=      7.35274      0.00000      0.00000  hop=            -0.189078209999147
-:2 3:
-:2 4:
-T=      0.00000     -3.02375      2.16539  hop=             0.334578732971367
-T=      0.00000      3.02375      2.16539  hop=            -0.334578732971367
-:3 3:
-T=      0.00000      0.00000      0.00000  hop=            -3.169994666439095
-T=      0.00000      6.04750      0.00000  hop=             0.070664921923099
-T=      0.00000     -6.04750      0.00000  hop=             0.070664921923099
-T=     -7.35274      0.00000      0.00000  hop=             0.308461312287817
-T=      7.35274      0.00000      0.00000  hop=             0.308461312287817
-:3 4:
-T=     -3.67637     -3.02375      1.47997  hop=             0.46113474925360
-T=      3.67637     -3.02375      1.47997  hop=             0.46113474925360
-T=      3.67637      3.02375      1.47997  hop=             0.46113474925360
-T=     -3.67637      3.02375      1.47997  hop=             0.46113474925360
-:4 4:
-T=      0.00000      0.00000      0.00000  hop=            -3.169994666439095
-T=      0.00000      6.04750      0.00000  hop=             0.070664921923099
-T=      0.00000     -6.04750      0.00000  hop=             0.070664921923099
-T=     -7.35274      0.00000      0.00000  hop=             0.308461312287817
-T=      7.35274      0.00000      0.00000  hop=             0.308461312287817
+T=      0.00000      0.00000      0.00000  hop=            -1.059382636749482
+T=      0.00000      7.73350      0.00000  hop=             0.015756932724184
+T=     -7.73350      0.00000      0.00000  hop=             0.048090187495781
+T=      7.73350      0.00000      0.00000  hop=             0.048090187495781
+T=      0.00000     -7.73350      0.00000  hop=             0.015756932724184
+T=      3.86675      3.86675     -6.63815  hop=            -0.031342549982344
+T=      3.86675     -3.86675      6.63815  hop=            -0.031342549982344
+T=     -3.86675      3.86675     -6.63815  hop=            -0.031342549982344
+T=     -3.86675     -3.86675      6.63815  hop=            -0.031342549982344
+T=     -3.86675      3.86675      6.63815  hop=            -0.031342549982344
+T=     -3.86675     -3.86675     -6.63815  hop=            -0.031342549982344
+T=      3.86675      3.86675      6.63815  hop=            -0.031342549982344
+T=      3.86675     -3.86675     -6.63815  hop=            -0.031342549982344
 
+:1 2:
+T=      3.86675      3.86675     -6.63815  hop=            -0.054505745319268
+T=      3.86675     -3.86675      6.63815  hop=             0.054505745319268
+T=     -3.86675      3.86675     -6.63815  hop=             0.054505745319268
+T=     -3.86675     -3.86675      6.63815  hop=            -0.054505745319268
+T=     -3.86675      3.86675      6.63815  hop=             0.054505745319268
+T=     -3.86675     -3.86675     -6.63815  hop=            -0.054505745319268
+T=      3.86675      3.86675      6.63815  hop=            -0.054505745319268
+T=      3.86675     -3.86675     -6.63815  hop=             0.054505745319268
+
+:2 2:
+T=      0.00000      0.00000      0.00000  hop=            -1.059382636749482
+T=      0.00000      7.73350      0.00000  hop=             0.048090187495781
+T=     -7.73350      0.00000      0.00000  hop=             0.015756932724184
+T=      7.73350      0.00000      0.00000  hop=             0.015756932724184
+T=      0.00000     -7.73350      0.00000  hop=             0.048090187495781
+T=      3.86675      3.86675     -6.63815  hop=            -0.031342549982344
+T=      3.86675     -3.86675      6.63815  hop=            -0.031342549982344
+T=     -3.86675      3.86675     -6.63815  hop=            -0.031342549982344
+T=     -3.86675     -3.86675      6.63815  hop=            -0.031342549982344
+T=     -3.86675      3.86675      6.63815  hop=            -0.031342549982344
+T=     -3.86675     -3.86675     -6.63815  hop=            -0.031342549982344
+T=      3.86675      3.86675      6.63815  hop=            -0.031342549982344
+T=      3.86675     -3.86675     -6.63815  hop=            -0.031342549982344
+
+  
 # Optional section
 # The path through K-space for integration is given as a series of points
-# in Cartesian coordinates.  These will be multiplied by pi, internally, so 
-# the zone boundary is at 1/a.
+# in Cartesian coordinates.  These values will be multiplied by 2*pi
+# internally.
 [KPath]
-G   0          0          0
-X   0.13600381 0          0
-S   0.13600381 0.16535754 0
-Y   0          0.16535754 0
-G   0          0          0
-Z   0          0          0.070569
-U   0.13600381 0          0.070569
-R   0.13600381 0.16535754 0.070569
-T   0          0.16535754 0.070569
+G        0              0             0      
+X        0.129307558    0.129307558   0
+P        0.129307558    0.129307558   0.07532219067
+G        0              0             0
 
+# Number of electrons for RPA and tight binding calculation.
+[Nelec]
+3
 
 # Optional section
-# Gives a k-mesh for calculating the density of states.
-# The second line gives the gaussian smearing used in the DOS calculation.
+# Gives a k-mesh for calculating the density of states and doing RPA.
+# The second line gives the finite temperature smearing used in the DOS calculation.
 # It is optional.
 [KMesh]
-60 60 10
-0.05
+60 60 60 1 1 1
+0.005
+
+# Gives data for a plane of q-points in the BZ to plot.  There must be
+# four sets of three numbers here.
+# The first three numbers are the q-point mesh from which points are taken.
+# The next three groups of three numbers are q-points which define the plane.
+[QPlane]
+10 10 10
+0   0   0  
+1   1   0
+0   0   1
+
+# Frequency mesh for RPA calculation
+# You may enter just a single number to calculate a single frequency,
+# or something of the form:
+#    lower_bound  upper_bound  num_points
+[Frequency]
+0.0
+
+# Temperature mesh for RPA calculation
+# You may enter just a single number to calculate a single frequency,
+# or something of the form:
+#    lower_bound  upper_bound  num_points
+[Temperature]
+0.005
+
+# Hubbard model parameters for RPA calculation
+# U, U prime, J, J prime. (don't enter commas).
+[Hubbard]
+4 4 1 1 
+

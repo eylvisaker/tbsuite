@@ -1,6 +1,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using ERY.EMath;
 
 namespace TightBinding
@@ -30,13 +31,13 @@ namespace TightBinding
 			g1 = m.GetColumnAsVector3(0);
 			g2 = m.GetColumnAsVector3(1);
 			g3 = m.GetColumnAsVector3(2);
-			
-			Console.WriteLine("a1: {0}", a1);
-			Console.WriteLine("a2: {0}", a2);
-			Console.WriteLine("a3: {0}", a3);
-			Console.WriteLine("g1: {0}", g1);
-			Console.WriteLine("g2: {0}", g2);
-			Console.WriteLine("g3: {0}", g3);
+
+			Output.WriteLine("a1: {0}", a1);
+			Output.WriteLine("a2: {0}", a2);
+			Output.WriteLine("a3: {0}", a3);
+			Output.WriteLine("g1: {0}", g1);
+			Output.WriteLine("g2: {0}", g2);
+			Output.WriteLine("g3: {0}", g3);
 			
 		}
 		
@@ -63,9 +64,9 @@ namespace TightBinding
 
 			if (translate)
 			{
-				if (retval.X < 0) retval.X += (int)retval.X + 1;
-				if (retval.Y < 0) retval.Y += (int)retval.Y + 1;
-				if (retval.Z < 0) retval.Z += (int)retval.Z + 1;
+				while (retval.X < 0) retval.X += 1;
+				while (retval.Y < 0) retval.Y += 1;
+				while (retval.Z < 0) retval.Z += 1;
 
 				retval.X %= 1;
 				retval.Y %= 1;

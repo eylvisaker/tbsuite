@@ -9,7 +9,7 @@ namespace TightBinding
 		StreamReader reader;
 		string line;
 		int lineIndex;
-		
+
 		public InputReader(string filename)
 		{
 			reader = new StreamReader(filename);

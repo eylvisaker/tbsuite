@@ -105,17 +105,17 @@ namespace TightBinding
 			Analyze("S", S);
 			Analyze("C", C);
 
-			Console.WriteLine("Calculating X0...");
+			Output.WriteLine("Calculating X0...");
 
 			for (int tempIndex = 0; tempIndex < TemperatureMesh.Length; tempIndex++)
 			{
 				SetTemperature(TemperatureMesh[tempIndex], input.ChemicalPotential);
-				Console.WriteLine("Temperature: {1}    Beta: {0}",
+				Output.WriteLine("Temperature: {1}    Beta: {0}",
 					1 / TemperatureMesh[tempIndex], TemperatureMesh[tempIndex]);
 
 				for (int qIndex = 0; qIndex < QMesh.Count; qIndex++)
 				{
-					Console.WriteLine("q = {0}", QMesh[qIndex].Value);
+					Output.WriteLine("q = {0}", QMesh[qIndex].Value);
 					//CreateKQbands(tb, input, QMesh[qIndex]);
 
 					for (int freqIndex = 0; freqIndex < input.FrequencyMesh.Length; freqIndex++)
@@ -127,7 +127,7 @@ namespace TightBinding
 					}
 				}
 			}
-			Console.WriteLine();
+			Output.WriteLine();
 
 
 			Matrix[, ,] xs = new Matrix[QMesh.Count, input.FrequencyMesh.Length, input.TemperatureMesh.Length];
@@ -135,15 +135,15 @@ namespace TightBinding
 			List<Complex>[, ,] xs_evals = new List<Complex>[QMesh.Count, input.FrequencyMesh.Length, input.TemperatureMesh.Length];
 			List<Complex>[, ,] xc_evals = new List<Complex>[QMesh.Count, input.FrequencyMesh.Length, input.TemperatureMesh.Length];
 
-			Console.WriteLine("Calculating dressed susceptibilities.");
+			Output.WriteLine("Calculating dressed susceptibilities.");
 
 			for (int tempIndex = 0; tempIndex < input.TemperatureMesh.Length; tempIndex++)
 			{
-				Console.WriteLine("Temperature: {0}", input.TemperatureMesh[tempIndex]);
+				Output.WriteLine("Temperature: {0}", input.TemperatureMesh[tempIndex]);
 
 				for (int qIndex = 0; qIndex < QMesh.Count; qIndex++)
 				{
-					Console.WriteLine("q: {0}", QMesh[qIndex].Value);
+					Output.WriteLine("q: {0}", QMesh[qIndex].Value);
 
 					for (int freqIndex = 0; freqIndex < input.FrequencyMesh.Length; freqIndex++)
 					{
@@ -388,7 +388,7 @@ namespace TightBinding
 
 		private void Analyze(string name, Matrix S)
 		{
-			Console.WriteLine("Analysis of matrix {0}", name);
+			Output.WriteLine("Analysis of matrix {0}", name);
 
 			Matrix evals, evecs;
 
@@ -397,7 +397,7 @@ namespace TightBinding
 			Complex lastEigenvalue = evals[0, 0];
 			int multiplicity = 1;
 
-			Console.WriteLine("Eigenvalues:");
+			Output.WriteLine("Eigenvalues:");
 
 			for (int i = 1; i < evals.Rows; i++)
 			{
@@ -408,12 +408,12 @@ namespace TightBinding
 					multiplicity++;
 					continue;
 				}
-				Console.WriteLine("{0}      multiplicity: {1}", lastEigenvalue, multiplicity);
+				Output.WriteLine("{0}      multiplicity: {1}", lastEigenvalue, multiplicity);
 
 				lastEigenvalue = c;
 				multiplicity = 1;
 			}
-			Console.WriteLine("{0}      multiplicity: {1}", lastEigenvalue, multiplicity);
+			Output.WriteLine("{0}      multiplicity: {1}", lastEigenvalue, multiplicity);
 
 		}
 
@@ -582,7 +582,7 @@ namespace TightBinding
 									}
 								}
 
-								//Console.WriteLine(input.KMesh.AllKpts[kindex].Weight.ToString());
+								//Output.WriteLine(input.KMesh.AllKpts[kindex].Weight.ToString());
 								val *= input.KMesh.AllKpts[kindex].Weight;
 								total += val;
 							}

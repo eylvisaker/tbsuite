@@ -21,7 +21,15 @@ namespace TightBinding
 
 			for (int i = 0; i < args.Length; i += 2)
 			{
-				c.RunTB(args[i], args[i + 1]);
+				string filename = args[i];
+				string outputfile = System.IO.Path.GetFileNameWithoutExtension(filename) + ".out";
+
+				using (StreamWriter output = new StreamWriter(outputfile))
+				{
+					Output.SetFile(output);
+
+					c.RunTB(args[i], outputfile);
+				}
 			}
 
 			watch.Stop();
@@ -41,7 +49,7 @@ namespace TightBinding
 
 		static void Usage()
 		{
-			Console.WriteLine("Usage: tightbinding inputfile outputfile");
+			Console.WriteLine("Usage: tightbinding inputfile");
 		}
 	}
 }

@@ -54,5 +54,10 @@ namespace TightBinding
 
 		public List<Wavefunction> Wavefunctions { get { return wfk; } }
 		public IEnumerable<List<int>> OrbitalTransform { get { return mOrbitalTransform; } }
+
+		public override string ToString()
+		{
+			return base.ToString() + Value.ToString();
+		}
 	}
 }

@@ -8,13 +8,18 @@ namespace TightBinding
 {
 	class TightBinding
 	{
-		public void RunTB(string filename, string outputfile)
+		string outputfile;
+
+		public void RunTB(string filename, string outputPrefix)
 		{
+			this.outputfile = outputPrefix;
+			
 			TbInputFile r = new TbInputFile(filename);
 			r.ReadFile();
-			Console.WriteLine("Successfully parsed input file.");
-			
-			CalcValues(r, outputfile);
+
+			Output.WriteLine("Successfully parsed input file.");
+
+			CalcValues(r);
 
 			bool ranRPA = false;
 
@@ -25,7 +30,8 @@ namespace TightBinding
 			}
 
 			if (!ranRPA)
-				Console.WriteLine("No q-points defined, so we will not run the RPA.");
+				Output.WriteLine("No q-points defined, so we will not run the RPA.");
+
 		}
 
 		private void RunRPA(TbInputFile r , KptList qptList)
@@ -35,17 +41,115 @@ namespace TightBinding
 			rpa.RunRpa(this, r, qptList);
 		}
 		
-		public void CalcValues(TbInputFile inp, string outputfile)
+		public void CalcValues(TbInputFile inp)
 		{
-			DoBandStructure(inp, outputfile);
-			DoDensityOfStates(inp, outputfile);
+			CalcNelec(inp);
+			DoBandStructure(inp);
+			DoDensityOfStates(inp);
 		}
+
 
 		double FermiFunction(double omega, double mu, double beta)
 		{
 			return 1.0 / (Math.Exp(beta * (omega - mu)) + 1);
 		}
-		void DoDensityOfStates(TbInputFile inp, string outputfile)
+
+		private void CalcNelec(TbInputFile inp)
+		{
+			KptList ks = inp.KMesh;
+			Matrix[] eigenvals = new Matrix[ks.Kpts.Count];
+
+			for (int i = 0; i < ks.Kpts.Count; i++)
+			{
+				Matrix m = CalcHamiltonian(inp, ks.Kpts[i]);
+				Matrix vals, vecs;
+				m.EigenValsVecs(out vals, out vecs);
+
+				eigenvals[i] = vals;
+			}
+
+			double beta = 1 / inp.TemperatureMesh[0];
+
+			double N = FindNelec(ks, eigenvals, inp.ChemicalPotential, beta);
+
+			if (inp.Nelec != 0)
+			{
+				inp.ChemicalPotential = FindMu(ks, eigenvals, inp.Nelec, beta);
+				Output.WriteLine("Found chemical potential of {0}", inp.ChemicalPotential);
+			}
+			else
+			{
+				N = FindNelec(ks, eigenvals, inp.ChemicalPotential, beta);
+
+			}
+		}
+
+		private double FindMu(KptList ks, Matrix[] eigenvals, double Ntarget, double beta)
+		{
+			double N, Nold;
+			double mu_in, muold_in;
+			double mu_out, muold_out;
+
+			mu_in = 0;
+			muold_in = 0;
+
+			N = FindNelec(ks, eigenvals, mu_in, beta);
+
+			if (N > Ntarget)
+				mu_in = mu_in - 1;
+			else if (N < Ntarget)
+				mu_in = mu_in + 1;
+			else
+				return mu_in;
+
+			muold_out = mu_in;
+			Nold = N;
+
+			// do anderson mixing.
+			while (Math.Abs(N - Ntarget) > 1e-9)
+			{
+				N = FindNelec(ks, eigenvals, mu_in, beta);
+
+				double slope = (N - Nold) / (mu_in - muold_in);
+				mu_out = (Ntarget - N) / slope + mu_in;
+
+				double Rn = mu_out - mu_in;
+				double Rn1 = muold_out - muold_in;
+
+				double gamma = -Rn1 / (Rn - Rn1);
+
+				double avg_in = gamma * mu_in + (1 - gamma) * muold_in;
+				double avg_out = gamma * mu_out + (1 - gamma) * muold_out;
+
+				muold_in = mu_in;
+				muold_out = mu_out;
+				Nold = N;
+
+				mu_in = 0.3 * avg_in + 0.7 * avg_out;
+			}
+
+			return mu_in;
+		}
+
+		private double FindNelec(KptList ks, Matrix[] eigenvals, double mu, double beta)
+		{
+			double N = 0;
+
+			for (int i = 0; i < ks.Kpts.Count; i++)
+			{
+				double weight = ks.Kpts[i].Weight;
+
+				for (int j = 0; j < eigenvals[i].Rows; j++)
+				{
+					double energy = eigenvals[i][j, 0].RealPart;
+					double npt = 2 * FermiFunction(energy, mu, beta);
+
+					N += npt * weight;
+				}
+			}
+			return N;
+		}
+		void DoDensityOfStates(TbInputFile inp)
 		{
 			KptList ks = inp.KMesh;
 			using (StreamWriter outf = new StreamWriter(outputfile + ".dos"))
@@ -73,11 +177,11 @@ namespace TightBinding
 					if (energyGrid[i] < 0)
 						zeroIndex = i;
 				}
-				Console.WriteLine(
+				Output.WriteLine(
 					"Calculating DOS from {0} to {1} with finite temperature smearing {2}.",
 					emin, emax, smearing);
 
-				Console.WriteLine("Using {0} kpts.", ks.Kpts.Count);
+				Output.WriteLine("Using {0} kpts.", ks.Kpts.Count);
 
 				for (int i = 0; i < ks.Kpts.Count; i++)
 				{
@@ -152,7 +256,7 @@ namespace TightBinding
 				double slope = (dos[zeroIndex, 0] - dos[zeroIndex + 1, 0]) / (energyGrid[zeroIndex] - energyGrid[zeroIndex + 1]);
 				double dosEF = slope * (-energyGrid[zeroIndex]) + dos[zeroIndex, 0];
 
-				Console.WriteLine("Density of states at chemical potential: {0}", dosEF);
+				Output.WriteLine("Density of states at chemical potential: {0}", dosEF);
 
 				for (int i = 0; i < epts; i++)
 				{
@@ -194,11 +298,11 @@ namespace TightBinding
 			return trial;
 		}
 
-		void DoBandStructure(TbInputFile inp, string outputfile)
+		void DoBandStructure(TbInputFile inp)
 		{
 			KptList kpath = inp.KPath;
 
-			Console.WriteLine("Computing band structure with {0} k-points.",
+			Output.WriteLine("Computing band structure with {0} k-points.",
 							  kpath.Kpts.Count);
 
 			List<Matrix> eigenvals = new List<Matrix>();
@@ -280,13 +384,13 @@ namespace TightBinding
 					
 					if (Math.Abs(val.ImagPart) > 1e-7)
 					{
-						//Console.WriteLine("Imaginary part detected.  Check translation vectors: ");
+						//Output.WriteLine("Imaginary part detected.  Check translation vectors: ");
 						
 						//for (int k = 0; k < p.Hoppings.Count; k++)
 						//{
 						//    HoppingValue hop = p.Hoppings[k];
 							
-						//    Console.WriteLine(hop.R);
+						//    Output.WriteLine(hop.R);
 						//}
 					}
 					
@@ -306,7 +410,7 @@ namespace TightBinding
 		/// </summary>
 		/// <param name="inp"></param>
 		/// <param name="outputfile"></param>
-		void tet_DoDensityOfStates(TbInputFile inp, string outputfile)
+		void tet_DoDensityOfStates(TbInputFile inp)
 		{
 			KptList ks = inp.KMesh;
 			StreamWriter outf = new StreamWriter(outputfile + ".dos");
@@ -334,16 +438,16 @@ namespace TightBinding
 				energyGrid[i] = emin + (emax - emin) * i / (double)(epts - 1);
 			}
 
-			Console.WriteLine("Calculating DOS from {0} to {1} with tetrahedron method.",
+			Output.WriteLine("Calculating DOS from {0} to {1} with tetrahedron method.",
 							  emin, emax, smearing);
 
-			Console.WriteLine("Using {0} tetrahedrons.", ks.Tetrahedrons.Count);
+			Output.WriteLine("Using {0} tetrahedrons.", ks.Tetrahedrons.Count);
 
 			for (int tetindex = 0; tetindex < ks.Tetrahedrons.Count; tetindex++)
 			{
 				Tetrahedron tet = ks.Tetrahedrons[tetindex];
 				if (tetindex % (ks.Tetrahedrons.Count / 10) == 0 && tetindex > 0)
-					Console.WriteLine("At {0}...", tetindex);
+					Output.WriteLine("At {0}...", tetindex);
 
 				Matrix[] eigenvals = new Matrix[4];
 
@@ -394,7 +498,7 @@ namespace TightBinding
 
 			outf.Close();
 
-			Console.WriteLine("Creating +coeff file.");
+			Output.WriteLine("Creating +coeff file.");
 			outf = new StreamWriter(Path.Combine(Path.GetDirectoryName(outputfile), "+coeff"));
 
 			outf.WriteLine("#\t1\t0\t" + ks.Kpts.Count.ToString());
