@@ -170,6 +170,14 @@ namespace ERY.EMath
             buffer = string.Format("({0}, {1}, {2})", (double)this[0], (double)this[1], (double)this[2]);
             return buffer;
         }
+		public string ToString(string format)
+		{
+			string buffer;
+			buffer = string.Format("({0:" + format + "}, {1:" + format + "}, {2:" + format + "})", 
+				(double)this[0], (double)this[1], (double)this[2]);
+
+			return buffer;
+		}
 
         public override bool Equals(object obj)
         {
