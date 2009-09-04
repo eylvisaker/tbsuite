@@ -232,8 +232,8 @@ namespace TightBinding
 					{
 						for (int l4 = 0; l4 < input.Sites.Count; l4++)
 						{
-							if (l1 != l2 || l2 != l3 || l3 != l4)
-								continue;
+							//if (l1 != l2 || l2 != l3 || l3 != l4)
+							//    continue;
 
 							int i = GetIndex(input, l1, l2);
 							int j = GetIndex(input, l3, l4);
@@ -333,7 +333,7 @@ namespace TightBinding
 											int newL4 = TransformOrbital(orbitalMap, l4);
 
 											int newii = GetIndex(input, newL1, newL2);
-											int newjj = GetIndex(input, newL1, newL2);
+											int newjj = GetIndex(input, newL3, newL4);
 
 											Complex val = chi[index, wi, ti][newii, newjj];
 

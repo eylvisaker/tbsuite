@@ -18,15 +18,22 @@
 # one number for each orbital.  The orbital transforms are optional if the 
 # orbitals transform into themselves.
 [Symmetry]
-Identity
-ReflectX
-ReflectY
-ReflectZ
-Inversion
-#RotateX
-#RotateY
-RotateZ
-#RotateZ     2 1  # Rotation of 90 around the z axis swaps px and py.
+E
+C2(y)
+C2(x)
+C2(z)
+C2(xy)   
+C3/4(z)  
+C1/4(z)  
+C2(x-y)  
+I
+s(y)
+s(x)
+s(z)
+s(xy)    
+S1/4(z)  
+S3/4(z)  
+s(x-y)   
 
 # Each hopping is followed by a list of Bravais lattice vectors.
 # Those vectors must be composed of integer values.

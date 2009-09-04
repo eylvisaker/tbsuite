@@ -121,7 +121,6 @@ namespace TightBinding
 					retval.allKpts.Add(qpt);
 
 					int N = retval.CalcN(lattice, qpt);
-					int reducedIndex = qmesh.Nvalues[N];
 					int symN = N;
 					bool foundSym = false;
 					List<int> orbitals = null;
@@ -142,7 +141,7 @@ namespace TightBinding
 
 						symN = retval.CalcN(newi, newj, newk);
 
-						if (symN < N && retval.Nvalues.ContainsKey(symN))
+						if (retval.Nvalues.ContainsKey(symN))
 						{
 							foundSym = true;
 
@@ -180,9 +179,6 @@ namespace TightBinding
 			
 			NormalizeST(lattice, retval);
 
-			//retval.sdir /= retval.sdir.Magnitude;
-			//retval.tdir /= retval.tdir.Magnitude;
-
 			// now sort k-points.
 			Comparison<KPoint> sorter = (x, y) =>
 				{
@@ -211,8 +207,14 @@ namespace TightBinding
 
 		private static void NormalizeST(Lattice lattice, KptList retval)
 		{
+			retval.sdir /= retval.sdir.Magnitude;
+			retval.tdir /= retval.tdir.Magnitude;
+
 			retval.sdir /= GammaInDirection(lattice, retval.sdir).Magnitude;
 			retval.tdir /= GammaInDirection(lattice, retval.tdir).Magnitude;
+
+			retval.sdir *= 2;
+			retval.tdir *= 2;
 		}
 
 		private static Vector3 GammaInDirection(Lattice lattice, Vector3 direction)
@@ -296,9 +298,9 @@ namespace TightBinding
 
 						if (centerGamma)
 						{
-							dx -= 0.5;
-							dy -= 0.5;
-							dz -= 0.5;
+							if (kgrid[0] > 1) dx -= 0.5;
+							if (kgrid[1] > 1) dy -= 0.5;
+							if (kgrid[2] > 1) dz -= 0.5;
 						}
 						foreach (var symmetry in compatSyms)
 						{
@@ -431,5 +433,9 @@ namespace TightBinding
 			return CalcN(i, j, k);
 		}
 
+		public override string ToString()
+		{
+			return string.Format("K-points: {0}   Irreducible: {1}", allKpts.Count, kpts.Count);
+		}
 	}
 }

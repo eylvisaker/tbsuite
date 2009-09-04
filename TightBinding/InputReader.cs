@@ -35,6 +35,11 @@ namespace TightBinding
 		protected abstract void Validate();
 		protected abstract void PostProcess();
 
+		protected void ThrowEx(string format, params object[] args)
+		{
+			string message = string.Format(format, args);
+			ThrowEx(message);
+		}
 		protected void ThrowEx(string message)
 		{
 			throw new Exception(string.Format(

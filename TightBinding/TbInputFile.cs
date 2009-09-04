@@ -450,6 +450,88 @@ namespace TightBinding
 				{
 					case "e":
 						break;
+					case "c2(90)":
+						n[0, 0] = -1;
+						n[1, 0] = -1;
+						n[0, 1] = 1;
+						n[2, 2] = -1;
+						symmetries.Add(n, orbitals);
+						break;
+					case "c2(0)":
+						n[0, 0] = 1;
+						n[1, 0] = 1;
+						n[0, 1] = -1;
+						n[2, 2] = -1;
+						symmetries.Add(n, orbitals);
+						break;
+					case "c5/6(z)":
+						n[0, 1] = 1;
+						n[1, 0] = -1;
+						n[1, 1] = 1;
+						n[2, 2] = 1;
+						symmetries.Add(n, orbitals);
+						break;
+					case "c2/3(z)":
+						n[0, 0] = -1;
+						n[0, 1] = 1;
+						n[1, 0] = -1;
+						n[2, 2] = 1;
+						symmetries.Add(n, orbitals);
+						break;
+					case "c1/3(z)":
+						n[0, 1] = -1;
+						n[1, 0] = 1;
+						n[1, 1] = -1;
+						n[2, 2] = 1;
+						symmetries.Add(n, orbitals);
+						break;
+					case "c1/6(z)":
+						n[0, 0] = 1;
+						n[0, 1] = -1;
+						n[1, 0] = 1;
+						n[2, 2] = 1;
+						symmetries.Add(n, orbitals);
+						break;
+					case "c2(xy[30])":
+						n[0, 1] = 1;
+						n[1, 0] = 1;
+						n[2, 2] = -1;
+						symmetries.Add(n, orbitals);
+						break;
+					case "c2(xy[60])":
+						n[0, 0] = -1;
+						n[0, 1] = 1;
+						n[1, 1] = 1;
+						n[2, 2] = -1;
+						symmetries.Add(n, orbitals);
+						break;
+					case "c2(xy[-60])":
+						n[0, 1] = -1;
+						n[1, 0] = -1;
+						n[2, 2] = -1;
+						symmetries.Add(n, orbitals);
+						break;
+					case "c2(xy[-30])":
+						n[0, 0] = 1;
+						n[0, 1] = -1;
+						n[1, 1] = -1;
+						n[2, 2] = -1;
+						symmetries.Add(n, orbitals);
+						break;
+					case "s(90)":
+						n[0, 0] = 1;
+						n[1, 0] = 1;
+						n[1, 1] = -1;
+						n[2, 2] = 1;
+						symmetries.Add(n, orbitals);
+						break;
+					case "s(0)":
+						n[0, 0] = -1;
+						n[1, 0] = -1;
+						n[1, 1] = 1;
+						n[2, 2] = 1;
+						symmetries.Add(n, orbitals);
+						break;
 					case "c2(y)":    //1
 						m[0, 0] = -1;
 						m[2, 2] = -1;
@@ -531,7 +613,7 @@ namespace TightBinding
 
 					default:
 						Output.WriteLine("Unrecognized Symmetry {0}.", words[0]);
-						ThrowEx("Invalid Symmetry");
+						ThrowEx("Invalid Symmetry: {0}", words[0]);
 						break;
 				}
 
