@@ -115,7 +115,12 @@ namespace TightBinding
 
 				for (int qIndex = 0; qIndex < QMesh.Count; qIndex++)
 				{
-					Output.WriteLine("q = {0}", QMesh[qIndex].Value);
+					double s, t;
+					qpts.GetPlaneST(qpts.Kpts[qIndex], out s, out t);
+
+					Output.WriteLine("q = {0};     s = {1:0.0000}   t = {2:0.0000}", 
+						QMesh[qIndex].Value.ToString("0.0000"), s, t);
+
 					//CreateKQbands(tb, input, QMesh[qIndex]);
 
 					for (int freqIndex = 0; freqIndex < input.FrequencyMesh.Length; freqIndex++)

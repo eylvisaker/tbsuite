@@ -99,15 +99,15 @@ G        0              0             0
 # The second line gives the finite temperature smearing used in the DOS calculation.
 # It is optional.
 [KMesh]
-60 60 60 1 1 1
-0.005
+120 120 120 1 1 1
+0.001
 
 # Gives data for a plane of q-points in the BZ to plot.  There must be
 # four sets of three numbers here.
 # The first three numbers are the q-point mesh from which points are taken.
 # The next three groups of three numbers are q-points which define the plane.
 [QPlane]
-10 10 10
+12 12 12
 0   0   0  
 1   1   0
 0   0   1
@@ -124,7 +124,7 @@ G        0              0             0
 # or something of the form:
 #    lower_bound  upper_bound  num_points
 [Temperature]
-0.005
+0.001
 
 # Hubbard model parameters for RPA calculation
 # U, U prime, J, J prime. (don't enter commas).

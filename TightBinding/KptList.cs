@@ -15,7 +15,7 @@ namespace TightBinding
 		Dictionary<int, int> Nvalues = new Dictionary<int, int>();
 
 		Vector3 sdir, tdir, origin;
- 
+
 		public KptList()
 		{
 		}
@@ -93,17 +93,20 @@ namespace TightBinding
 
 		public static KptList GeneratePlane(Lattice lattice, Vector3[] points, SymmetryList syms, int[] qgrid)
 		{
-			KptList qmesh = GenerateMesh(lattice, qgrid, null, syms, true);
+			KptList qmesh = GenerateMesh(lattice, qgrid, null, syms, true, true);
 
 			Vector3 diff_1 = points[1] - points[0];
 			Vector3 diff_2 = points[2] - points[0];
 			Vector3 norm = Vector3.CrossProduct(diff_1, diff_2);
 
 			KptList retval = new KptList();
-			Dictionary<int,int> indexMap = new Dictionary<int,int>();
 
 			retval.mesh = (int[])qgrid.Clone();
 			retval.shift = new int[3];
+
+			int zmax = qgrid[2] * 2;
+			int ymax = qgrid[1] * 2;
+			int xmax = qgrid[0] * 2;
 
 			int index = 0;
 			for (int i = 0; i < qmesh.AllKpts.Count; i++)
@@ -119,41 +122,72 @@ namespace TightBinding
 
 					int N = retval.CalcN(lattice, qpt);
 					int reducedIndex = qmesh.Nvalues[N];
+					int symN = N;
+					bool foundSym = false;
+					List<int> orbitals = null;
 
-					if (indexMap.ContainsKey(reducedIndex) == false)
+					foreach (var symmetry in syms)
 					{
-						retval.kpts.Add(qmesh.kpts[reducedIndex]);
+						Vector3 pt = qpt.Value;
+						Vector3 Tpt = symmetry.Value * pt;
 
-						indexMap.Add(reducedIndex, index);
+						Vector3 red = lattice.ReducedCoords(Tpt, true);
+
+						int newi = (int)Math.Round(xmax * red.X );
+						int newj = (int)Math.Round(ymax * red.Y );
+						int newk = (int)Math.Round(zmax * red.Z );
+
+						if (newi % 2 != 0 || newj % 2 != 0 || newk % 2 != 0)
+							continue;
+
+						symN = retval.CalcN(newi, newj, newk);
+
+						if (symN < N && retval.Nvalues.ContainsKey(symN))
+						{
+							foundSym = true;
+
+							if (symmetry.OrbitalTransform.Count > 0)
+							{
+								orbitals = symmetry.OrbitalTransform;
+							}
+						}
+
+						if (foundSym)
+							break;
+					}
+
+					if (foundSym == false && retval.Nvalues.ContainsKey(N) == false)
+					{
+						retval.kpts.Add(qpt);
 						retval.Nvalues.Add(N, index);
-
 						index++;
 					}
-					else
+					else if (retval.Nvalues.ContainsKey(N) == false)
 					{
-						if (retval.Nvalues.ContainsKey(N))
-						{
-							if (retval.Nvalues[N] != indexMap[reducedIndex])
-								throw new Exception("Mapping screwed up.");
-						}
-						else
-							retval.Nvalues.Add(N, indexMap[reducedIndex]);
+						int newIndex = retval.Nvalues[symN];
+						retval.kpts[newIndex].AddOrbitalSymmetry(orbitals);
+
+						retval.Nvalues.Add(N, newIndex);
 					}
+					else
+					{ }  // skip points which are already in there.  This should only happen for gamma?
 				}
 			}
 
 			retval.origin = points[0];
 			retval.sdir = diff_1;
 			retval.tdir = Vector3.CrossProduct(norm, diff_1);
+			
+			NormalizeST(lattice, retval);
 
-			retval.sdir /= retval.sdir.Magnitude;
-			retval.tdir /= retval.tdir.Magnitude;
+			//retval.sdir /= retval.sdir.Magnitude;
+			//retval.tdir /= retval.tdir.Magnitude;
 
 			// now sort k-points.
-			retval.allKpts.Sort((x, y) =>
+			Comparison<KPoint> sorter = (x, y) =>
 				{
-					double s_x,s_y,t_x,t_y;
-					
+					double s_x, s_y, t_x, t_y;
+
 					retval.GetPlaneST(x, out s_x, out t_x);
 					retval.GetPlaneST(y, out s_y, out t_y);
 
@@ -161,7 +195,10 @@ namespace TightBinding
 						return t_x.CompareTo(t_y);
 					else
 						return s_x.CompareTo(s_y);
-				});
+				};
+
+			retval.allKpts.Sort(sorter);
+			retval.kpts.Sort(sorter);
 
 			Vector3 sd = retval.sdir / SmallestNonzero(retval.sdir);
 			Vector3 td = retval.tdir / SmallestNonzero(retval.tdir);
@@ -172,24 +209,40 @@ namespace TightBinding
 			return retval;
 		}
 
-private static double SmallestNonzero(Vector3 vector3)
-{
- 	double smallest = double.MaxValue;
-	for (int i = 0; i < 3; i++)
-	{
-		if (Math.Abs(vector3[i]) < smallest &&
-			Math.Abs(vector3[i]) > 1e-6)
-			smallest = vector3[i];
-	}
+		private static void NormalizeST(Lattice lattice, KptList retval)
+		{
+			retval.sdir /= GammaInDirection(lattice, retval.sdir).Magnitude;
+			retval.tdir /= GammaInDirection(lattice, retval.tdir).Magnitude;
+		}
 
-	return smallest;
-}
+		private static Vector3 GammaInDirection(Lattice lattice, Vector3 direction)
+		{
+			Vector3 sred = lattice.ReducedCoords(direction);
+			sred /= SmallestNonzero(sred);
+
+			Vector3 retval = sred.X * lattice.G1 + sred.Y * lattice.G2 + sred.Z * lattice.G3;
+
+			return retval;
+		}
+
+		private static double SmallestNonzero(Vector3 vector3)
+		{
+			double smallest = double.MaxValue;
+			for (int i = 0; i < 3; i++)
+			{
+				if (Math.Abs(vector3[i]) < smallest &&
+					Math.Abs(vector3[i]) > 1e-6)
+					smallest = Math.Abs(vector3[i]);
+			}
+
+			return smallest;
+		}
 		public void GetPlaneST(KPoint kpt, out double s, out double t)
 		{
 			s = (kpt.Value - origin).DotProduct(sdir);
 			t = (kpt.Value - origin).DotProduct(tdir);
 		}
-		public static KptList GenerateMesh(Lattice lattice, int[] kgrid, int[] shift, SymmetryList syms, bool includeEnds)
+		public static KptList GenerateMesh(Lattice lattice, int[] kgrid, int[] shift, SymmetryList syms, bool includeEnds, bool centerGamma)
 		{
 			KptList retval = new KptList();
 			int zmax = kgrid[2] * 2;
@@ -206,6 +259,19 @@ private static double SmallestNonzero(Vector3 vector3)
 
 			int index = 0;
 			Vector3 gridVector = new Vector3(kgrid[0], kgrid[1], kgrid[2]);
+
+			SymmetryList compatSyms = new SymmetryList();
+			foreach (var symmetry in syms)
+			{
+				Vector3 grid2 = symmetry.Value * gridVector;
+				for (int gi = 0; gi < 3; gi++)
+					grid2[gi] = Math.Abs(grid2[gi]);
+
+				if (grid2 == gridVector)
+				{
+					compatSyms.Add(symmetry);
+				}
+			}
 
 			for (int k = 0; k <= zmax; k += 2)
 			{
@@ -228,15 +294,14 @@ private static double SmallestNonzero(Vector3 vector3)
 						int symN = N;
 						List<int> orbitals = null;
 
-						foreach (var symmetry in syms)
+						if (centerGamma)
 						{
-							Vector3 grid2 = symmetry.Value * gridVector;
-							for (int gi = 0 ; gi < 3; gi++)
-								grid2[gi] = Math.Abs(grid2[gi]);
-
-							if (grid2 != gridVector)
-								continue;
-
+							dx -= 0.5;
+							dy -= 0.5;
+							dz -= 0.5;
+						}
+						foreach (var symmetry in compatSyms)
+						{
 							Vector3 pt = CalcK(lattice, dx, dy, dz);
 							Vector3 Tpt = symmetry.Value * pt;
 
@@ -307,11 +372,11 @@ private static double SmallestNonzero(Vector3 vector3)
 				System.Diagnostics.Debug.Assert(Math.Abs(check - 1) < 1e-8);
 			}
 #endif
-			
+
 			return retval;
 		}
 
-		
+
 		public int GetKindex(Lattice lattice, Vector3 kpt, out List<int> orbitalMap, SymmetryList symmetries)
 		{
 			for (int s = 0; s < symmetries.Count; s++)
@@ -338,6 +403,7 @@ private static double SmallestNonzero(Vector3 vector3)
 		private void ReduceKpt(Lattice lattice, Vector3 kpt, out int newi, out int newj, out int newk)
 		{
 			Vector3 red = lattice.ReducedCoords(kpt, true);
+
 			int zmax = mesh[2] * 2;
 			int ymax = mesh[1] * 2;
 			int xmax = mesh[0] * 2;

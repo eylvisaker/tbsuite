@@ -80,7 +80,7 @@ namespace TightBinding
 
 		private void GenerateKmesh()
 		{
-			kmesh = KptList.GenerateMesh(lattice, kgrid, shift, symmetries, false);
+			kmesh = KptList.GenerateMesh(lattice, kgrid, shift, symmetries, false, false);
 
 			Output.WriteLine("Applied {0} symmetries to get {1} irreducible kpoints from {2}.",
 				symmetries.Count, kmesh.Kpts.Count, kmesh.AllKpts.Count);
