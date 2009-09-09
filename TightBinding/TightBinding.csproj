@@ -114,7 +114,7 @@
     <None Include="testHubbard.in">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="tb.in">
+    <None Include="LiNbO2.in">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="FreeE.in">
