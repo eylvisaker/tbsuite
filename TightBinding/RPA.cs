@@ -350,7 +350,7 @@ namespace TightBinding
 									using (StreamWriter w = new StreamWriter(gpfilename))
 									{
 										w.WriteLine("#!/usr/bin/gnuplot");
-										w.WriteLine("set pm3d map flush begin ftriangles scansbackward interpolate 5,5");
+										w.WriteLine("set pm3d map flush begin ftriangles scansbackward interpolate 10,10");
 										w.WriteLine("splot '{0}'", filename);
 									}
 
@@ -583,7 +583,13 @@ namespace TightBinding
 											contrib = coeff * f1 * (1 - f1) * Beta;
 										}
 
+										if (double.IsNaN(contrib.mx) || double.IsNaN(contrib.my))
+										{
+											throw new Exception("Found NaN when evaluating X0");
+										}
+
 										val += contrib;
+
 									}
 								}
 

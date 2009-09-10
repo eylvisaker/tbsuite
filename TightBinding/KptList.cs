@@ -1,6 +1,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using ERY.EMath;
 
 namespace TightBinding
@@ -91,6 +92,63 @@ namespace TightBinding
 
 		public List<Tetrahedron> Tetrahedrons { get { return tets; } }
 
+		private static bool CenterOnGamma(Lattice lattice, ref KPoint qpt, KptList list)
+		{
+			double dist = qpt.Value.Magnitude;
+			double olddist = dist;
+			Vector3 newPt = qpt.Value;
+			bool retval = true;
+			double bs, bt;
+
+			list.GetPlaneST(qpt, out bs, out bt);
+
+
+			for (int k = -1; k <= 1; k++)
+			{
+				for (int j = -1; j <= 1; j++)
+				{
+					for (int i = -1; i <= 1; i++)
+					{
+						if (i == 0 && j == 0 && k == 0)
+							continue;
+
+						Vector3 pt = qpt.Value +
+							i * lattice.G1 +
+							j * lattice.G2 +
+							k * lattice.G3;
+
+						double s, t;
+						bool valid = list.GetPlaneST(new KPoint(pt), out s, out t);
+
+						if (!valid)
+							continue;
+
+						if (pt.Magnitude < dist - 1e-6)
+						{
+							if (list.allKpts.Any(x => Math.Abs((x.Value - pt).Magnitude) > 1e-6))
+							{
+								retval = false;
+								continue;
+							}
+
+							dist = pt.Magnitude;
+							newPt = pt;
+						}
+					}
+				}
+			}
+
+			if (olddist != dist)
+				retval = true;
+
+			if (retval == false)
+				return false;
+
+			qpt.Value = newPt;
+
+			return true;
+		}
+
 		public static KptList GeneratePlane(Lattice lattice, Vector3[] points, SymmetryList syms, int[] qgrid)
 		{
 			KptList qmesh = GenerateMesh(lattice, qgrid, null, syms, true, true);
@@ -104,11 +162,19 @@ namespace TightBinding
 			retval.mesh = (int[])qgrid.Clone();
 			retval.shift = new int[3];
 
+			retval.origin = points[0];
+			retval.sdir = diff_1;
+			retval.tdir = Vector3.CrossProduct(norm, diff_1);
+
+			NormalizeST(lattice, retval);
+
 			int zmax = qgrid[2] * 2;
 			int ymax = qgrid[1] * 2;
 			int xmax = qgrid[0] * 2;
 
 			int index = 0;
+
+			List<KPoint> planePoints  = new List<KPoint>();
 			for (int i = 0; i < qmesh.AllKpts.Count; i++)
 			{
 				var qpt = qmesh.AllKpts[i];
@@ -118,67 +184,86 @@ namespace TightBinding
 
 				if (dot < 1e-8)
 				{
-					retval.allKpts.Add(qpt);
-
-					int N = retval.CalcN(lattice, qpt);
-					int symN = N;
-					bool foundSym = false;
-					List<int> orbitals = null;
-
-					foreach (var symmetry in syms)
-					{
-						Vector3 pt = qpt.Value;
-						Vector3 Tpt = symmetry.Value * pt;
-
-						Vector3 red = lattice.ReducedCoords(Tpt, true);
-
-						int newi = (int)Math.Round(xmax * red.X );
-						int newj = (int)Math.Round(ymax * red.Y );
-						int newk = (int)Math.Round(zmax * red.Z );
-
-						if (newi % 2 != 0 || newj % 2 != 0 || newk % 2 != 0)
-							continue;
-
-						symN = retval.CalcN(newi, newj, newk);
-
-						if (retval.Nvalues.ContainsKey(symN))
-						{
-							foundSym = true;
-
-							if (symmetry.OrbitalTransform.Count > 0)
-							{
-								orbitals = symmetry.OrbitalTransform;
-							}
-						}
-
-						if (foundSym)
-							break;
-					}
-
-					if (foundSym == false && retval.Nvalues.ContainsKey(N) == false)
-					{
-						retval.kpts.Add(qpt);
-						retval.Nvalues.Add(N, index);
-						index++;
-					}
-					else if (retval.Nvalues.ContainsKey(N) == false)
-					{
-						int newIndex = retval.Nvalues[symN];
-						retval.kpts[newIndex].AddOrbitalSymmetry(orbitals);
-
-						retval.Nvalues.Add(N, newIndex);
-					}
-					else
-					{ }  // skip points which are already in there.  This should only happen for gamma?
+					double s, t;
+				
+					retval.GetPlaneST(qpt, out s, out t); 
+					planePoints.Add(qpt);
 				}
 			}
+			SortByDistanceFromGamma(planePoints);
 
-			retval.origin = points[0];
-			retval.sdir = diff_1;
-			retval.tdir = Vector3.CrossProduct(norm, diff_1);
+			for (int i = 0; i <planePoints.Count; i++)
+			{
+				var qpt = planePoints[i];
+				double s, t, news, newt;
+				retval.GetPlaneST(qpt, out s, out t);
+
+				if (CenterOnGamma(lattice, ref qpt, retval) == false)
+					continue;
+
+				retval.GetPlaneST(qpt, out news, out newt);
+
+				retval.allKpts.Add(qpt);
+			}
+
+
+			for (int i = 0; i < retval.allKpts.Count; i++)
+			{
+				var qpt = retval.AllKpts[i];
+
+				int N = retval.CalcN(lattice, qpt);
+				int symN = N;
+				bool foundSym = false;
+				List<int> orbitals = null;
+
+				Vector3 pt = qpt.Value;
+
+				foreach (var symmetry in syms)
+				{
+					Vector3 Tpt = symmetry.Value * pt;
+
+					Vector3 red = lattice.ReducedCoords(Tpt, true);
+
+					int newi = (int)Math.Round(xmax * red.X);
+					int newj = (int)Math.Round(ymax * red.Y);
+					int newk = (int)Math.Round(zmax * red.Z);
+
+					if (newi % 2 != 0 || newj % 2 != 0 || newk % 2 != 0)
+						continue;
+
+					symN = retval.CalcN(newi, newj, newk);
+
+					if (retval.Nvalues.ContainsKey(symN))
+					{
+						foundSym = true;
+
+						if (symmetry.OrbitalTransform.Count > 0)
+						{
+							orbitals = symmetry.OrbitalTransform;
+						}
+					}
+
+					if (foundSym)
+						break;
+				}
+
+				if (foundSym == false && retval.Nvalues.ContainsKey(N) == false)
+				{
+					retval.kpts.Add(qpt);
+					retval.Nvalues.Add(N, index);
+					index++;
+				}
+				else if (retval.Nvalues.ContainsKey(N) == false)
+				{
+					int newIndex = retval.Nvalues[symN];
+					retval.kpts[newIndex].AddOrbitalSymmetry(orbitals);
+
+					retval.Nvalues.Add(N, newIndex);
+				}
+				else
+				{ }  // skip points which are already in there.  This should only happen for zone edge points
+			}
 			
-			NormalizeST(lattice, retval);
-
 			// now sort k-points.
 			Comparison<KPoint> sorter = (x, y) =>
 				{
@@ -202,19 +287,33 @@ namespace TightBinding
 			Output.WriteLine("Plane horizontal direction: {0}", sd);
 			Output.WriteLine("Plane vertical direction: {0}", td);
 
+			Output.WriteLine("Plane horizontal vector: {0}", retval.sdir);
+			Output.WriteLine("Plane vertical vector: {0}", retval.tdir);
+
 			return retval;
 		}
 
+		private static void SortByDistanceFromGamma(List<KPoint> planePoints)
+		{
+			planePoints.Sort(
+				(x, y) =>
+				{
+					return x.Value.Magnitude.CompareTo(y.Value.Magnitude);
+				});
+		}
+
+		
 		private static void NormalizeST(Lattice lattice, KptList retval)
 		{
 			retval.sdir /= retval.sdir.Magnitude;
 			retval.tdir /= retval.tdir.Magnitude;
 
-			retval.sdir /= GammaInDirection(lattice, retval.sdir).Magnitude;
-			retval.tdir /= GammaInDirection(lattice, retval.tdir).Magnitude;
+			retval.sdir = GammaInDirection(lattice, retval.sdir);
+			retval.tdir = GammaInDirection(lattice, retval.tdir);
 
-			retval.sdir *= 2;
-			retval.tdir *= 2;
+			// double them to make s and t 1 at the zone boundary, instead of 0.5.
+			//retval.sdir *= 2;
+			//retval.tdir *= 2;
 		}
 
 		private static Vector3 GammaInDirection(Lattice lattice, Vector3 direction)
@@ -239,10 +338,17 @@ namespace TightBinding
 
 			return smallest;
 		}
-		public void GetPlaneST(KPoint kpt, out double s, out double t)
+		public bool GetPlaneST(KPoint kpt, out double s, out double t)
 		{
 			s = (kpt.Value - origin).DotProduct(sdir);
 			t = (kpt.Value - origin).DotProduct(tdir);
+
+			double norm = (kpt.Value - origin).DotProduct(sdir.CrossProduct(tdir));
+
+			if (Math.Abs(norm) > 1e-7)
+				return false;
+			else
+				return true;
 		}
 		public static KptList GenerateMesh(Lattice lattice, int[] kgrid, int[] shift, SymmetryList syms, bool includeEnds, bool centerGamma)
 		{
@@ -252,9 +358,7 @@ namespace TightBinding
 			int xmax = kgrid[0] * 2;
 
 			if (shift == null)
-			{
 				shift = new int[3];
-			}
 
 			retval.mesh = (int[])kgrid.Clone();
 			retval.shift = (int[])shift.Clone();
@@ -298,13 +402,15 @@ namespace TightBinding
 
 						if (centerGamma)
 						{
-							if (kgrid[0] > 1) dx -= 0.5;
-							if (kgrid[1] > 1) dy -= 0.5;
-							if (kgrid[2] > 1) dz -= 0.5;
+							if (kgrid[0] > 1) dx = 0.5 - dx;
+							if (kgrid[1] > 1) dy = 0.5 - dy;
+							if (kgrid[2] > 1) dz = 0.5 - dz;
 						}
+
+						Vector3 pt = CalcK(lattice, dx, dy, dz);
+
 						foreach (var symmetry in compatSyms)
 						{
-							Vector3 pt = CalcK(lattice, dx, dy, dz);
 							Vector3 Tpt = symmetry.Value * pt;
 
 							//if (Tpt == pt)
@@ -339,7 +445,11 @@ namespace TightBinding
 
 						retval.allKpts.Add(new KPoint(kptValue));
 
-						if (foundSym == false)
+						if (retval.Nvalues.ContainsKey(N))
+						{
+							
+						}
+						else if (foundSym == false)
 						{
 							retval.kpts.Add(new KPoint(kptValue));
 							retval.Nvalues.Add(N, index);
@@ -377,6 +487,8 @@ namespace TightBinding
 
 			return retval;
 		}
+
+		
 
 
 		public int GetKindex(Lattice lattice, Vector3 kpt, out List<int> orbitalMap, SymmetryList symmetries)

@@ -87,48 +87,81 @@ namespace TightBinding
 		private double FindMu(KptList ks, Matrix[] eigenvals, double Ntarget, double beta)
 		{
 			double N, Nold;
-			double mu_in, muold_in;
-			double mu_out, muold_out;
+			double mu_lower, mu_upper;
+			double N_lower, N_upper;
+			double mu;
 
-			mu_in = 0;
-			muold_in = 0;
-
-			N = FindNelec(ks, eigenvals, mu_in, beta);
+			mu_lower = mu_upper = mu = 0;
+			
+			// first bracket
+			N = FindNelec(ks, eigenvals, mu, beta);
 
 			if (N > Ntarget)
-				mu_in = mu_in - 1;
-			else if (N < Ntarget)
-				mu_in = mu_in + 1;
-			else
-				return mu_in;
-
-			muold_out = mu_in;
-			Nold = N;
-
-			// do anderson mixing.
-			while (Math.Abs(N - Ntarget) > 1e-9)
 			{
-				N = FindNelec(ks, eigenvals, mu_in, beta);
+				mu_upper = mu;
 
-				double slope = (N - Nold) / (mu_in - muold_in);
-				mu_out = (Ntarget - N) / slope + mu_in;
+				while (mu_lower >= mu_upper)
+				{
+					mu -= 1;
+					N = FindNelec(ks, eigenvals, mu, beta);
 
-				double Rn = mu_out - mu_in;
-				double Rn1 = muold_out - muold_in;
+					if (N > Ntarget)
+						mu_upper = mu;
+					else
+						mu_lower = mu;
+				}
+			}
+			else
+			{
+				mu_lower = mu;
 
-				double gamma = -Rn1 / (Rn - Rn1);
+				while (mu_lower >= mu_upper)
+				{
+					mu += 1;
+					N = FindNelec(ks, eigenvals, mu, beta);
 
-				double avg_in = gamma * mu_in + (1 - gamma) * muold_in;
-				double avg_out = gamma * mu_out + (1 - gamma) * muold_out;
-
-				muold_in = mu_in;
-				muold_out = mu_out;
-				Nold = N;
-
-				mu_in = 0.3 * avg_in + 0.7 * avg_out;
+					if (N > Ntarget)
+						mu_upper = mu;
+					else
+						mu_lower = mu;
+				}
 			}
 
-			return mu_in;
+			mu = 0.5 * (mu_upper + mu_lower);
+
+			N_lower = FindNelec(ks, eigenvals, mu_lower, beta);
+			N_upper = FindNelec(ks, eigenvals, mu_upper, beta);
+
+			// do linear extrapolation
+			int iter = 0;
+			while (Math.Abs(N - Ntarget) > 1e-11 && iter < 300)
+			{
+				double slope = (N_upper - N_lower) / (mu_upper - mu_lower);
+				mu = (Ntarget - N_lower) / slope + mu_lower;
+
+				N = FindNelec(ks, eigenvals, mu, beta);
+
+				if (N < Ntarget)
+				{
+					mu_lower = mu;
+					N_lower = N;
+				}
+				else if (N > Ntarget)
+				{
+					mu_upper = mu;
+					N_upper = N;
+				}
+
+				iter++;
+			}
+
+			if (iter >= 300)
+			{
+				Output.WriteLine("Failed to find chemical potential.  Check the number of electrons.");
+				throw new Exception("Failed to find chemical potential.");
+			}
+
+			return mu;
 		}
 
 		private double FindNelec(KptList ks, Matrix[] eigenvals, double mu, double beta)
