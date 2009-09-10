@@ -365,6 +365,12 @@ namespace ERY.EMath
 		/// <param name="eigenvecs"></param>
 		public void EigenValsVecs(out Matrix eigenvals, out Matrix eigenvecs)
 		{
+			if (Columns == 1 && Rows == 1)
+			{
+				eigenvals = this.Clone();
+				eigenvecs = Matrix.Identity(1);
+				return;
+			}
 			if (AllElementsReal)
 			{
 				UseGeneralMatrix(out eigenvals, out eigenvecs);
