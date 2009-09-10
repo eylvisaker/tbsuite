@@ -3,15 +3,15 @@
 # Enter direct lattice vectors in cartesian coordinates.
 # This section must be first.
 [Lattice]
- 1 0 0
- 0 1 0
- 0 0 1
+     -1   1   1
+      1  -1   1
+      1   1  -1
  
 # Number of orbitals / sites and their locations 
 # Positions are in cartesian coordinates
 [Sites]
-(0 0 0)   s
-
+ 0 0 0
+ 
 # Symmetries in the crystal.
 # The numbers following the symmetry name indicate how the orbitals transform 
 # under the symmetry.  If you specify the symmetry operation, you must specify
@@ -22,64 +22,65 @@ E
 #C2(y)
 #C2(x)
 #C2(z)
-#C2(xy)   
-#C3/4(z)  
-#C1/4(z)  
-#C2(x-y)  
+#C2(xy) 
+#C3/4(z)
+#C1/4(z)
+#C2(x-y)
 #I
 #s(y)
 #s(x)
 #s(z)
-#s(xy)    
-#S1/4(z)  
-#S3/4(z)  
-#s(x-y)   
+#s(xy)  
+#S1/4(z)
+#S3/4(z)
+#s(x-y) 
 
 # Each hopping is followed by a list of Bravais lattice vectors.
 # Those vectors must be composed of integer values.
 [Hoppings]
 :1 1:
-  0  0  0       0
-  1  0  0      -1
- -1  0  0      -1
-  0  1  0      -1
-  0 -1  0      -1
-# 0  0  1      -1
-# 0  0 -1      -1
+   -1 -1 -1  2
+   -1 -1  1  2
+   -1  1 -1  2
+   -1  1  1  2
+    1 -1 -1  2
+    1 -1  1  2
+    1  1 -1  2
+    1  1  1  2
+
   
 # Optional section
 # The path through K-space for integration is given as a series of points
-# in Cartesian coordinates.  These values will be multiplied by 2*pi
+# in Cartesian coordinates.  These values will be multiplied by pi
 # internally.
 [KPath]
-G        0       0       0      
-X        1       0       0
-M        1       1       0
-Y        0       1       0
-G        0       0       0
+G        0              0             0      
+X        0.5            0.5           0
+P        0.5            0.5           0.5
+Z        0              0             1
+G        0              0             0
 
-# Chemical potential for both tightbinding and RPA calculation.
-[Mu]
-0
+# Number of electrons for RPA and tight binding calculation.
+[Nelec]
+1
 
 # Optional section
 # Gives a k-mesh for calculating the density of states and doing RPA.
 # The second line gives the finite temperature smearing used in the DOS calculation.
 # It is optional.
 [KMesh]
-6 6 1 0 0 0
+ 2  2  2  0 0 0
 0.1
 
 # Gives data for a plane of q-points in the BZ to plot.  There must be
 # four sets of three numbers here.
 # The first three numbers are the q-point mesh from which points are taken.
-# The next three groups of three numbers are q-points which are constrained to be
-# on the plane.
+# The next three groups of three numbers are q-points which define the plane.
 [QPlane]
-6 6 1 
-0   0   0  
+ 2  2  2 
+0   0   0
 1   0   0
-0   1   0
+0   0   1
 
 # Frequency mesh for RPA calculation
 # You may enter just a single number to calculate a single frequency,
@@ -98,5 +99,5 @@ G        0       0       0
 # Hubbard model parameters for RPA calculation
 # U, U prime, J, J prime. (don't enter commas).
 [Hubbard]
-4 4 1 1 
+1 1 0.5 0.5
 

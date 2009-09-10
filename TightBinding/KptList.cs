@@ -13,6 +13,7 @@ namespace TightBinding
 		List<Tetrahedron> tets = new List<Tetrahedron>();
 		int[] mesh;
 		int[] shift;
+		bool gammaCentered;
 		Dictionary<int, int> Nvalues = new Dictionary<int, int>();
 
 		Vector3 sdir, tdir, origin;
@@ -161,6 +162,7 @@ namespace TightBinding
 
 			retval.mesh = (int[])qgrid.Clone();
 			retval.shift = new int[3];
+			retval.gammaCentered = true;
 
 			retval.origin = points[0];
 			retval.sdir = diff_1;
@@ -206,7 +208,21 @@ namespace TightBinding
 				retval.allKpts.Add(qpt);
 			}
 
+			// now sort q-points to lay them in the s,t plane.
+			Comparison<KPoint> sorter = (x, y) =>
+			{
+				double s_x, s_y, t_x, t_y;
 
+				retval.GetPlaneST(x, out s_x, out t_x);
+				retval.GetPlaneST(y, out s_y, out t_y);
+
+				if (Math.Abs(t_x - t_y) > 1e-6)
+					return t_x.CompareTo(t_y);
+				else
+					return s_x.CompareTo(s_y);
+			};
+
+			retval.allKpts.Sort(sorter);
 			for (int i = 0; i < retval.allKpts.Count; i++)
 			{
 				var qpt = retval.AllKpts[i];
@@ -222,11 +238,8 @@ namespace TightBinding
 				{
 					Vector3 Tpt = symmetry.Value * pt;
 
-					Vector3 red = lattice.ReducedCoords(Tpt, true);
-
-					int newi = (int)Math.Round(xmax * red.X);
-					int newj = (int)Math.Round(ymax * red.Y);
-					int newk = (int)Math.Round(zmax * red.Z);
+					int newi, newj, newk;
+					retval.ReduceKpt(lattice, Tpt, out newi, out newj, out newk);
 
 					if (newi % 2 != 0 || newj % 2 != 0 || newk % 2 != 0)
 						continue;
@@ -264,21 +277,6 @@ namespace TightBinding
 				{ }  // skip points which are already in there.  This should only happen for zone edge points
 			}
 			
-			// now sort k-points.
-			Comparison<KPoint> sorter = (x, y) =>
-				{
-					double s_x, s_y, t_x, t_y;
-
-					retval.GetPlaneST(x, out s_x, out t_x);
-					retval.GetPlaneST(y, out s_y, out t_y);
-
-					if (Math.Abs(t_x - t_y) > 1e-6)
-						return t_x.CompareTo(t_y);
-					else
-						return s_x.CompareTo(s_y);
-				};
-
-			retval.allKpts.Sort(sorter);
 			retval.kpts.Sort(sorter);
 
 			Vector3 sd = retval.sdir / SmallestNonzero(retval.sdir);
@@ -308,8 +306,8 @@ namespace TightBinding
 			retval.sdir /= retval.sdir.Magnitude;
 			retval.tdir /= retval.tdir.Magnitude;
 
-			retval.sdir = GammaInDirection(lattice, retval.sdir);
-			retval.tdir = GammaInDirection(lattice, retval.tdir);
+			retval.sdir /= GammaInDirection(lattice, retval.sdir).Magnitude;
+			retval.tdir /= GammaInDirection(lattice, retval.tdir).Magnitude;
 
 			// double them to make s and t 1 at the zone boundary, instead of 0.5.
 			//retval.sdir *= 2;
@@ -362,6 +360,7 @@ namespace TightBinding
 
 			retval.mesh = (int[])kgrid.Clone();
 			retval.shift = (int[])shift.Clone();
+			retval.gammaCentered = centerGamma;
 
 			int index = 0;
 			Vector3 gridVector = new Vector3(kgrid[0], kgrid[1], kgrid[2]);
@@ -402,13 +401,22 @@ namespace TightBinding
 
 						if (centerGamma)
 						{
-							if (kgrid[0] > 1) dx = 0.5 - dx;
-							if (kgrid[1] > 1) dy = 0.5 - dy;
-							if (kgrid[2] > 1) dz = 0.5 - dz;
+							if (kgrid[0] > 1) dx -= 0.5;
+							if (kgrid[1] > 1) dy -= 0.5;
+							if (kgrid[2] > 1) dz -= 0.5;
 						}
 
 						Vector3 pt = CalcK(lattice, dx, dy, dz);
+						
+#if DEBUG
+						int testi, testj, testk;
+						retval.ReduceKpt(lattice, new Vector3(pt), out testi, out testj, out testk);
 
+						System.Diagnostics.Debug.Assert(i == testi);
+						System.Diagnostics.Debug.Assert(j == testj);
+						System.Diagnostics.Debug.Assert(k == testk);
+
+#endif
 						foreach (var symmetry in compatSyms)
 						{
 							Vector3 Tpt = symmetry.Value * pt;
@@ -516,7 +524,7 @@ namespace TightBinding
 
 		private void ReduceKpt(Lattice lattice, Vector3 kpt, out int newi, out int newj, out int newk)
 		{
-			Vector3 red = lattice.ReducedCoords(kpt, true);
+			Vector3 red = lattice.ReducedCoords(kpt, !gammaCentered);
 
 			int zmax = mesh[2] * 2;
 			int ymax = mesh[1] * 2;
@@ -525,6 +533,13 @@ namespace TightBinding
 			newi = (int)Math.Round(xmax * red.X - shift[0]);
 			newj = (int)Math.Round(ymax * red.Y - shift[1]);
 			newk = (int)Math.Round(zmax * red.Z - shift[2]);
+			
+			if (gammaCentered)
+			{
+				if (mesh[0] > 1) newi += xmax / 2;
+				if (mesh[1] > 1) newj += ymax / 2;
+				if (mesh[2] > 1) newk += zmax / 2;
+			}
 		}
 		private int CalcN(int i, int j, int k)
 		{
@@ -542,6 +557,7 @@ namespace TightBinding
 			int i, j, k;
 
 			ReduceKpt(lattice, kpt, out i, out j, out k);
+
 			return CalcN(i, j, k);
 		}
 

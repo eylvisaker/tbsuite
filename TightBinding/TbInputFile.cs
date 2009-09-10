@@ -289,7 +289,7 @@ namespace TightBinding
 					name = vals[0];
 				}
 
-				Vector3 vecval = Vector3.Parse(text) / 2;
+				Vector3 vecval = Vector3.Parse(text);
 				Vector3 kpt = vecval;
 				double length = (kpt - lastKpt).Magnitude;
 
