@@ -29,5 +29,11 @@ namespace TightBinding
 			file.WriteLine(format, args);
 			Console.WriteLine(format, args);
 		}
+
+		public static void Write(string format, params object[] args)
+		{
+			file.Write(format, args);
+			Console.Write(format, args);
+		}
 	}
 }

@@ -197,13 +197,13 @@ namespace TightBinding
 			for (int i = 0; i <planePoints.Count; i++)
 			{
 				var qpt = planePoints[i];
-				double s, t, news, newt;
+				double s, t;
 				retval.GetPlaneST(qpt, out s, out t);
 
-				if (CenterOnGamma(lattice, ref qpt, retval) == false)
-					continue;
+				//if (CenterOnGamma(lattice, ref qpt, retval) == false)
+				//    continue;
 
-				retval.GetPlaneST(qpt, out news, out newt);
+				//retval.GetPlaneST(qpt, out news, out newt);
 
 				retval.allKpts.Add(qpt);
 			}
@@ -310,8 +310,8 @@ namespace TightBinding
 			retval.tdir /= GammaInDirection(lattice, retval.tdir).Magnitude;
 
 			// double them to make s and t 1 at the zone boundary, instead of 0.5.
-			//retval.sdir *= 2;
-			//retval.tdir *= 2;
+			retval.sdir *= 2;
+			retval.tdir *= 2;
 		}
 
 		private static Vector3 GammaInDirection(Lattice lattice, Vector3 direction)
@@ -386,8 +386,9 @@ namespace TightBinding
 					{
 						if (includeEnds == false)
 						{
-							if (i == xmax || j == ymax || k == zmax)
-								break;
+							if (k == zmax) break;
+							if (i == xmax) break;
+							if (j == ymax) break;
 						}
 
 						int N = retval.CalcN(i, j, k);
@@ -421,8 +422,8 @@ namespace TightBinding
 						{
 							Vector3 Tpt = symmetry.Value * pt;
 
-							//if (Tpt == pt)
-							//    continue;
+							if (Tpt == pt)
+								continue;
 
 							Vector3 red = lattice.ReducedCoords(Tpt, true);
 
@@ -482,6 +483,108 @@ namespace TightBinding
 				retval.allKpts[i].Weight /= count;
 			}
 
+			if (includeEnds)
+			{
+				retval.allKpts.Sort((x, y) => x.Value.Z.CompareTo(y.Value.Z));
+
+				List<int> removeThese = new List<int>();
+				List<int> equivKpt = new List<int>();
+
+				// read this value first, because the size of the array will change.
+				int kptCount = retval.AllKpts.Count;
+				for (int kindex = 0; kindex < kptCount; kindex++)
+				{
+					if (removeThese.Contains(kindex))
+						continue;
+
+					Vector3 kpt = retval.allKpts[kindex].Value;
+					double dist = kpt.Magnitude;
+
+					equivKpt.Clear();
+
+					for (int k = -1; k <= 1; k++)
+					{
+						for (int j = -1; j <= 1; j++)
+						{
+							for (int i = -1; i <= 1; i++)
+							{
+								if (i == 0 && j == 0 && k == 0)
+									continue;
+
+								Vector3 pt = kpt +
+									i * lattice.G1 +
+									j * lattice.G2 +
+									k * lattice.G3;
+
+								double newDist = pt.Magnitude;
+
+								if (newDist < dist - 1e-6)
+								{
+									foreach (var value in equivKpt)
+									{
+										if (removeThese.Contains(value) == false)
+											removeThese.Add(value);
+									}
+
+									equivKpt.Clear();
+
+									int search = retval.AllKpts.FindIndex(x => (x.Value - pt).Magnitude < 1e-6);
+
+									if (search != -1)
+									{
+										if (removeThese.Contains(kindex) == false)
+											removeThese.Add(kindex);
+
+										// break out of the loop
+										k = 1; j = 1; i = 2;
+									}
+									else
+									{
+										retval.allKpts[kindex].Value = pt;
+										kpt = pt;
+										dist = newDist;
+
+										// reset variables since we updated this kpoint value.
+										k = -1;
+										j = -1;
+										i = -2;
+									}
+								}
+								else if (Math.Abs(dist - newDist) < 1e-6)
+								{
+									int search = retval.AllKpts.FindIndex(x => (x.Value - pt).Magnitude < 1e-6);
+
+									if (search != -1)
+									{
+										if (removeThese.Contains(search))
+										{
+											k = 1; j = 1; i = 2;
+											removeThese.Add(kindex);
+											break;
+										}
+
+										equivKpt.Add(search);
+										continue;
+									}
+
+									equivKpt.Add(retval.allKpts.Count);
+									retval.allKpts.Add(new KPoint(pt));
+								}
+							}
+						}
+					}
+				}
+
+				// sort in reverse order
+				removeThese.Sort((x, y) => -x.CompareTo(y));
+
+				for (int i = 0; i < removeThese.Count; i++)
+				{
+					retval.allKpts.RemoveAt(removeThese[i]);
+				}
+
+				retval.allKpts.Sort((x, y) => x.Value.Z.CompareTo(y.Value.Z));
+			}
 #if DEBUG
 			if (!includeEnds)
 			{

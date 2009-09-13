@@ -113,9 +113,6 @@
     <None Include="tb.in">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="RbO2.in">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Include="TiNCl.in" />
     <None Include="testHubbard.in">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

@@ -86,7 +86,7 @@ namespace TightBinding
 
 		private double FindMu(KptList ks, Matrix[] eigenvals, double Ntarget, double beta)
 		{
-			double N, Nold;
+			double N;
 			double mu_lower, mu_upper;
 			double N_lower, N_upper;
 			double mu;
@@ -137,7 +137,17 @@ namespace TightBinding
 			while (Math.Abs(N - Ntarget) > 1e-11 && iter < 300)
 			{
 				double slope = (N_upper - N_lower) / (mu_upper - mu_lower);
-				mu = (Ntarget - N_lower) / slope + mu_lower;
+
+				if ((iter / 3) % 5 < 2)
+				{
+					// bisection in case system is gapped at target number
+					mu = 0.5 * (mu_upper + mu_lower);
+				}
+				else
+				{
+					// linear extrapoliation
+					mu = (Ntarget - N_lower) / slope + mu_lower;
+				}
 
 				N = FindNelec(ks, eigenvals, mu, beta);
 

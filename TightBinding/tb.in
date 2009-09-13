@@ -3,14 +3,15 @@
 # Enter direct lattice vectors in cartesian coordinates.
 # This section must be first.
 [Lattice]
-     -1   1   1
-      1  -1   1
-      1   1  -1
+     -3.866750000000000      3.866750000000000      6.638150000000000
+      3.866750000000000     -3.866750000000000      6.638150000000000
+      3.866750000000000      3.866750000000000     -6.638150000000000
  
 # Number of orbitals / sites and their locations 
 # Positions are in cartesian coordinates
 [Sites]
- 0 0 0
+ 0 0 0 pi_x
+ 0 0 0 pi_y
  
 # Symmetries in the crystal.
 # The numbers following the symmetry name indicate how the orbitals transform 
@@ -19,67 +20,96 @@
 # orbitals transform into themselves.
 [Symmetry]
 E
-#C2(y)
-#C2(x)
-#C2(z)
-#C2(xy) 
-#C3/4(z)
-#C1/4(z)
-#C2(x-y)
-#I
-#s(y)
-#s(x)
-#s(z)
-#s(xy)  
-#S1/4(z)
-#S3/4(z)
-#s(x-y) 
+C2(y)
+C2(x)
+C2(z)
+#C2(xy)   
+#C3/4(z)  2 1
+#C1/4(z)  2 1
+C2(x-y)  2 1
+I
+s(y)
+s(x)
+s(z)
+#s(xy)    2 1
+#S1/4(z)  2 1
+#S3/4(z)  2 1
+#s(x-y)   2 1
 
 # Each hopping is followed by a list of Bravais lattice vectors.
 # Those vectors must be composed of integer values.
 [Hoppings]
 :1 1:
-   -1 -1 -1  2
-   -1 -1  1  2
-   -1  1 -1  2
-   -1  1  1  2
-    1 -1 -1  2
-    1 -1  1  2
-    1  1 -1  2
-    1  1  1  2
+T=      0.00000      0.00000      0.00000  hop=            -1.059382636749482
+T=      0.00000      7.73350      0.00000  hop=             0.015756932724184
+T=     -7.73350      0.00000      0.00000  hop=             0.048090187495781
+T=      7.73350      0.00000      0.00000  hop=             0.048090187495781
+T=      0.00000     -7.73350      0.00000  hop=             0.015756932724184
+T=      3.86675      3.86675     -6.63815  hop=            -0.031342549982344
+T=      3.86675     -3.86675      6.63815  hop=            -0.031342549982344
+T=     -3.86675      3.86675     -6.63815  hop=            -0.031342549982344
+T=     -3.86675     -3.86675      6.63815  hop=            -0.031342549982344
+T=     -3.86675      3.86675      6.63815  hop=            -0.031342549982344
+T=     -3.86675     -3.86675     -6.63815  hop=            -0.031342549982344
+T=      3.86675      3.86675      6.63815  hop=            -0.031342549982344
+T=      3.86675     -3.86675     -6.63815  hop=            -0.031342549982344
+
+:1 2:
+T=      3.86675      3.86675     -6.63815  hop=            -0.054505745319268
+T=      3.86675     -3.86675      6.63815  hop=             0.054505745319268
+T=     -3.86675      3.86675     -6.63815  hop=             0.054505745319268
+T=     -3.86675     -3.86675      6.63815  hop=            -0.054505745319268
+T=     -3.86675      3.86675      6.63815  hop=             0.054505745319268
+T=     -3.86675     -3.86675     -6.63815  hop=            -0.054505745319268
+T=      3.86675      3.86675      6.63815  hop=            -0.054505745319268
+T=      3.86675     -3.86675     -6.63815  hop=             0.054505745319268
+
+:2 2:
+T=      0.00000      0.00000      0.00000  hop=            -1.059382636749482
+T=      0.00000      7.73350      0.00000  hop=             0.048090187495781
+T=     -7.73350      0.00000      0.00000  hop=             0.015756932724184
+T=      7.73350      0.00000      0.00000  hop=             0.015756932724184
+T=      0.00000     -7.73350      0.00000  hop=             0.048090187495781
+T=      3.86675      3.86675     -6.63815  hop=            -0.031342549982344
+T=      3.86675     -3.86675      6.63815  hop=            -0.031342549982344
+T=     -3.86675      3.86675     -6.63815  hop=            -0.031342549982344
+T=     -3.86675     -3.86675      6.63815  hop=            -0.031342549982344
+T=     -3.86675      3.86675      6.63815  hop=            -0.031342549982344
+T=     -3.86675     -3.86675     -6.63815  hop=            -0.031342549982344
+T=      3.86675      3.86675      6.63815  hop=            -0.031342549982344
+T=      3.86675     -3.86675     -6.63815  hop=            -0.031342549982344
 
   
 # Optional section
 # The path through K-space for integration is given as a series of points
-# in Cartesian coordinates.  These values will be multiplied by pi
+# in Cartesian coordinates.  These values will be multiplied by 2*pi
 # internally.
 [KPath]
 G        0              0             0      
-X        0.5            0.5           0
-P        0.5            0.5           0.5
-Z        0              0             1
+X        0.064653779    0.064653779   0
+P        0.064653779    0.064653779   0.037661095335
 G        0              0             0
 
 # Number of electrons for RPA and tight binding calculation.
 [Nelec]
-1
+3
 
 # Optional section
 # Gives a k-mesh for calculating the density of states and doing RPA.
 # The second line gives the finite temperature smearing used in the DOS calculation.
 # It is optional.
 [KMesh]
- 2  2  2  0 0 0
-0.1
+48 48 48  1 1 1
+0.002
 
 # Gives data for a plane of q-points in the BZ to plot.  There must be
 # four sets of three numbers here.
 # The first three numbers are the q-point mesh from which points are taken.
 # The next three groups of three numbers are q-points which define the plane.
 [QPlane]
- 2  2  2 
-0   0   0
-1   0   0
+12 12 12
+0   0   0  
+1   1   0
 0   0   1
 
 # Frequency mesh for RPA calculation
@@ -94,7 +124,7 @@ G        0              0             0
 # or something of the form:
 #    lower_bound  upper_bound  num_points
 [Temperature]
-0.1
+0.002
 
 # Hubbard model parameters for RPA calculation
 # U, U prime, J, J prime. (don't enter commas).

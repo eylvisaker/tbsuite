@@ -106,7 +106,9 @@ namespace TightBinding
 			Analyze("C", C);
 
 			Output.WriteLine("Calculating X0...");
-
+			
+			System.Diagnostics.Stopwatch watch = new System.Diagnostics.Stopwatch();
+			watch.Start();
 			for (int tempIndex = 0; tempIndex < TemperatureMesh.Length; tempIndex++)
 			{
 				SetTemperature(TemperatureMesh[tempIndex], input.ChemicalPotential);
@@ -118,7 +120,7 @@ namespace TightBinding
 					double s, t;
 					qpts.GetPlaneST(qpts.Kpts[qIndex], out s, out t);
 
-					Output.WriteLine("q = {0};     s = {1:0.0000}   t = {2:0.0000}", 
+					Output.Write("q = {0};   s = {1:0.00}  t = {2:0.00}  ...", 
 						QMesh[qIndex].Value.ToString("0.0000"), s, t);
 
 					//CreateKQbands(tb, input, QMesh[qIndex]);
@@ -130,6 +132,9 @@ namespace TightBinding
 						Matrix s_denom = (ident - S * x0[qIndex, freqIndex, tempIndex]);
 						Matrix c_denom = (ident + C * x0[qIndex, freqIndex, tempIndex]);
 					}
+
+					Output.WriteLine("{0}:{1}", (int)watch.Elapsed.TotalMinutes, watch.Elapsed.Seconds);
+
 				}
 			}
 			Output.WriteLine();

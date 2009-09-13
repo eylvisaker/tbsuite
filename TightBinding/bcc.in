@@ -69,7 +69,7 @@ G        0              0             0
 # The second line gives the finite temperature smearing used in the DOS calculation.
 # It is optional.
 [KMesh]
- 2  2  2  0 0 0
+ 10 10 10  1 1 1
 0.1
 
 # Gives data for a plane of q-points in the BZ to plot.  There must be
@@ -77,9 +77,9 @@ G        0              0             0
 # The first three numbers are the q-point mesh from which points are taken.
 # The next three groups of three numbers are q-points which define the plane.
 [QPlane]
- 2  2  2 
+ 10 10 10
 0   0   0
-1   0   0
+1   1   0
 0   0   1
 
 # Frequency mesh for RPA calculation
