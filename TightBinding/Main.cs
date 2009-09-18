@@ -8,28 +8,19 @@ namespace TightBinding
 	{
 		public static int Main(string[] args)
 		{
-			if (args.Length < 2)
-			{
-				Usage();
-				return 1;
-			}
-
 			System.Diagnostics.Stopwatch watch = new System.Diagnostics.Stopwatch();
 			watch.Start();
 
 			TightBinding c = new TightBinding();
 
-			for (int i = 0; i < args.Length; i += 2)
+			string filename = "tb.in";
+			string outputfile = "tb.out";
+
+			using (StreamWriter output = new StreamWriter(outputfile))
 			{
-				string filename = args[i];
-				string outputfile = System.IO.Path.GetFileNameWithoutExtension(filename) + ".out";
+				Output.SetFile(output);
 
-				using (StreamWriter output = new StreamWriter(outputfile))
-				{
-					Output.SetFile(output);
-
-					c.RunTB(args[i], outputfile);
-				}
+				c.RunTB(filename, outputfile);
 			}
 
 			watch.Stop();

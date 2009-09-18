@@ -139,6 +139,7 @@ namespace TightBinding
 			}
 			Output.WriteLine();
 
+			double factor = AdjustInteraction(x0, ref S, ref C);
 
 			Matrix[, ,] xs = new Matrix[QMesh.Count, input.FrequencyMesh.Length, input.TemperatureMesh.Length];
 			Matrix[, ,] xc = new Matrix[QMesh.Count, input.FrequencyMesh.Length, input.TemperatureMesh.Length];
@@ -147,6 +148,7 @@ namespace TightBinding
 
 			Output.WriteLine("Calculating dressed susceptibilities.");
 
+			
 			for (int tempIndex = 0; tempIndex < input.TemperatureMesh.Length; tempIndex++)
 			{
 				Output.WriteLine("Temperature: {0}", input.TemperatureMesh[tempIndex]);
@@ -176,6 +178,40 @@ namespace TightBinding
 			SaveMatrices(input, QMesh, xs, "chi_s");
 			SaveMatrices(input, QMesh, xc, "chi_c");
 
+		}
+
+		double AdjustInteraction(Matrix[, ,] x0, ref Matrix S, ref Matrix C)
+		{
+			double largest = 0;
+
+			foreach (Matrix x in x0)
+			{
+				Matrix B = S * x;
+				Matrix A = B * B.HermitianConjugate();
+
+				Matrix eigenvals, eigenvecs;
+
+				A.EigenValsVecs(out eigenvals, out eigenvecs);
+				double lv = eigenvals[eigenvals.Rows - 1, 0].mx;
+
+				if (lv > largest)
+					largest = lv;
+			}
+
+			largest = Math.Sqrt(largest);
+			largest += 0.01;
+
+			S /= largest;
+			C /= largest;
+
+			Output.WriteLine("Adjusted interaction by dividing by {0}.", largest);
+
+			return 1 / largest;
+		}
+
+		private void AdjustUJ(Matrix[, ,] x0, Matrix S, Matrix C)
+		{
+			throw new NotImplementedException();
 		}
 
 		private static void StoreEigenValues(Matrix mat, List<Complex>[, ,] xs_evals, int tempIndex, int qIndex, int freqIndex)
@@ -450,17 +486,17 @@ namespace TightBinding
 								S[i, j] = input.HubU;
 								C[i, j] = input.HubU;
 							}
-							else if (l1 == l3 && l3 != l2 && l2 == l4)
+							else if (l1 == l4 && l4 != l2 && l2 == l3)
 							{
 								S[i, j] = input.HubUp;
 								C[i, j] = -input.HubUp + input.HubJ;
 							}
-							else if (l1 == l2 && l2 != l3 && l3 == l4)
+							else if (l1 == l2 && l2 != l4 && l4 == l3)
 							{
 								S[i, j] = input.HubJ;
 								C[i, j] = 2 * input.HubUp - input.HubJ;
 							}
-							else if (l1 == l4 && l4 != l2 && l2 == l3)
+							else if (l1 == l3 && l3 != l2 && l2 == l4)
 							{
 								S[i, j] = input.HubJp;
 								C[i, j] = input.HubJp;
@@ -571,8 +607,8 @@ namespace TightBinding
 										if (e2 > en_max) break;
 
 										Complex coeff =
-											wfq.Coeffs[newL1] * wfq.Coeffs[newL3].Conjugate() *
-											wfk.Coeffs[newL4] * wfk.Coeffs[newL2].Conjugate();
+											wfq.Coeffs[newL1] * wfq.Coeffs[newL4].Conjugate() *
+											wfk.Coeffs[newL3] * wfk.Coeffs[newL2].Conjugate();
 
 										if (coeff == 0) continue;
 										if (f1 < 1e-15 && f2 < 1e-15) continue;

@@ -63,6 +63,8 @@ namespace TightBinding
 				ThrowEx(@"There are no sites.");
 			if (hoppings.Count == 0)
 				ThrowEx(@"There are no hoppings.");
+			if (symmetries.Count == 0)
+				symmetries.Add(new Symmetry(Matrix.Identity(3)));
 
 			foreach (HoppingPair h in hoppings)
 			{
