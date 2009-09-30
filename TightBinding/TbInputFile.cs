@@ -87,10 +87,10 @@ namespace TightBinding
 			Output.WriteLine("Applied {0} symmetries to get {1} irreducible kpoints from {2}.",
 				symmetries.Count, kmesh.Kpts.Count, kmesh.AllKpts.Count);
 
-			for (int i = 0; i < kmesh.Kpts.Count; i++)
-			{
-				Output.WriteLine("    {0}", kmesh.Kpts[i].Value);
-			}
+			//for (int i = 0; i < kmesh.Kpts.Count; i++)
+			//{
+			//    Output.WriteLine("    {0}", kmesh.Kpts[i].Value);
+			//}
 			if (setQplane)
 			{
 				qplane = KptList.GeneratePlane(lattice, qplaneDef, symmetries, qgrid);
@@ -98,10 +98,10 @@ namespace TightBinding
 					qplane.Kpts.Count, qplane.AllKpts.Count);
 
 
-				for (int i = 0; i < qplane.Kpts.Count; i++)
-				{
-					Output.WriteLine("    {0}", qplane.Kpts[i].Value);
-				}
+				//for (int i = 0; i < qplane.Kpts.Count; i++)
+				//{
+				//    Output.WriteLine("    {0}", qplane.Kpts[i].Value);
+				//}
 			}
 		}
 

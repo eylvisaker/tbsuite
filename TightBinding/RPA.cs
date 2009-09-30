@@ -347,6 +347,9 @@ namespace TightBinding
 									filename = string.Format("{0}.{1}{2}{3}{4}.w{5}.T{6}.qm",
 											   name, l1, l2, l3, l4, wi, ti);
 
+									Complex maxvalue = new Complex(double.MinValue, double.MinValue);
+									Complex minvalue = new Complex(double.MaxValue, double.MaxValue);
+
 									using (StreamWriter w = new StreamWriter(filename))
 									{
 										double last_t;
@@ -381,6 +384,11 @@ namespace TightBinding
 											w.WriteLine(" {0}       {1}       {2}",
 												s, t, val.RealPart);
 
+											if (val.RealPart > maxvalue.RealPart) maxvalue.RealPart = val.RealPart;
+											if (val.ImagPart > maxvalue.ImagPart) maxvalue.ImagPart = val.ImagPart;
+											if (val.RealPart < minvalue.RealPart) minvalue.RealPart = val.RealPart;
+											if (val.ImagPart < minvalue.ImagPart) minvalue.ImagPart = val.ImagPart;
+
 											last_t = t;
 											last_s = s;
 										}
@@ -388,11 +396,20 @@ namespace TightBinding
 
 									string gpfilename = "gnuplot." + filename;
 
+									//minvalue.RealPart = Math.Floor(minvalue.RealPart);
+									//maxvalue.RealPart = Math.Ceiling(maxvalue.RealPart);
+
 									using (StreamWriter w = new StreamWriter(gpfilename))
 									{
 										w.WriteLine("#!/usr/bin/gnuplot");
-										w.WriteLine("set pm3d map flush begin ftriangles scansbackward interpolate 10,10");
-										w.WriteLine("splot '{0}'", filename);
+										w.WriteLine("set pm3d at bs flush center ftriangles scansbackward interpolate 1,1");
+										w.WriteLine("set palette rgbformula 28,9,32");
+										w.WriteLine("set border 895");
+										w.WriteLine("set key off");
+										w.WriteLine("set zrange [{0}:{1}]", minvalue.RealPart, maxvalue.RealPart);
+										// label z = minvalue - 0.5 * (maxvalue - minvalue)
+										//  set label 1 "G" at 0,0,1 font "Symbol" center front
+										w.WriteLine("splot '{0}' with pm3d", filename);
 									}
 
 								}
