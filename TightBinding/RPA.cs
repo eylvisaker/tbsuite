@@ -199,7 +199,7 @@ namespace TightBinding
 			}
 
 			largest = Math.Sqrt(largest);
-			largest += 0.01;
+			largest *= 1.001;
 
 			S /= largest;
 			C /= largest;
