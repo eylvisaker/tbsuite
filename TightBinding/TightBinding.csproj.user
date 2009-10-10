@@ -1,6 +1,8 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <StartArguments>../../tb.in</StartArguments>
+    <StartArguments>
+    </StartArguments>
+    <StartWorkingDirectory>C:\Users\Erik\Documents\devel\Physics\versioned\TightBinding\bin\Debug\tests\</StartWorkingDirectory>
   </PropertyGroup>
   <PropertyGroup>
     <PublishUrlHistory>

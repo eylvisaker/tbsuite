@@ -1,0 +1,75 @@
+[Lattice]
+ 1 0 0
+ 0 1 0
+ 0 0 1
+ 
+[Sites]
+(0 0 0)   s1
+(0 0 0)   s2
+
+[Symmetry]
+E
+C2(y)
+C2(x)
+C2(z)
+C2(xy)   
+C3/4(z)  
+C1/4(z)  
+C2(x-y)  
+I
+s(y)
+s(x)
+s(z)
+s(xy)    
+S1/4(z)  
+S3/4(z)  
+s(x-y) 
+
+[Hoppings]
+:1 1:
+  0  0  0      -3
+  1  0  0      -1
+ -1  0  0      -1
+  0  1  0      -1
+  0 -1  0      -1
+:1 2:
+  1  0  0       0
+ -1  0  0       0
+  0  1  0       0
+  0 -1  0       0
+:2 2:
+  0  0  0       3
+  1  0  0      -1
+ -1  0  0      -1
+  0  1  0      -1
+  0 -1  0      -1
+  
+[KPath]
+G        0       0       0      
+X       .5       0       0
+M       .5      .5       0
+G        0       0       0
+
+# Chemical potential for both tightbinding and RPA calculation.
+[Mu]
+0
+
+[KMesh]
+200 200 1 1 1 1
+0.02
+
+[QPlane]
+50 50 1 
+0   0   0  
+0.5 0   0
+0   0.5 0
+
+[Frequency]
+0.0
+
+[Temperature]
+0.05
+
+# U, U', J, J' (don't enter commas).
+[Hubbard]
+1.0 1.0 0.6 0.6 

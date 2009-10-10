@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using ERY.EMath;
 
 namespace TightBinding
@@ -95,10 +96,36 @@ namespace TightBinding
 			double[] FrequencyMesh = input.FrequencyMesh;
 			double[] TemperatureMesh = input.TemperatureMesh;
 
-			Matrix[, ,] x0 = new Matrix[QMesh.Count, FrequencyMesh.Length, TemperatureMesh.Length];
+			List<RpaParams> rpa = new List<RpaParams>();
+			int index = 0;
 
+			for (int tempIndex = 0; tempIndex < TemperatureMesh.Length; tempIndex++)
+			{
+				for (int qIndex = 0; qIndex < QMesh.Count; qIndex++)
+				{
+					for (int freqIndex = 0; freqIndex < FrequencyMesh.Length; freqIndex++)
+					{
+						rpa.Add(new RpaParams(
+							qIndex, 
+							TemperatureMesh[tempIndex],
+							FrequencyMesh[freqIndex], 
+							input.ChemicalPotential));
+					}
+				}
+			}
+
+			CalcX0(input, qpts, rpa);
+
+			SaveMatricesQPlane(input, QMesh, rpa, x => x.X0, "chi_0");
+			SaveMatricesQPlane(input, QMesh, rpa, x => x.Xs, "chi_s");
+			SaveMatricesQPlane(input, QMesh, rpa, x => x.Xc, "chi_c");
+
+		}
+
+		private void CalcX0(TbInputFile input, KptList qpts, List<RpaParams> rpa)
+		{
 			Matrix ident = Matrix.Identity(input.Sites.Count * input.Sites.Count);
-			
+
 			Matrix S, C;
 			CalcSpinChargeMatrices(input, out S, out C);
 
@@ -106,85 +133,53 @@ namespace TightBinding
 			Analyze("C", C);
 
 			Output.WriteLine("Calculating X0...");
-			
+
 			System.Diagnostics.Stopwatch watch = new System.Diagnostics.Stopwatch();
 			watch.Start();
-			for (int tempIndex = 0; tempIndex < TemperatureMesh.Length; tempIndex++)
+			for (int i = 0; i < rpa.Count; i++)
 			{
-				SetTemperature(TemperatureMesh[tempIndex], input.ChemicalPotential);
-				Output.WriteLine("Temperature: {1}    Beta: {0}",
-					1 / TemperatureMesh[tempIndex], TemperatureMesh[tempIndex]);
+				SetTemperature(rpa[i].Temperature, rpa[i].ChemicalPotential);
 
-				for (int qIndex = 0; qIndex < QMesh.Count; qIndex++)
+				rpa[i].X0 = CalcX0(input, rpa[i].Frequency, qpts.Kpts[rpa[i].Qindex]);
+
+				if (i == 0)
 				{
-					double s, t;
-					qpts.GetPlaneST(qpts.Kpts[qIndex], out s, out t);
+					long time = watch.ElapsedTicks * rpa.Count;
+					TimeSpan s = new TimeSpan(time);
 
-					Output.Write("q = {0};   s = {1:0.00}  t = {2:0.00}  ...", 
-						QMesh[qIndex].Value.ToString("0.0000"), s, t);
-
-					//CreateKQbands(tb, input, QMesh[qIndex]);
-
-					for (int freqIndex = 0; freqIndex < input.FrequencyMesh.Length; freqIndex++)
-					{
-						x0[qIndex, freqIndex, tempIndex] = CalcX0(input, input.FrequencyMesh[freqIndex], QMesh[qIndex].Value);
-
-						Matrix s_denom = (ident - S * x0[qIndex, freqIndex, tempIndex]);
-						Matrix c_denom = (ident + C * x0[qIndex, freqIndex, tempIndex]);
-					}
-
-					Output.WriteLine("{0}:{1}", (int)watch.Elapsed.TotalMinutes, watch.Elapsed.Seconds);
-
+					Output.WriteLine("Estimated total time {0:+hh.mm.ss}", s);
 				}
+				Complex val = new Complex();
+				for (int j = 0; j < rpa[i].X0.Rows; j++)
+				{
+					val += rpa[i].X0[j, j];
+				}
+
+				Output.Write("q = {0}, T = {1:0.000}, mu = {2:0.000}, omega = {3:0.0000}",
+					rpa[i].Qindex, rpa[i].Temperature, rpa[i].ChemicalPotential, rpa[i].Frequency);
+				Output.WriteLine(", Tr(X_0) = {0}", val.ToString("0.0000"));
 			}
 			Output.WriteLine();
 
-			double factor = AdjustInteraction(x0, ref S, ref C);
-
-			Matrix[, ,] xs = new Matrix[QMesh.Count, input.FrequencyMesh.Length, input.TemperatureMesh.Length];
-			Matrix[, ,] xc = new Matrix[QMesh.Count, input.FrequencyMesh.Length, input.TemperatureMesh.Length];
-			List<Complex>[, ,] xs_evals = new List<Complex>[QMesh.Count, input.FrequencyMesh.Length, input.TemperatureMesh.Length];
-			List<Complex>[, ,] xc_evals = new List<Complex>[QMesh.Count, input.FrequencyMesh.Length, input.TemperatureMesh.Length];
+			double factor = InteractionAdjustment(rpa, ref S, ref C);
 
 			Output.WriteLine("Calculating dressed susceptibilities.");
 
-			
-			for (int tempIndex = 0; tempIndex < input.TemperatureMesh.Length; tempIndex++)
+			for (int i = 0; i < rpa.Count; i++)
 			{
-				Output.WriteLine("Temperature: {0}", input.TemperatureMesh[tempIndex]);
+				Matrix s_denom = (ident - S * rpa[i].X0);
+				Matrix c_denom = (ident + C * rpa[i].X0);
 
-				for (int qIndex = 0; qIndex < QMesh.Count; qIndex++)
-				{
-					Output.WriteLine("q: {0}", QMesh[qIndex].Value);
-
-					for (int freqIndex = 0; freqIndex < input.FrequencyMesh.Length; freqIndex++)
-					{
-						Matrix s_denom = (ident - S * x0[qIndex, freqIndex, tempIndex]);
-						Matrix c_denom = (ident + C * x0[qIndex, freqIndex, tempIndex]);
-
-						StoreEigenValues(s_denom, xs_evals, tempIndex, qIndex, freqIndex);
-						StoreEigenValues(c_denom, xc_evals, tempIndex, qIndex, freqIndex);
-
-						xs[qIndex, freqIndex, tempIndex] = s_denom.Invert() * x0[qIndex, freqIndex, tempIndex];
-						xc[qIndex, freqIndex, tempIndex] = c_denom.Invert() * x0[qIndex, freqIndex, tempIndex];
-					}
-				}
+				rpa[i].Xs = s_denom.Invert() * rpa[i].X0;
+				rpa[i].Xc = c_denom.Invert() * rpa[i].X0;
 			}
-
-			SaveEigenValues(input, QMesh, xs_evals, "s", "1 - SX_0");
-			SaveEigenValues(input, QMesh, xc_evals, "c", "1 + CX_0");
-
-			SaveMatrices(input, QMesh, x0, "chi_0");
-			SaveMatrices(input, QMesh, xs, "chi_s");
-			SaveMatrices(input, QMesh, xc, "chi_c");
-
 		}
 
-		double AdjustInteraction(Matrix[, ,] x0, ref Matrix S, ref Matrix C)
+		double InteractionAdjustment(List<RpaParams> rpa, ref Matrix S, ref Matrix C)
 		{
 			double largest = 0;
 
-			foreach (Matrix x in x0)
+			foreach (Matrix x in rpa.Select(x => x.X0))
 			{
 				Matrix B = S * x;
 				Matrix A = B * B.HermitianConjugate();
@@ -192,14 +187,14 @@ namespace TightBinding
 				Matrix eigenvals, eigenvecs;
 
 				A.EigenValsVecs(out eigenvals, out eigenvecs);
-				double lv = eigenvals[eigenvals.Rows - 1, 0].mx;
+				double lv = eigenvals[eigenvals.Rows - 1, 0].RealPart;
 
 				if (lv > largest)
 					largest = lv;
 			}
 
 			largest = Math.Sqrt(largest);
-			largest *= 1.001;
+			largest *= 1.005;
 
 			S /= largest;
 			C /= largest;
@@ -209,62 +204,16 @@ namespace TightBinding
 			return 1 / largest;
 		}
 
-		private void AdjustUJ(Matrix[, ,] x0, Matrix S, Matrix C)
+		delegate Matrix MatrixGetter(RpaParams p);
+
+		private void SaveByTemperature(TbInputFile input, List<KPoint> QMesh, List<RpaParams> rpa, MatrixGetter g, string name)
 		{
-			throw new NotImplementedException();
-		}
+			rpa.Sort(RpaParams.TemperatureComparison);
 
-		private static void StoreEigenValues(Matrix mat, List<Complex>[, ,] xs_evals, int tempIndex, int qIndex, int freqIndex)
-		{
-			Matrix evals, evecs;
+			Complex[] chisum = new Complex[rpa.Count];
+			double[] chimag = new double[rpa.Count];
+			double[] chimagsqr = new double[rpa.Count];
 
-			// currently we can't calculate eigenvalues/vectors for a regular matrix, 
-			// so instead we construct a hermitian matrix where the eigenvalues are
-			// real part of the desired eigenvalues.  All we care about here
-			// is whether they are close to zero anyway.
-			Matrix r = mat.HermitianConjugate() * mat;
-			r.EigenValsVecs(out evals, out evecs);
-
-			xs_evals[qIndex, freqIndex, tempIndex] = new List<Complex>();
-			for (int i = 0; i < evals.Rows; i++)
-				xs_evals[qIndex, freqIndex, tempIndex].Add(Complex.Sqrt(evals[i, 0]));
-		}
-
-		private void SaveEigenValues(TbInputFile input, List<KPoint> QMesh, List<Complex>[, ,] xs_evals, string name, string equation)
-		{
-			string filename = string.Format(
-				"evals.{0}", name);
-
-
-			using (StreamWriter w = new StreamWriter(filename))
-			{
-				w.WriteLine("# Eigenvalues for {0}", equation);
-
-				for (int wi = 0; wi < input.FrequencyMesh.Length; wi++)
-				{
-					w.WriteLine("# Frequency: {0}", input.FrequencyMesh[wi]);
-
-					for (int qi = 0; qi < QMesh.Count; qi++)
-					{
-						w.WriteLine("# Q: {0}", QMesh[qi]);
-
-						for (int ti = 0; ti < input.TemperatureMesh.Length; ti++)
-						{
-							w.WriteLine("# Temperature: {0}", input.TemperatureMesh[ti]);
-
-							var list = xs_evals[qi, wi, ti];
-
-							for (int i = 0; i < list.Count; i++)
-								w.Write("{0}   ", list[i]);
-
-							w.WriteLine();
-						}
-					}
-				}
-			}
-		}
-		private void SaveMatrices(TbInputFile input, List<KPoint> QMesh, Matrix[, ,] chi, string name)
-		{
 			for (int l1 = 0; l1 < input.Sites.Count; l1++)
 			{
 				for (int l2 = 0; l2 < input.Sites.Count; l2++)
@@ -273,79 +222,80 @@ namespace TightBinding
 					{
 						for (int l4 = 0; l4 < input.Sites.Count; l4++)
 						{
-							//if (l1 != l2 || l2 != l3 || l3 != l4)
-							//    continue;
-
 							int i = GetIndex(input, l1, l2);
 							int j = GetIndex(input, l3, l4);
 
 							// organize by temperature
 							string filename = string.Format(
-								"{0}.{1}{2}{3}{4}.T", name, l1, l2, l3, l4);
+								"temperature/{0}.{1}{2}{3}{4}.T", name, l1, l2, l3, l4);
+
+							double lastFreq = double.MinValue;
+							double lastMu = double.MinValue;
+							double lastq = int.MinValue;
 
 							using (StreamWriter w = new StreamWriter(filename))
 							{
-								for (int wi = 0; wi < input.FrequencyMesh.Length; wi++)
+								for (int index = 0; index < rpa.Count; index++)
 								{
-									w.WriteLine("# Frequency: {0}", input.FrequencyMesh[wi]);
+									bool newline = false;
 
-									for (int qi = 0; qi < QMesh.Count; qi++)
+									newline |= ChangeValue(ref lastFreq, rpa[index].Frequency);
+									newline |= ChangeValue(ref lastMu, rpa[index].ChemicalPotential);
+									newline |= ChangeValue(ref lastq, rpa[index].Qindex);
+
+									if (newline)
 									{
-										w.WriteLine("#{0}\tTemp\tRe(Chi)\tIm(Chi)", QMesh[qi].Value);
-
-										for (int ti = 0; ti < input.TemperatureMesh.Length; ti++)
-										{
-											Complex val = chi[qi, wi, ti][i, j];
-
-											w.WriteLine("\t{0:0.000000}\t{1:0.0000000}\t{2:0.0000000}",
-												input.TemperatureMesh[ti],
-												val.RealPart, val.ImagPart);
-										}
 										w.WriteLine();
+										w.WriteLine("# Frequency: {0}", rpa[index].Frequency);
+										w.WriteLine("# Chemical Potential: {0}", rpa[index].ChemicalPotential);
+										w.WriteLine("# Q: {0}", QMesh[rpa[index].Qindex]);
+										w.WriteLine("#");
+										w.WriteLine("# Temperature\tRe(Chi)\tIm(Chi)");
 									}
+
+									Complex val = g(rpa[index])[i, j];
+
+									chisum[index] += val;
+									chimag[index] += val.Magnitude;
+									chimagsqr[index] += val.MagnitudeSquared;
+
+									w.WriteLine("\t{0:0.000000}\t{1:0.0000000}\t{2:0.0000000}",
+										rpa[index].Temperature, val.RealPart, val.ImagPart);
 								}
 							}
+						}
+					}
+				}
+			}
+		}
+		private void SaveByQPlane(TbInputFile input, List<KPoint> QMesh, List<RpaParams> rpa, MatrixGetter g, string name)
+		{
+			rpa.Sort(RpaParams.QIndexComparison);
 
-							// organize by q index
-							filename = string.Format("{0}.{1}{2}{3}{4}.qi", name, l1, l2, l3, l4);
+			Complex[] chisum = new Complex[rpa.Count];
+			double[] chimag = new double[rpa.Count];
+			double[] chimagsqr = new double[rpa.Count];
 
-							using (StreamWriter w = new StreamWriter(filename))
+			for (int l1 = 0; l1 < input.Sites.Count; l1++)
+			{
+				for (int l2 = 0; l2 < input.Sites.Count; l2++)
+				{
+					for (int l3 = 0; l3 < input.Sites.Count; l3++)
+					{
+						for (int l4 = 0; l4 < input.Sites.Count; l4++)
+						{
+							double lastFreq = double.MinValue;
+							double lastMu = double.MinValue;
+							double lastq = int.MinValue;
+
+							int baseIndex = 0;
+
+							for (int ti = 0; ti < input.TemperatureMesh.Length; ti++)
 							{
-								w.WriteLine("# qindex   qvalue");
-								for (int qi = 0; qi < QMesh.Count; qi++)
-								{
-									w.WriteLine("# {0}   {1}", qi, QMesh[qi].Value);
-								}
-							
 								for (int wi = 0; wi < input.FrequencyMesh.Length; wi++)
 								{
-									w.WriteLine("# Frequency: {0}", input.FrequencyMesh[wi]);
-
-									for (int ti = 0; ti < input.TemperatureMesh.Length; ti++)
-									{
-										w.WriteLine("# Temperature: {0}", input.TemperatureMesh[ti]);
-										w.WriteLine("#\tQindex\tRe(Chi)\tIm(Chi)");
-
-										for (int qi = 0; qi < QMesh.Count; qi++)
-										{
-											Complex val = chi[qi, wi, ti][i, j];
-
-											w.WriteLine("\t{0}\t{1:0.0000000}\t{2:0.0000000}",
-												qi,
-												val.RealPart, val.ImagPart);
-										}
-										w.WriteLine();
-									}
-								}
-							}
-
-							// organize on qmesh
-							for (int wi = 0; wi < input.FrequencyMesh.Length; wi++)
-							{
-								for (int ti = 0; ti < input.TemperatureMesh.Length; ti++)
-								{
-									filename = string.Format("{0}.{1}{2}{3}{4}.w{5}.T{6}.qm",
-											   name, l1, l2, l3, l4, wi, ti);
+									string filename = string.Format("{0}.{1}{2}{3}{4}.w{5}.T{6}.qm",
+														   name, l1, l2, l3, l4, wi, ti);
 
 									Complex maxvalue = new Complex(double.MinValue, double.MinValue);
 									Complex minvalue = new Complex(double.MaxValue, double.MaxValue);
@@ -371,6 +321,8 @@ namespace TightBinding
 											int index =
 												input.QPlane.GetKindex(input.Lattice, qpt, out orbitalMap, input.Symmetries);
 
+											index += baseIndex;
+
 											int newL1 = TransformOrbital(orbitalMap, l1);
 											int newL2 = TransformOrbital(orbitalMap, l2);
 											int newL3 = TransformOrbital(orbitalMap, l3);
@@ -379,7 +331,7 @@ namespace TightBinding
 											int newii = GetIndex(input, newL1, newL2);
 											int newjj = GetIndex(input, newL3, newL4);
 
-											Complex val = chi[index, wi, ti][newii, newjj];
+											Complex val = g(rpa[index])[newii, newjj];
 
 											w.WriteLine(" {0}       {1}       {2}",
 												s, t, val.RealPart);
@@ -413,42 +365,35 @@ namespace TightBinding
 									}
 
 								}
+
+								baseIndex += QMesh.Count;
 							}
-							
-							// organize by w
-							filename = string.Format(
-								"{0}.{1}{2}{3}{4}.w", name, l1, l2, l3, l4);
-
-							using (StreamWriter w = new StreamWriter(filename))
-							{
-								for (int qi = 0; qi < QMesh.Count; qi++)
-								{
-									w.WriteLine("#{0}", QMesh[qi].Value);
-
-									for (int ti = 0; ti < input.TemperatureMesh.Length; ti++)
-									{
-										w.WriteLine("# Temperature: {0}", input.TemperatureMesh[ti]);
-										w.WriteLine("#\tFrequency\tRe(Chi)\tIm(Chi)");
-
-										for (int wi = 0; wi < input.FrequencyMesh.Length; wi++)
-										{
-											Complex val = chi[qi, wi, ti][i, j];
-
-											w.WriteLine("\t{0:0.000000}\t{1:0.0000000}\t{2:0.0000000}",
-												input.FrequencyMesh[wi],
-												val.RealPart, val.ImagPart);
-										}
-										w.WriteLine();
-									}
-								}
-							}
-
 						}
 					}
 				}
 			}
 		}
+		private static bool ChangeValue(ref double value, double newValue)
+		{
+			 if (value != newValue)
+			 {
+				 value = newValue;
+				 return true;
+			 }
+			 else
+				 return false;
+		}
 
+		private void SaveMatricesQPlane(TbInputFile input, List<KPoint> QMesh, List<RpaParams> chi, MatrixGetter g, string name)
+		{
+			if (input.TemperatureMesh.Length > 1)
+			{
+				Directory.CreateDirectory("temperature");
+				SaveByTemperature(input, QMesh, chi, g, name);
+			}
+
+			SaveByQPlane(input, QMesh, chi, g, name);
+		}
 		private void Analyze(string name, Matrix S)
 		{
 			Output.WriteLine("Analysis of matrix {0}", name);

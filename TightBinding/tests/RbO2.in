@@ -10,8 +10,8 @@
 # Number of orbitals / sites and their locations 
 # Positions are in cartesian coordinates
 [Sites]
- 0 0 0 pi_x
- 0 0 0 pi_y
+ 0 0 0 pi_x 2a px
+ 0 0 0 pi_y 2a py
  
 # Symmetries in the crystal.
 # The numbers following the symmetry name indicate how the orbitals transform 
@@ -99,15 +99,15 @@ G        0              0             0
 # The second line gives the finite temperature smearing used in the DOS calculation.
 # It is optional.
 [KMesh]
-28 28 28  1 1 1
-0.002
+24 24 24 1 1 1
+0.02
 
 # Gives data for a plane of q-points in the BZ to plot.  There must be
 # four sets of three numbers here.
 # The first three numbers are the q-point mesh from which points are taken.
 # The next three groups of three numbers are q-points which define the plane.
 [QPlane]
-14 14 14
+12 12 12
 0   0   0  
 1   1   0
 0   0   1
@@ -124,10 +124,10 @@ G        0              0             0
 # or something of the form:
 #    lower_bound  upper_bound  num_points
 [Temperature]
-0.002
+0.02
 
 # Hubbard model parameters for RPA calculation
 # U, U prime, J, J prime. (don't enter commas).
 [Hubbard]
-4 4 1 1
+4 4 0 0 
 

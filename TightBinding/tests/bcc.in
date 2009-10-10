@@ -1,0 +1,103 @@
+
+# Lattice section
+# Enter direct lattice vectors in cartesian coordinates.
+# This section must be first.
+[Lattice]
+     -1   1   1
+      1  -1   1
+      1   1  -1
+ 
+# Number of orbitals / sites and their locations 
+# Positions are in cartesian coordinates
+[Sites]
+ 0 0 0
+ 
+# Symmetries in the crystal.
+# The numbers following the symmetry name indicate how the orbitals transform 
+# under the symmetry.  If you specify the symmetry operation, you must specify
+# one number for each orbital.  The orbital transforms are optional if the 
+# orbitals transform into themselves.
+[Symmetry]
+E
+C2(y)
+C2(x)
+C2(z)
+#C2(xy) 
+#C3/4(z)
+#C1/4(z)
+#C2(x-y)
+#I
+#s(y)
+#s(x)
+#s(z)
+#s(xy)  
+#S1/4(z)
+#S3/4(z)
+#s(x-y) 
+
+# Each hopping is followed by a list of Bravais lattice vectors.
+# Those vectors must be composed of integer values.
+[Hoppings]
+:1 1:
+   -1 -1 -1  2
+   -1 -1  1  2
+   -1  1 -1  2
+   -1  1  1  2
+    1 -1 -1  2
+    1 -1  1  2
+    1  1 -1  2
+    1  1  1  2
+
+  
+# Optional section
+# The path through K-space for integration is given as a series of points
+# in Cartesian coordinates.  These values will be multiplied by pi
+# internally.
+[KPath]
+G        0              0             0      
+X        0.5            0.5           0
+P        0.5            0.5           0.5
+Z        0              0             1
+G        0              0             0
+
+# Number of electrons for RPA and tight binding calculation.
+[Nelec]
+1
+
+# Optional section
+# Gives a k-mesh for calculating the density of states and doing RPA.
+# The second line gives the finite temperature smearing used in the DOS calculation.
+# It is optional.
+[KMesh]
+40 40 40  1 1 1
+0.4
+
+# Gives data for a plane of q-points in the BZ to plot.  There must be
+# four sets of three numbers here.
+# The first three numbers are the q-point mesh from which points are taken.
+# The next three groups of three numbers are q-points which define the plane.
+[QPlane]
+ 20 20 20
+0   0   0
+1   1   0
+0   0   1
+
+# Frequency mesh for RPA calculation
+# You may enter just a single number to calculate a single frequency,
+# or something of the form:
+#    lower_bound  upper_bound  num_points
+[Frequency]
+0.0
+
+# Temperature mesh for RPA calculation
+# You may enter just a single number to calculate a single frequency,
+# or something of the form:
+#    lower_bound  upper_bound  num_points
+[Temperature]
+0.2
+
+# Hubbard model parameters for RPA calculation
+# U, U prime, J, J prime. (don't enter commas).
+[Hubbard]
+1 1 0.5 0.5
+

@@ -365,15 +365,15 @@ namespace TightBinding
 				if (vals[2].EndsWith(")"))
 					vals[2] = vals[2].Substring(0, vals[2].Length - 1);
 
-				Vector3 loc = new Vector3(double.Parse(vals[0]), double.Parse(vals[1]), double.Parse(vals[2]));
+				if (vals.Length < 6)
+					ThrowEx("Insufficient information about site.");
 
-				if (vals.Length > 3)
-				{
-					string name = vals[3];
-					sites.Add(new Site(loc, name));
-				}
-				else
-					sites.Add(new Site(loc));
+				Vector3 loc = new Vector3(double.Parse(vals[0]), double.Parse(vals[1]), double.Parse(vals[2]));
+				string name = vals[3];
+				string sitename = vals[4];
+				string localsym = vals[5];
+
+				sites.Add(new Site(loc, name, sitename, localsym));
 
 				ReadNextLine();
 			}

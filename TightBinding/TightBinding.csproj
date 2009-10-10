@@ -60,6 +60,7 @@
     <Compile Include="InputReader.cs" />
     <Compile Include="Output.cs" />
     <Compile Include="RPA.cs" />
+    <Compile Include="RpaParams.cs" />
     <Compile Include="Symmetry.cs" />
     <Compile Include="SymmetryList.cs" />
     <Compile Include="TbInputFile.cs" />
@@ -107,23 +108,34 @@
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <None Include="bcc.in">
+    <None Include="tests\bcc.in">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="tb.in">
+    <None Include="tests\Hubbard-1band-ee.in">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="TiNCl.in" />
-    <None Include="testHubbard.in">
+    <None Include="tests\Hubbard-1band-half.in">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="LiNbO2.in">
+    <None Include="tests\Hubbard-2band-he.in">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="FreeE.in">
+    <None Include="tests\RbO2.in">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="Hubbard.in">
+    <None Include="tests\TiNCl.in">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="tests\testHubbard.in">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="tests\LiNbO2.in">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="tests\FreeE.in">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="tests\Hubbard.in">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

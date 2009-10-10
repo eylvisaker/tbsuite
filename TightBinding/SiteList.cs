@@ -38,13 +38,17 @@ namespace TightBinding
 		{
 			this.vec = vec;
 		}
-		public Site(Vector3 vec, string name)
+		public Site(Vector3 vec, string name, string site, string localSym)
 		{
 			this.vec = vec;
 			this.name = name;
+			this.SiteName = site;
+			this.LocalSymmetry = localSym;
 		}
 
 		public string Name { get { return name; } set { name = value; } }
+		public string SiteName { get; set; }
+		public string LocalSymmetry { get; set; }
 		public Vector3 Location { get { return vec; } set { vec = value; } }
 		public List<int> Equivalent { get { return equivalentSites; } }
 
