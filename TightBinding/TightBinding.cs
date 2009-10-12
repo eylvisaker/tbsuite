@@ -213,15 +213,15 @@ namespace TightBinding
 
 					for (int j = 0; j < vals.Rows; j++)
 					{
-						double ev = vals[j, 0].RealPart;
+						double ev = vals[j, 0].RealPart - inp.MuMesh[0];
 
 						if (emin > ev) emin = ev;
 						if (emax < ev) emax = ev;
 					}
 				}
 
-				emin -= smearing * 50;
-				emax += smearing * 50;
+				emin -= smearing * 10;
+				emax += smearing * 10;
 
 				int epts = 3000;
 
