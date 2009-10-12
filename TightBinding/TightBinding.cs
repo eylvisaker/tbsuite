@@ -70,16 +70,16 @@ namespace TightBinding
 
 			double beta = 1 / inp.TemperatureMesh[0];
 
-			double N = FindNelec(ks, eigenvals, inp.ChemicalPotential, beta);
+			double N = FindNelec(ks, eigenvals, inp.MuMesh[0], beta);
 
 			if (inp.Nelec != 0)
 			{
-				inp.ChemicalPotential = FindMu(ks, eigenvals, inp.Nelec, beta);
-				Output.WriteLine("Found chemical potential of {0}", inp.ChemicalPotential);
+				inp.MuMesh[0] = FindMu(ks, eigenvals, inp.Nelec, beta);
+				Output.WriteLine("Found chemical potential of {0}", inp.MuMesh[0]);
 			}
 			else
 			{
-				N = FindNelec(ks, eigenvals, inp.ChemicalPotential, beta);
+				N = FindNelec(ks, eigenvals, inp.MuMesh[0], beta);
 
 			}
 		}
@@ -198,20 +198,42 @@ namespace TightBinding
 			using (StreamWriter outf = new StreamWriter(outputfile + ".dos"))
 			{
 
-				double smearing = inp.Smearing;
+				double smearing = inp.TemperatureMesh[0];
 				double effBeta = 1 / smearing;
 				
-				double emin, emax;
-				inp.Hoppings.EnergyScale(out emin, out emax);
+				double emin = double.MaxValue, emax = double.MinValue;
 
-				emin -= smearing * 10;
-				emax += smearing * 10;
+				for (int i = 0; i < ks.Kpts.Count; i++)
+				{
+					Matrix m = CalcHamiltonian(inp, ks.Kpts[i]);
+					Matrix vals, vecs;
+					m.EigenValsVecs(out vals, out vecs);
 
-				int epts = 2000;
+					//ks.Kpts[i].SetStates(vals, vecs);
+
+					for (int j = 0; j < vals.Rows; j++)
+					{
+						double ev = vals[j, 0].RealPart;
+
+						if (emin > ev) emin = ev;
+						if (emax < ev) emax = ev;
+					}
+				}
+
+				emin -= smearing * 50;
+				emax += smearing * 50;
+
+				int epts = 3000;
 
 				double[] energyGrid = new double[epts];
 				double[,] dos = new double[epts, inp.Sites.Count + 1];
 				int zeroIndex = 0;
+
+				Output.WriteLine(
+					"Calculating DOS from {0} to {1} with finite temperature smearing {2}.",
+					emin, emax, smearing);
+
+				Output.WriteLine("Using {0} kpts.", ks.Kpts.Count);
 
 				for (int i = 0; i < epts; i++)
 				{
@@ -220,12 +242,7 @@ namespace TightBinding
 					if (energyGrid[i] < 0)
 						zeroIndex = i;
 				}
-				Output.WriteLine(
-					"Calculating DOS from {0} to {1} with finite temperature smearing {2}.",
-					emin, emax, smearing);
-
-				Output.WriteLine("Using {0} kpts.", ks.Kpts.Count);
-
+				
 				for (int i = 0; i < ks.Kpts.Count; i++)
 				{
 					Matrix m = CalcHamiltonian(inp, ks.Kpts[i]);
@@ -234,7 +251,7 @@ namespace TightBinding
 
 					for (int j = 0; j < vals.Rows; j++)
 					{
-						double energy = vals[j, 0].RealPart - inp.ChemicalPotential;
+						double energy = vals[j, 0].RealPart - inp.MuMesh[0];
 
 						int startIndex = FindIndex(energyGrid, energy - smearing * 10);
 						int endIndex = FindIndex(energyGrid, energy + smearing * 10);
@@ -380,7 +397,7 @@ namespace TightBinding
 				for (int i = 0; i < datasets; i++)
 				{
 					writer.WriteGraceDataset(kpath.Kpts.Count,
-						x => eigenvals[x][i, 0].RealPart - inp.ChemicalPotential);
+						x => eigenvals[x][i, 0].RealPart - inp.MuMesh[0]);
 				}
 			}
 		}
@@ -416,7 +433,6 @@ namespace TightBinding
 					for (int k = 0; k < p.Hoppings.Count; k++)
 					{
 						HoppingValue hop = p.Hoppings[k];
-						
 						Vector3 R = hop.R;
 						
 						Complex newval = hop.Value * 
@@ -425,25 +441,12 @@ namespace TightBinding
 						val += newval;
 					}
 					
-					if (Math.Abs(val.ImagPart) > 1e-7)
-					{
-						//Output.WriteLine("Imaginary part detected.  Check translation vectors: ");
-						
-						//for (int k = 0; k < p.Hoppings.Count; k++)
-						//{
-						//    HoppingValue hop = p.Hoppings[k];
-							
-						//    Output.WriteLine(hop.R);
-						//}
-					}
-					
 					m[i,j] = val;
 				}
 			}
 			
 			if (m.IsHermitian == false)
 				throw new Exception("Hamiltonian at k = " + kpt.ToString() + " is not Hermitian.");
-			
 			
 			return m;
 		}
@@ -458,7 +461,7 @@ namespace TightBinding
 			KptList ks = inp.KMesh;
 			StreamWriter outf = new StreamWriter(outputfile + ".dos");
 
-			double smearing = inp.Smearing;
+			double smearing = inp.TemperatureMesh[0];
 			double smearNorm = 1 / smearing * Math.Pow(Math.PI, -0.5);
 			double oneOverSmearSquared = Math.Pow(smearing, -2);
 

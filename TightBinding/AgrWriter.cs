@@ -56,8 +56,13 @@ namespace TightBinding
 			file.WriteLine("@    xaxis  tick spec {0}", pts.Length);
 			for (int i = 0; i < pts.Length; i++)
 			{
+				string label = pts[i].Second.Name;
+
+				if (label == "G")
+					label = @"\xG";
+
 				file.WriteLine("@    xaxis  tick major {0}, {1}", i, pts[i].First);
-				file.WriteLine("@    xaxis  ticklabel {0}, \"{1}\"", i, pts[i].Second.Name);
+				file.WriteLine("@    xaxis  ticklabel {0}, \"{1}\"", i, label);
 			}
 
 		}

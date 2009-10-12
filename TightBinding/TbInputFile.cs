@@ -15,9 +15,7 @@ namespace TightBinding
 		KptList kpath, kmesh;
 		KptList qplane;
 		List<int> poles = new List<int>();
-		double smearing = 0.04;
 
-		public double ChemicalPotential { get; set; }
 		public Lattice Lattice { get { return lattice; } }
 		public SiteList Sites { get { return sites; } }
 		public HoppingPairList Hoppings { get { return hoppings; } }
@@ -26,7 +24,7 @@ namespace TightBinding
 		public KptList QPlane { get { return qplane; } }
 		public double[] FrequencyMesh { get; private set; }
 		public double[] TemperatureMesh { get; private set; }
-		public double Smearing { get { return smearing; } }
+		public double[] MuMesh { get; private set; }
 		public List<int> PoleStates { get { return poles; } }
 		public SymmetryList Symmetries { get { return symmetries; } }
 		public double Nelec { get; private set; }
@@ -65,6 +63,28 @@ namespace TightBinding
 				ThrowEx(@"There are no hoppings.");
 			if (symmetries.Count == 0)
 				symmetries.Add(new Symmetry(Matrix.Identity(3)));
+
+			if (Nelec > 0)
+			{
+				if (MuMesh != null)
+					ThrowEx(@"Specify only one of Nelec or Mu.");
+
+				MuMesh = new double[1];
+
+				if (Nelec > Sites.Count * 2)
+					ThrowEx(@"Nelec is too large.");
+			}
+			else if (Nelec < 0)
+				ThrowEx(@"Nelec cannot be less than zero.");
+
+			if (TemperatureMesh == null)
+			{
+				TemperatureMesh = new double[] { 1 };
+			}
+			if (FrequencyMesh == null)
+			{
+				FrequencyMesh = new double[] { 0 };
+			}
 
 			foreach (HoppingPair h in hoppings)
 			{
@@ -195,16 +215,14 @@ namespace TightBinding
 		}
 
 
-		private void ReadChemicalPotential()
-		{
-			ChemicalPotential = double.Parse(Line);
-		}
-
 		private void ReadNelec()
 		{
 			Nelec = double.Parse(Line);
 		}
-
+		private void ReadChemicalPotential()
+		{
+			MuMesh = ReadDoubleMesh();
+		}
 		private void ReadFrequencySection()
 		{
 			FrequencyMesh = ReadDoubleMesh();
@@ -272,6 +290,7 @@ namespace TightBinding
 			Vector3 lastKpt = Vector3.Zero;
 			char[] array = new char[] { ' ' };
 			const double ptScale = 400;
+			int ptCount = 0;
 
 			path = new KptList();
 			while (EOF == false && LineType != LineType.NewSection)
@@ -295,8 +314,16 @@ namespace TightBinding
 				Vector3 kpt = vecval;
 				double length = (kpt - lastKpt).Magnitude;
 
-				path.AddPts(lastKpt, kpt, Math.Max((int)(ptScale * length), 1));
+				if (ptCount == 0)
+				{
+					path.AddPts(kpt, kpt, 1);
+				}
+				else
+				{
+					path.AddPts(lastKpt, kpt, Math.Max((int)(ptScale * length), 1));
+				}
 				path.Kpts[path.Kpts.Count - 1].Name = name;
+				ptCount++;
 
 				lastKpt = kpt;
 
@@ -327,11 +354,6 @@ namespace TightBinding
 			}
 
 			ReadNextLine();
-
-			if (LineType == LineType.Numeric)
-			{
-				smearing = double.Parse(Line);
-			}
 		}
 
 		void ReadLatticeSection()

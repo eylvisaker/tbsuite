@@ -10,7 +10,7 @@
 # Number of orbitals / sites and their locations 
 # Positions are in cartesian coordinates
 [Sites]
-(0 0 0)   s
+(0 0 0)   s   a   s
 
 # Symmetries in the crystal.
 # The numbers following the symmetry name indicate how the orbitals transform 

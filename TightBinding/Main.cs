@@ -33,7 +33,7 @@ namespace TightBinding
 			{
 				Output.SetFile(output);
 
-				c.RunTB(filename, outputfile);
+				c.RunTB(filename, Path.GetFileNameWithoutExtension(filename));
 			}
 
 			watch.Stop();
@@ -75,6 +75,11 @@ namespace TightBinding
 				}
 				else if (File.Exists(name))
 					done = true;
+				else if (name.EndsWith(".in") == false && File.Exists(name + ".in"))
+				{
+					name += ".in";
+					done = true;
+				}
 				else
 				{
 					Console.WriteLine("The file '{0}' does not exist.", name);

@@ -97,19 +97,23 @@ namespace TightBinding
 			double[] TemperatureMesh = input.TemperatureMesh;
 
 			List<RpaParams> rpa = new List<RpaParams>();
-			int index = 0;
+
+			SaveGreensFunctions(input);
 
 			for (int tempIndex = 0; tempIndex < TemperatureMesh.Length; tempIndex++)
 			{
-				for (int qIndex = 0; qIndex < QMesh.Count; qIndex++)
+				for (int muIndex = 0; muIndex < input.MuMesh.Length; muIndex++)
 				{
-					for (int freqIndex = 0; freqIndex < FrequencyMesh.Length; freqIndex++)
+					for (int qIndex = 0; qIndex < QMesh.Count; qIndex++)
 					{
-						rpa.Add(new RpaParams(
-							qIndex, 
-							TemperatureMesh[tempIndex],
-							FrequencyMesh[freqIndex], 
-							input.ChemicalPotential));
+						for (int freqIndex = 0; freqIndex < FrequencyMesh.Length; freqIndex++)
+						{
+							rpa.Add(new RpaParams(
+								qIndex,
+								TemperatureMesh[tempIndex],
+								FrequencyMesh[freqIndex],
+								input.MuMesh[muIndex]));
+						}
 					}
 				}
 			}
@@ -120,6 +124,85 @@ namespace TightBinding
 			SaveMatricesQPlane(input, QMesh, rpa, x => x.Xs, "chi_s");
 			SaveMatricesQPlane(input, QMesh, rpa, x => x.Xc, "chi_c");
 
+		}
+
+		private void SaveGreensFunctions(TbInputFile input)
+		{
+			Output.Write("Saving Green's function...");
+			System.Diagnostics.Stopwatch watch = new System.Diagnostics.Stopwatch();
+			int orbitalCount = input.Sites.Count;
+			
+			watch.Start();
+			using (StreamWriter w = new StreamWriter("green.dat"))
+			{
+				w.WriteLine("# KMesh: {0} {1} {2}",
+								input.KMesh.Mesh[0], input.KMesh.Mesh[1], input.KMesh.Mesh[2]);
+
+				for (int tempIndex = 0; tempIndex < input.TemperatureMesh.Length; tempIndex++)
+				{
+					double temperature = input.TemperatureMesh[tempIndex];
+
+					for (int freqIndex = 0; freqIndex < input.FrequencyMesh.Length; freqIndex++)
+					{
+						double frequency = input.FrequencyMesh[freqIndex];
+
+						for (int muIndex = 0; muIndex < input.MuMesh.Length; muIndex++)
+						{
+							double mu = input.MuMesh[muIndex];
+
+							SetTemperature(
+								input.TemperatureMesh[tempIndex],
+								input.MuMesh[muIndex]);
+
+							w.WriteLine("# Temperature: {0}", input.TemperatureMesh[tempIndex]);
+							w.WriteLine("# Chemical Potential: {0}", input.MuMesh[muIndex]);
+							w.WriteLine("# Frequency: {0}", input.FrequencyMesh[freqIndex]);
+
+							for (int allkindex = 0; allkindex < input.KMesh.AllKpts.Count; allkindex++)
+							{
+								Matrix value = new Matrix(orbitalCount, orbitalCount);
+								List<int> kOrbitalMap;
+
+								int kindex = input.KMesh.GetKindex(
+									input.Lattice, input.KMesh.AllKpts[allkindex], out kOrbitalMap, input.Symmetries);
+								
+								for (int n = 0; n < orbitalCount; n++)
+								{
+									for (int i = 0; i < orbitalCount; i++)
+									{
+										for (int j = 0; j < orbitalCount; j++)
+										{
+											Wavefunction wfk = Bands(kindex, n);
+									
+											Complex coeff = 
+												wfk.Coeffs[i].Conjugate() *
+												wfk.Coeffs[j];
+
+											Complex g = 1.0 / (frequency + mu - wfk.Energy + new Complex(0, temperature));
+
+											value[i,j] += g * coeff;
+										}
+									}
+								}
+
+								w.Write("{0}\t", allkindex);
+								for (int j = 0; j < value.Rows; j++)
+								{
+									for (int i = 0; i < value.Columns; i++)
+									{
+										w.Write("{0}\t{1}\t", value[i, j].RealPart, value[i, j].ImagPart);
+									}
+								}
+								w.WriteLine();
+							}
+						}
+					}
+				}
+
+				watch.Stop();
+				Output.WriteLine("   {0:0.0} seconds.", watch.ElapsedMilliseconds / 1000.0);
+
+			}
 		}
 
 		private void CalcX0(TbInputFile input, KptList qpts, List<RpaParams> rpa)
@@ -586,7 +669,7 @@ namespace TightBinding
 											contrib = coeff * f1 * (1 - f1) * Beta;
 										}
 
-										if (double.IsNaN(contrib.mx) || double.IsNaN(contrib.my))
+										if (double.IsNaN(contrib.RealPart) || double.IsNaN(contrib.ImagPart))
 										{
 											throw new Exception("Found NaN when evaluating X0");
 										}

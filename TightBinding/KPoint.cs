@@ -52,12 +52,29 @@ namespace TightBinding
 			mOrbitalTransform.Add(orbitals);
 		}
 
-		public List<Wavefunction> Wavefunctions { get { return wfk; } }
+		//public List<Wavefunction> Wavefunctions { get { return wfk; } }
 		public IEnumerable<List<int>> OrbitalTransform { get { return mOrbitalTransform; } }
 
 		public override string ToString()
 		{
 			return base.ToString() + Value.ToString();
 		}
+
+		//internal void SetStates(Matrix eigenvals, Matrix eigenvecs)
+		//{
+		//    for (int n = 0; n < eigenvals.Rows; n++)
+		//    {
+		//        var wfk = new Wavefunction(eigenvecs.Rows);
+
+		//        wfk.Energy = eigenvals[n, 0].RealPart;
+
+		//        for (int c = 0; c < eigenvecs.Rows; c++)
+		//        {
+		//            wfk.Coeffs[c] = eigenvecs[c, n];
+		//        }
+
+		//        bands[k][n] = wfk;
+		//    }
+		//}
 	}
 }
