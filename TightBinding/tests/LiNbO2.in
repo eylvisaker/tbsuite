@@ -164,7 +164,7 @@ A        0              0             0.025295276665
 
 # Gives a k-mesh for calculating the density of states and doing RPA.
 [KMesh]
-20 20 6 1 1 1
+50 50 10 1 1 1
 
 # Gives data for a plane of q-points in the BZ to plot.  There must be
 # four sets of three numbers here.
@@ -189,7 +189,7 @@ A        0              0             0.025295276665
 # or something of the form:
 #    lower_bound  upper_bound  num_points
 [Temperature]
-0.02
+0.005
 
 # Hubbard model parameters for RPA calculation
 # U, U prime, J, J prime. (don't enter commas).

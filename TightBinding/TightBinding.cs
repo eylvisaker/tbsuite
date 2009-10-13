@@ -6,7 +6,7 @@ using ERY.EMath;
 
 namespace TightBinding
 {
-	class TightBinding
+	public class TightBinding
 	{
 		string outputfile;
 

@@ -230,7 +230,7 @@ namespace TightBinding
 			{
 				var qpt = retval.AllKpts[i];
 
-				int N = retval.CalcN(lattice, qpt);
+				int N = retval.KptToInteger(lattice, qpt);
 				int symN = N;
 				bool foundSym = false;
 				List<int> orbitals = null;
@@ -247,7 +247,7 @@ namespace TightBinding
 					if (newi % 2 != 0 || newj % 2 != 0 || newk % 2 != 0)
 						continue;
 
-					symN = retval.CalcN(newi, newj, newk);
+					symN = retval.KptToInteger(newi, newj, newk);
 
 					if (retval.Nvalues.ContainsKey(symN))
 					{
@@ -293,6 +293,7 @@ namespace TightBinding
 
 			return retval;
 		}
+
 
 		private static void SortByDistanceFromGamma(List<KPoint> planePoints)
 		{
@@ -354,6 +355,191 @@ namespace TightBinding
 		public static KptList GenerateMesh(Lattice lattice, int[] kgrid, int[] shift, SymmetryList syms, bool includeEnds, bool centerGamma)
 		{
 			KptList retval = new KptList();
+
+			if (shift == null)
+				shift = new int[3];
+
+			for (int i = 0; i < 3; i++)
+				if (kgrid[i] == 1)
+					shift[i] = 1;
+
+			retval.mesh = (int[])kgrid.Clone();
+			retval.shift = (int[])shift.Clone();
+			retval.gammaCentered = true;
+
+			SymmetryList compatSyms = FindCompatibleSymmetries(kgrid, syms);
+
+			int index = 0;
+			for (int k = -kgrid[2] + shift[2]; k <= kgrid[2]; k += 2)
+			{
+				for (int j = -kgrid[1] + shift[1]; j <= kgrid[1]; j += 2)
+				{
+					for (int i = -kgrid[0] + shift[0]; i <= kgrid[0]; i += 2)
+					{
+						if (includeEnds == false)
+						{
+							if (k == kgrid[2]) break;
+							if (j == kgrid[1]) break;
+							if (i == kgrid[0]) break;
+						}
+
+						int N = retval.KptToInteger(i, j, k);
+
+						double dx = i * 0.5 / kgrid[0];
+						double dy = j * 0.5 / kgrid[1];
+						double dz = k * 0.5 / kgrid[2];
+
+						Vector3 kptValue = CalcK(lattice, dx, dy, dz);
+						int symN = N;
+						List<int> orbitals = null;
+						bool foundSym = false;
+
+						TranslateKptToNearGamma(lattice, ref kptValue);
+
+						foreach (var symmetry in compatSyms)
+						{
+							Vector3 Tpt = symmetry.Value * kptValue;
+
+							if (Tpt == kptValue)
+								continue;
+
+							int newi, newj, newk;
+							
+							retval.ReduceKpt(lattice, Tpt, out newi, out newj, out newk);
+
+							if (newi % 2 != shift[0] ||
+								newj % 2 != shift[1] ||
+								newk % 2 != shift[2])
+								continue;
+
+							symN = retval.KptToInteger(newi, newj, newk);
+
+							if (symN < N)
+							{
+								foundSym = true;
+
+								if (symmetry.OrbitalTransform.Count > 0)
+								{
+									orbitals = symmetry.OrbitalTransform;
+								}
+
+								break;
+							}
+						}
+
+						retval.allKpts.Add(new KPoint(kptValue));
+
+						if (retval.Nvalues.ContainsKey(N))
+						{
+							int q = 2;
+						}
+						else if (foundSym == false)
+						{
+							retval.kpts.Add(new KPoint(kptValue));
+							retval.Nvalues.Add(N, index);
+							index++;
+						}
+						else
+						{
+							int newIndex = retval.Nvalues[symN];
+							retval.kpts[newIndex].Weight++;
+							retval.kpts[newIndex].AddOrbitalSymmetry(orbitals);
+
+							retval.Nvalues.Add(N, newIndex);
+						}
+					}
+				}
+			}
+
+			int count = kgrid[0] * kgrid[1] * kgrid[2];
+			for (int i = 0; i < retval.kpts.Count; i++)
+			{
+				retval.kpts[i].Weight /= count;
+				retval.allKpts[i].Weight /= count;
+			}
+
+			return retval;
+		}
+
+		private static void TranslateKptToNearGamma(Lattice lattice, ref Vector3 kptValue)
+		{
+			Vector3 newkpt = kptValue;
+			double newdiff = 0;
+
+			for (int i = -1; i <= 1; i++)
+			{
+				for (int j = -1; j <= 1; j++)
+				{
+					for (int k = -1; k <= 1; k++)
+					{
+						if (i == j && j == k && k == 0) continue;
+
+						Vector3 G = i * lattice.G1 + j * lattice.G2 + k * lattice.G3;
+						double mag = G.MagnitudeSquared;
+						Vector3 newpt = kptValue + G;
+
+						double diff = 2 * G.DotProduct(kptValue) + mag;
+
+						if (diff < newdiff)
+						{
+							newkpt = kptValue + G;
+							newdiff = diff;
+						}
+					}
+				}
+			}
+
+			kptValue = newkpt;
+		}
+
+		private void ReduceKpt(Lattice lattice, Vector3 pt, out int newi, out int newj, out int newk)
+		{
+			Vector3 red = lattice.ReducedCoords(pt, true);
+
+			newi = (int)Math.Round(mesh[0] * red.X * 2);
+			newj = (int)Math.Round(mesh[1] * red.Y * 2);
+			newk = (int)Math.Round(mesh[2] * red.Z * 2);
+		}
+
+		private int KptToInteger(int i, int j, int k)
+		{
+			i += mesh[0];
+			j += mesh[1];
+			k += mesh[2];
+
+			return i + j * 1000 + k * 1000000;
+		}
+		private int KptToInteger(Lattice lattice, KPoint qpt)
+		{
+			int i, j, k;
+			ReduceKpt(lattice, qpt, out i, out j, out k);
+
+			return KptToInteger(i, j, k);
+		}
+
+		private static SymmetryList FindCompatibleSymmetries(int[] kgrid, SymmetryList syms)
+		{
+			SymmetryList compatSyms;
+			compatSyms = new SymmetryList();
+			Vector3 gridVector = new Vector3(kgrid[0], kgrid[1], kgrid[2]);
+
+			foreach (var symmetry in syms)
+			{
+				Vector3 grid2 = symmetry.Value * gridVector;
+				for (int gi = 0; gi < 3; gi++)
+					grid2[gi] = Math.Abs(grid2[gi]);
+
+				if (grid2 == gridVector)
+				{
+					compatSyms.Add(symmetry);
+				}
+			}
+			return compatSyms;
+		}
+
+		public static KptList oldGenerateMesh(Lattice lattice, int[] kgrid, int[] shift, SymmetryList syms, bool includeEnds, bool centerGamma)
+		{
+			KptList retval = new KptList();
 			int zmax = kgrid[2] * 2;
 			int ymax = kgrid[1] * 2;
 			int xmax = kgrid[0] * 2;
@@ -394,7 +580,7 @@ namespace TightBinding
 							if (j == ymax) break;
 						}
 
-						int N = retval.CalcN(i, j, k);
+						int N = retval.KptToInteger(i, j, k);
 						bool foundSym = false;
 
 						double dx = (i + shift[0]) / (double)xmax;
@@ -437,7 +623,7 @@ namespace TightBinding
 							if (newi % 2 != 0 || newj % 2 != 0 || newk % 2 != 0)
 								continue;
 
-							symN = retval.CalcN(newi, newj, newk);
+							symN = retval.KptToInteger(newi, newj, newk);
 
 							if (symN < N)
 							{
@@ -614,7 +800,7 @@ namespace TightBinding
 
 				ReduceKpt(lattice, newKpt, out newi, out newj, out newk);
 
-				int N = CalcN(newi, newj, newk);
+				int N = KptToInteger(newi, newj, newk);
 
 				if (Nvalues.ContainsKey(N))
 				{
@@ -628,44 +814,6 @@ namespace TightBinding
 			throw new Exception(string.Format("Could not find k-point {0}", kpt));
 		}
 
-		private void ReduceKpt(Lattice lattice, Vector3 kpt, out int newi, out int newj, out int newk)
-		{
-			Vector3 red = lattice.ReducedCoords(kpt, !gammaCentered);
-
-			int zmax = mesh[2] * 2;
-			int ymax = mesh[1] * 2;
-			int xmax = mesh[0] * 2;
-
-			newi = (int)Math.Round(xmax * red.X - shift[0]);
-			newj = (int)Math.Round(ymax * red.Y - shift[1]);
-			newk = (int)Math.Round(zmax * red.Z - shift[2]);
-			
-			if (gammaCentered)
-			{
-				if (mesh[0] > 1) newi += xmax / 2;
-				if (mesh[1] > 1) newj += ymax / 2;
-				if (mesh[2] > 1) newk += zmax / 2;
-			}
-		}
-		private int CalcN(int i, int j, int k)
-		{
-			int zmax = mesh[2] * 2;
-			int ymax = mesh[1] * 2;
-			int xmax = mesh[0] * 2;
-			int zsh = shift[2];
-			int ysh = shift[1];
-			int xsh = shift[0];
-
-			return 1 + (i + xsh) + xmax * ((j + ysh) + ymax * (k + zsh));
-		}
-		public int CalcN(Lattice lattice, Vector3 kpt)
-		{
-			int i, j, k;
-
-			ReduceKpt(lattice, kpt, out i, out j, out k);
-
-			return CalcN(i, j, k);
-		}
 
 		public override string ToString()
 		{

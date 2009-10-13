@@ -10,7 +10,7 @@
 # Number of orbitals / sites and their locations 
 # Positions are in cartesian coordinates
 [Sites]
-(0 0 0)   s
+(0 0 0)   s  a  s
 
 # Symmetries in the crystal.
 # The numbers following the symmetry name indicate how the orbitals transform 
@@ -19,21 +19,8 @@
 # orbitals transform into themselves.
 [Symmetry]
 E
-C2(y)
-C2(x)
-C2(z)
-C2(xy)   
-C3/4(z)  
-C1/4(z)  
-C2(x-y)  
-I
-s(y)
-s(x)
-s(z)
-s(xy)    
-S1/4(z)  
-S3/4(z)  
-s(x-y)   
+#I
+
 
 # Each hopping is followed by a list of Bravais lattice vectors.
 # Those vectors must be composed of integer values.
@@ -62,13 +49,9 @@ G        0       0       0
 [Mu]
 0
 
-# Optional section
 # Gives a k-mesh for calculating the density of states and doing RPA.
-# The second line gives the finite temperature smearing used in the DOS calculation.
-# It is optional.
 [KMesh]
-200 200 1 1 1 1
-0.02
+80 80 1 1 1 1
 
 # Gives data for a plane of q-points in the BZ to plot.  There must be
 # four sets of three numbers here.
@@ -85,15 +68,14 @@ G        0       0       0
 # You may enter just a single number to calculate a single frequency,
 # or something of the form:
 #    lower_bound  upper_bound  num_points
+# or a list of frequencies (must be more than three).
 [Frequency]
 0.0
 
 # Temperature mesh for RPA calculation
-# You may enter just a single number to calculate a single frequency,
-# or something of the form:
-#    lower_bound  upper_bound  num_points
+# Same input format as the frequency.
 [Temperature]
-0.005
+ 0.05
 
 # Hubbard model parameters for RPA calculation
 # U, U prime, J, J prime. (don't enter commas).

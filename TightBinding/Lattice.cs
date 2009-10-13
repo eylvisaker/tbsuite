@@ -64,13 +64,13 @@ namespace TightBinding
 
 			if (translate)
 			{
-				while (retval.X < 0) retval.X += 1;
-				while (retval.Y < 0) retval.Y += 1;
-				while (retval.Z < 0) retval.Z += 1;
+				while (retval.X < -0.5) retval.X += 1;
+				while (retval.Y < -0.5) retval.Y += 1;
+				while (retval.Z < -0.5) retval.Z += 1;
 
-				retval.X %= 1;
-				retval.Y %= 1;
-				retval.Z %= 1;
+				while (retval.X > 0.5) retval.X -= 1;
+				while (retval.Y > 0.5) retval.Y -= 1;
+				while (retval.Z > 0.5) retval.Z -= 1;
 			}
 
 			return retval;

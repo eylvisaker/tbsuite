@@ -98,8 +98,6 @@ namespace TightBinding
 
 			List<RpaParams> rpa = new List<RpaParams>();
 
-			SaveGreensFunctions(input);
-
 			for (int tempIndex = 0; tempIndex < TemperatureMesh.Length; tempIndex++)
 			{
 				for (int muIndex = 0; muIndex < input.MuMesh.Length; muIndex++)
@@ -124,81 +122,6 @@ namespace TightBinding
 			SaveMatricesQPlane(input, QMesh, rpa, x => x.Xs, "chi_s");
 			SaveMatricesQPlane(input, QMesh, rpa, x => x.Xc, "chi_c");
 
-		}
-
-		private void SaveGreensFunctions(TbInputFile input)
-		{
-			Output.Write("Saving Green's function...");
-			System.Diagnostics.Stopwatch watch = new System.Diagnostics.Stopwatch();
-			int orbitalCount = input.Sites.Count;
-			
-			watch.Start();
-			using (StreamWriter w = new StreamWriter("green.dat"))
-			{
-				w.WriteLine("# KMesh: {0} {1} {2}",
-								input.KMesh.Mesh[0], input.KMesh.Mesh[1], input.KMesh.Mesh[2]);
-
-				for (int tempIndex = 0; tempIndex < input.TemperatureMesh.Length; tempIndex++)
-				{
-					double temperature = input.TemperatureMesh[tempIndex];
-
-					for (int freqIndex = 0; freqIndex < input.FrequencyMesh.Length; freqIndex++)
-					{
-						double frequency = input.FrequencyMesh[freqIndex];
-
-						for (int muIndex = 0; muIndex < input.MuMesh.Length; muIndex++)
-						{
-							double mu = input.MuMesh[muIndex];
-
-							SetTemperature(
-								input.TemperatureMesh[tempIndex],
-								input.MuMesh[muIndex]);
-
-							w.WriteLine("# Temperature: {0}", input.TemperatureMesh[tempIndex]);
-							w.WriteLine("# Chemical Potential: {0}", input.MuMesh[muIndex]);
-							w.WriteLine("# Frequency: {0}", input.FrequencyMesh[freqIndex]);
-
-							for (int kindex = 0; kindex < input.KMesh.Kpts.Count; kindex++)
-							{
-								Matrix value = new Matrix(orbitalCount, orbitalCount);
-								
-								for (int n = 0; n < orbitalCount; n++)
-								{
-									for (int i = 0; i < orbitalCount; i++)
-									{
-										for (int j = 0; j < orbitalCount; j++)
-										{
-											Wavefunction wfk = Bands(kindex, n);
-
-											Complex coeff = 
-												wfk.Coeffs[i].Conjugate() *
-												wfk.Coeffs[j];
-
-											Complex g = 1.0 / (frequency + mu - wfk.Energy + new Complex(0, temperature));
-
-											value[i,j] += g * coeff;
-										}
-									}
-								}
-
-								w.Write("{0}\t", kindex);
-								for (int j = 0; j < value.Rows; j++)
-								{
-									for (int i = 0; i < value.Columns; i++)
-									{
-										w.Write("{0}\t{1}\t", value[i, j].RealPart, value[i, j].ImagPart);
-									}
-								}
-								w.WriteLine();
-							}
-						}
-					}
-				}
-
-				watch.Stop();
-				Output.WriteLine("   {0:0.0} seconds.", watch.ElapsedMilliseconds / 1000.0);
-
-			}
 		}
 
 		private void CalcX0(TbInputFile input, KptList qpts, List<RpaParams> rpa)
@@ -441,11 +364,12 @@ namespace TightBinding
 									using (StreamWriter w = new StreamWriter(gpfilename))
 									{
 										w.WriteLine("#!/usr/bin/gnuplot");
-										w.WriteLine("set pm3d at bs flush center ftriangles scansbackward interpolate 1,1");
+										//w.WriteLine("set pm3d at bs flush center ftriangles scansbackward interpolate 1,1");
+										w.WriteLine("set pm3d map flush center ftriangles scansbackward interpolate 5,5");
 										w.WriteLine("set palette rgbformula 28,9,32");
-										w.WriteLine("set border 895");
+										//w.WriteLine("set border 895");
 										w.WriteLine("set key off");
-										w.WriteLine("set zrange [{0}:{1}]", minvalue.RealPart, maxvalue.RealPart);
+										//w.WriteLine("set zrange [{0}:{1}]", minvalue.RealPart, maxvalue.RealPart);
 										// label z = minvalue - 0.5 * (maxvalue - minvalue)
 										//  set label 1 "G" at 0,0,1 font "Symbol" center front
 										w.WriteLine("splot '{0}' with pm3d", filename);
