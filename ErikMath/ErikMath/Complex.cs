@@ -318,5 +318,13 @@ namespace ERY.EMath
 			return _x.GetHashCode() - _y.GetHashCode();
 		}
 
+		public static Complex Parse(string real)
+		{
+			return new Complex(double.Parse(real));
+		}
+		public static Complex Parse(string real, string imag)
+		{
+			return new Complex(double.Parse(real), double.Parse(imag));
+		}
 	}
 }
