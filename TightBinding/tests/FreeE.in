@@ -62,13 +62,9 @@ G        0       0       0
 [Mu]
 -3.5
 
-# Optional section
 # Gives a k-mesh for calculating the density of states and doing RPA.
-# The second line gives the finite temperature smearing used in the DOS calculation.
-# It is optional.
 [KMesh]
-60 60 1 1 1 1
-0.04
+80 80 2 1 1 1
 
 # Gives data for a plane of q-points in the BZ to plot.  There must be
 # four sets of three numbers here.
@@ -76,7 +72,7 @@ G        0       0       0
 # The next three groups of three numbers are q-points which are constrained to be
 # on the plane.
 [QPlane]
-10 10 10
+10 1 1
 0   0   0  
 1   0   0
 0   1   0
@@ -93,7 +89,7 @@ G        0       0       0
 # or something of the form:
 #    lower_bound  upper_bound  num_points
 [Temperature]
-0.04
+0.1
 
 # Hubbard model parameters for RPA calculation
 # U, U prime, J, J prime. (don't enter commas).

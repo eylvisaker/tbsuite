@@ -158,13 +158,9 @@ namespace TightBinding
 							w.WriteLine("# Chemical Potential: {0}", input.MuMesh[muIndex]);
 							w.WriteLine("# Frequency: {0}", input.FrequencyMesh[freqIndex]);
 
-							for (int allkindex = 0; allkindex < input.KMesh.AllKpts.Count; allkindex++)
+							for (int kindex = 0; kindex < input.KMesh.Kpts.Count; kindex++)
 							{
 								Matrix value = new Matrix(orbitalCount, orbitalCount);
-								List<int> kOrbitalMap;
-
-								int kindex = input.KMesh.GetKindex(
-									input.Lattice, input.KMesh.AllKpts[allkindex], out kOrbitalMap, input.Symmetries);
 								
 								for (int n = 0; n < orbitalCount; n++)
 								{
@@ -173,7 +169,7 @@ namespace TightBinding
 										for (int j = 0; j < orbitalCount; j++)
 										{
 											Wavefunction wfk = Bands(kindex, n);
-									
+
 											Complex coeff = 
 												wfk.Coeffs[i].Conjugate() *
 												wfk.Coeffs[j];
@@ -185,7 +181,7 @@ namespace TightBinding
 									}
 								}
 
-								w.Write("{0}\t", allkindex);
+								w.Write("{0}\t", kindex);
 								for (int j = 0; j < value.Rows; j++)
 								{
 									for (int i = 0; i < value.Columns; i++)
@@ -239,12 +235,15 @@ namespace TightBinding
 				}
 
 				Output.Write("q = {0}, T = {1:0.000}, mu = {2:0.000}, omega = {3:0.0000}",
-					rpa[i].Qindex, rpa[i].Temperature, rpa[i].ChemicalPotential, rpa[i].Frequency);
+					rpa[i].Qindex+1, rpa[i].Temperature, rpa[i].ChemicalPotential, rpa[i].Frequency);
 				Output.WriteLine(", Tr(X_0) = {0}", val.ToString("0.0000"));
 			}
 			Output.WriteLine();
 
-			double factor = InteractionAdjustment(rpa, ref S, ref C);
+			double factor = InteractionAdjustment(rpa, S, C);
+
+			S /= factor;
+			C /= factor;
 
 			Output.WriteLine("Calculating dressed susceptibilities.");
 
@@ -258,19 +257,27 @@ namespace TightBinding
 			}
 		}
 
-		double InteractionAdjustment(List<RpaParams> rpa, ref Matrix S, ref Matrix C)
+		double InteractionAdjustment(List<RpaParams> rpa, Matrix S, Matrix C)
 		{
 			double largest = 0;
 
 			foreach (Matrix x in rpa.Select(x => x.X0))
 			{
-				Matrix B = S * x;
-				Matrix A = B * B.HermitianConjugate();
+				Matrix Bs = S * x;
+				Matrix Bc = C * x;
+				Matrix As = Bs * Bs.HermitianConjugate();
+				Matrix Ac = Bc * Bc.HermitianConjugate();
 
 				Matrix eigenvals, eigenvecs;
 
-				A.EigenValsVecs(out eigenvals, out eigenvecs);
+				As.EigenValsVecs(out eigenvals, out eigenvecs);
 				double lv = eigenvals[eigenvals.Rows - 1, 0].RealPart;
+
+				if (lv > largest)
+					largest = lv;
+
+				Ac.EigenValsVecs(out eigenvals, out eigenvecs);
+				lv = eigenvals[eigenvals.Rows - 1, 0].RealPart;
 
 				if (lv > largest)
 					largest = lv;
@@ -278,9 +285,6 @@ namespace TightBinding
 
 			largest = Math.Sqrt(largest);
 			largest *= 1.005;
-
-			S /= largest;
-			C /= largest;
 
 			Output.WriteLine("Adjusted interaction by dividing by {0}.", largest);
 

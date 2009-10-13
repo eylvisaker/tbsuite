@@ -113,7 +113,7 @@ namespace TightBinding
 			//}
 			if (setQplane)
 			{
-				qplane = KptList.GeneratePlane(lattice, qplaneDef, symmetries, qgrid);
+				qplane = KptList.GeneratePlane(lattice, qplaneDef, symmetries, qgrid, null);
 				Output.WriteLine("Found {0} irreducible qpoints in the plane of {1} qpoints.",
 					qplane.Kpts.Count, qplane.AllKpts.Count);
 

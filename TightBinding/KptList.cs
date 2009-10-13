@@ -150,17 +150,20 @@ namespace TightBinding
 			return true;
 		}
 
-		public static KptList GeneratePlane(Lattice lattice, Vector3[] points, SymmetryList syms, int[] qgrid)
+		public static KptList GeneratePlane(Lattice lattice, Vector3[] points, SymmetryList syms, int[] qgrid, int[] qshift)
 		{
-			KptList qmesh = GenerateMesh(lattice, qgrid, null, syms, true, true);
-
+			KptList qmesh = GenerateMesh(lattice, qgrid, qshift, syms, true, true);
+			return GeneratePlane(lattice, points, syms, qmesh);
+		}
+		public static KptList GeneratePlane(Lattice lattice, Vector3[] points, SymmetryList syms, KptList qmesh)
+		{
 			Vector3 diff_1 = points[1] - points[0];
 			Vector3 diff_2 = points[2] - points[0];
 			Vector3 norm = Vector3.CrossProduct(diff_1, diff_2);
 
 			KptList retval = new KptList();
 
-			retval.mesh = (int[])qgrid.Clone();
+			retval.mesh = (int[])qmesh.mesh.Clone();
 			retval.shift = new int[3];
 			retval.gammaCentered = true;
 
@@ -170,9 +173,9 @@ namespace TightBinding
 
 			NormalizeST(lattice, retval);
 
-			int zmax = qgrid[2] * 2;
-			int ymax = qgrid[1] * 2;
-			int xmax = qgrid[0] * 2;
+			int zmax = qmesh.mesh[2] * 2;
+			int ymax = qmesh.mesh[1] * 2;
+			int xmax = qmesh.mesh[0] * 2;
 
 			int index = 0;
 
@@ -655,7 +658,7 @@ namespace TightBinding
 
 			return 1 + (i + xsh) + xmax * ((j + ysh) + ymax * (k + zsh));
 		}
-		private int CalcN(Lattice lattice, Vector3 kpt)
+		public int CalcN(Lattice lattice, Vector3 kpt)
 		{
 			int i, j, k;
 
