@@ -10,8 +10,8 @@
 # Number of orbitals / sites and their locations 
 # Positions are in cartesian coordinates
 [Sites]
- 0 0 0 pi_x 2a px
- 0 0 0 pi_y 2a py
+ 0 0 0 pi_x a px
+ 0 0 0 pi_y a py
  
 # Symmetries in the crystal.
 # The numbers following the symmetry name indicate how the orbitals transform 
@@ -96,11 +96,8 @@ G        0              0             0
 
 # Optional section
 # Gives a k-mesh for calculating the density of states and doing RPA.
-# The second line gives the finite temperature smearing used in the DOS calculation.
-# It is optional.
 [KMesh]
 24 24 24 1 1 1
-0.02
 
 # Gives data for a plane of q-points in the BZ to plot.  There must be
 # four sets of three numbers here.

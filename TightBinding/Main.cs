@@ -4,30 +4,18 @@ using ERY.EMath;
 
 namespace TightBinding
 {
-	class MainClass
+	public class MainClass
 	{
 		public static int Main(string[] args)
 		{
 			System.Diagnostics.Stopwatch watch = new System.Diagnostics.Stopwatch();
 			watch.Start();
 
+
+			string filename = GetInputFile(args);
+			string outputfile = Path.GetFileNameWithoutExtension(filename) + ".out";
+
 			TightBinding c = new TightBinding();
-
-			string filename;
-			string outputfile;
-
-			if (args.Length == 0)
-			{
-				filename = AskForFilename();
-			}
-			else
-				filename = args[0];
-
-			if (filename.EndsWith(".out"))
-				throw new Exception("Invalid filename.  It must not have the extension '.out'");
-
-			outputfile = Path.GetFileNameWithoutExtension(filename) + ".out";
-
 			
 			using (StreamWriter output = new StreamWriter(outputfile))
 			{
@@ -49,6 +37,21 @@ namespace TightBinding
 
 			Console.WriteLine("            {0}:{1:00}:{2:00}.{3:000}", hours, minutes, seconds, milliseconds);
 			return 0;
+		}
+
+		public static string GetInputFile(string[] args)
+		{
+			string filename;
+
+			if (args.Length == 0)
+				filename = AskForFilename();
+			else
+				filename = args[0];
+
+			if (filename.EndsWith(".out"))
+				throw new Exception("Invalid filename.  It must not have the extension '.out'");
+
+			return filename;
 		}
 
 		private static string AskForFilename()

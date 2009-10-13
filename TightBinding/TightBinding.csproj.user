@@ -2,7 +2,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <StartArguments>
     </StartArguments>
-    <StartWorkingDirectory>C:\Users\Erik\Documents\devel\Physics\versioned\TightBinding\bin\Debug\tests\</StartWorkingDirectory>
+    <StartWorkingDirectory>C:\Users\Erik\Documents\devel\Physics\versioned\out\tests</StartWorkingDirectory>
   </PropertyGroup>
   <PropertyGroup>
     <PublishUrlHistory>

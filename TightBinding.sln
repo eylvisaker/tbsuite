@@ -5,6 +5,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TightBinding", "TightBindin
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ErikMath", "ErikMath\ErikMath\ErikMath.csproj", "{9B79B5F7-1EEC-4473-B3CA-93A2FBB05E51}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlotGreen", "PlotGreen\PlotGreen.csproj", "{EDDCC91B-663A-412C-8B91-0F597A310981}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -19,6 +21,10 @@ Global
 		{9B79B5F7-1EEC-4473-B3CA-93A2FBB05E51}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9B79B5F7-1EEC-4473-B3CA-93A2FBB05E51}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9B79B5F7-1EEC-4473-B3CA-93A2FBB05E51}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EDDCC91B-663A-412C-8B91-0F597A310981}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EDDCC91B-663A-412C-8B91-0F597A310981}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EDDCC91B-663A-412C-8B91-0F597A310981}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EDDCC91B-663A-412C-8B91-0F597A310981}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
