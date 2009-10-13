@@ -30,28 +30,72 @@ namespace PlotGreen
 				//if (File.Exists("green.dat") == false)
 				//    throw new FileNotFoundException("The file green.dat is not present.", "green.dat");
 
-				RpaParams[] plist = ScanGreenFile(tb);
+				RpaParams p = new RpaParams(0, tb.TemperatureMesh[0], tb.FrequencyMesh[0], tb.MuMesh[0]);
+				KptList kmesh = KptList.GenerateMesh(
+					tb.Lattice, tb.KMesh.Mesh, null, tb.Symmetries, true, true);
+
+				Matrix[] green = CalcGreenFunction(tb, p, kmesh);
 
 				while (true)
 				{
-					int greenIndex = GetGreenIndex(plist);
-					
-					if (greenIndex < 0)
-						break;
-
-					Matrix[] green = ReadGreenFunction(tb, greenIndex);
-
-					WriteGreenFunction(tb, green);
+					WriteGreenFunction(tb, green, kmesh);
 				};
 			}
 		}
 
-		private void WriteGreenFunction(TbInputFile tb, Matrix[] green)
+		private Matrix[] CalcGreenFunction(TbInputFile tb, RpaParams p, KptList kmesh)
 		{
-			WriteGreenFunctionPlane(tb, green);
+			int orbitalCount = tb.Sites.Count;
+			Matrix[] retval = new Matrix[kmesh.Kpts.Count];
+			TightBinding.TightBinding tbobj = new TightBinding.TightBinding();
+
+			for (int k = 0; k < kmesh.Kpts.Count; k++)
+			{
+				retval[k] = new Matrix(orbitalCount, orbitalCount);
+
+				Matrix hamilt = tbobj.CalcHamiltonian(tb, kmesh.Kpts[k].Value);
+				Matrix vals, vecs;
+				hamilt.EigenValsVecs(out vals, out vecs);
+
+
+				for (int n = 0; n < orbitalCount; n++)
+				{
+					for (int i = 0; i < orbitalCount; i++)
+					{
+						for (int j = 0; j < orbitalCount; j++)
+						{
+							var wfk = new Wavefunction(orbitalCount);
+
+							wfk.Energy = vals[n, 0].RealPart;
+
+							for (int c = 0; c < vecs.Rows; c++)
+							{
+								wfk.Coeffs[c] = vecs[c, n];
+							}
+
+							Complex coeff =
+								wfk.Coeffs[i].Conjugate() *
+								wfk.Coeffs[j];
+
+							Complex g = 1.0 / (p.Frequency + p.ChemicalPotential - wfk.Energy + 
+														new Complex(0, p.Temperature));
+
+							retval[k][i, j] += g * coeff;
+						}
+					}
+				}
+
+			}
+
+			return retval;
 		}
 
-		private void WriteGreenFunctionPlane(TbInputFile tb, Matrix[] green)
+		private void WriteGreenFunction(TbInputFile tb, Matrix[] green, KptList kmesh)
+		{
+			WriteGreenFunctionPlane(tb, green, kmesh);
+		}
+
+		private void WriteGreenFunctionPlane(TbInputFile tb, Matrix[] green, KptList kmesh)
 		{
 			Console.WriteLine("Output as a plane.");
 			Console.WriteLine();
@@ -79,7 +123,7 @@ namespace PlotGreen
 			Vector3 closestKpt = Vector3.Zero;
 			double closestDistance = 999999999;
 
-			foreach (var kpt in tb.KMesh.AllKpts)
+			foreach (var kpt in kmesh.AllKpts)
 			{
 				double distance = (kpt.Value - orig).MagnitudeSquared;
 
@@ -99,7 +143,7 @@ namespace PlotGreen
 			}
 
 			KptList plane = KptList.GeneratePlane(
-				tb.Lattice, new Vector3[] { orig, sdir, tdir }, tb.Symmetries, tb.KMesh);
+				tb.Lattice, new Vector3[] { orig, sdir, tdir }, tb.Symmetries, kmesh);
 
 			for (int i = 0; i < green[0].Rows; i++)
 			{
@@ -125,7 +169,7 @@ namespace PlotGreen
 
 							plane.GetPlaneST(plane.AllKpts[k], out s, out t);
 
-							int kindex = tb.KMesh.GetKindex(tb.Lattice, kpt, out orbitalMap, tb.Symmetries);
+							int kindex = kmesh.GetKindex(tb.Lattice, kpt, out orbitalMap, tb.Symmetries);
 
 							if (Math.Abs(t - lastt) > 1e-6)
 							{
@@ -148,12 +192,8 @@ namespace PlotGreen
 						imw.Dispose();
 						mag.Dispose();
 					}
-					{
-
-					}
 				}
 			}
-
 		}
 
 		private int GetGreenIndex(RpaParams[] plist)
