@@ -12,9 +12,10 @@ namespace PlotGreen
 	{
 		static void Main(string[] args)
 		{
-			Console.WriteLine("==========================================");
-			Console.WriteLine("Green's function generating code");
-			Console.WriteLine("Written by Dr. Erik R. Ylvisaker");
+			Console.WriteLine("-----------------------------------------------------");
+			Console.WriteLine("|            Green's function generator             |");
+			Console.WriteLine("|             By Dr. Erik R. Ylvisaker              |");
+			Console.WriteLine("-----------------------------------------------------");
 			Console.WriteLine();
 
 			PlotGreenProgram inst = new PlotGreenProgram();
