@@ -12,6 +12,11 @@ namespace PlotGreen
 	{
 		static void Main(string[] args)
 		{
+			Console.WriteLine("==========================================");
+			Console.WriteLine("Green's function generating code");
+			Console.WriteLine("Written by Dr. Erik R. Ylvisaker");
+			Console.WriteLine();
+
 			PlotGreenProgram inst = new PlotGreenProgram();
 			inst.Run(args);
 		}
@@ -30,9 +35,9 @@ namespace PlotGreen
 				//if (File.Exists("green.dat") == false)
 				//    throw new FileNotFoundException("The file green.dat is not present.", "green.dat");
 
-				RpaParams p = new RpaParams(0, tb.TemperatureMesh[0], tb.FrequencyMesh[0], tb.MuMesh[0]);
+				RpaParams p = new RpaParams(0, Vector3.Zero, tb.TemperatureMesh[0], tb.FrequencyMesh[0], tb.MuMesh[0]);
 				KptList kmesh = KptList.GenerateMesh(
-					tb.Lattice, tb.KMesh.Mesh, null, tb.Symmetries, true, true);
+					tb.Lattice, tb.KMesh.Mesh, null, tb.Symmetries, true);
 
 				Matrix[] green = CalcGreenFunction(tb, p, kmesh);
 
@@ -229,115 +234,5 @@ namespace PlotGreen
 			} 
 		}
 
-		private RpaParams[] ScanGreenFile(TbInputFile tb)
-		{
-			List<RpaParams> plist = new List<RpaParams>();
-
-			using (StreamReader r = new StreamReader("green.dat"))
-			{
-				double temp = 0;
-				double mu = 0;
-				double freq = 0;
-
-				while (r.EndOfStream == false)
-				{
-					string line = r.ReadLine();
-
-					if (line.StartsWith("#") == false)
-					{
-						if (temp != 0)
-						{
-							plist.Add(
-								new RpaParams(0, temp, freq, mu));
-
-							temp = 0;
-						}
-
-						continue;
-					}
-					string[] vals = line.Split(seps, StringSplitOptions.RemoveEmptyEntries);
-
-					switch (vals[1])
-					{
-						case "Temperature:":
-							temp = double.Parse(vals[2]);
-							break;
-						case "Chemical Potential:":
-							mu = double.Parse(vals[2]);
-							break;
-						case "Frequency:":
-							freq = double.Parse(vals[2]);
-							break;
-					}
-				}
-			}
-
-			return plist.ToArray();
-		}
-
-		static readonly char[] seps = new char[] { ' ', '\t' };
-
-		private static Matrix[] ReadGreenFunction(TightBinding.TbInputFile tb,int greenIndex)
-		{
-			Matrix[] green = new Matrix[tb.KMesh.Kpts.Count];
-
-			using (StreamReader r = new StreamReader("green.dat"))
-			{
-				int index = 0;
-				int lineNumber = 0;
-
-				while (r.EndOfStream == false)
-				{
-					string line = r.ReadLine();
-					lineNumber++;
-
-					if (line.StartsWith("#"))
-					{
-						if (index > 0)
-						{
-							greenIndex--;
-							if (greenIndex < 0)
-								break;
-							else
-								continue;
-						}
-						else
-							continue;
-					}
-
-					string[] vals = line.Split(seps, StringSplitOptions.RemoveEmptyEntries);
-
-					if (int.Parse(vals[0]) != index)
-						throw new InvalidDataException("Invalid data on line " + lineNumber.ToString() + ".");
-
-					green[index] = new Matrix(tb.Sites.Count, tb.Sites.Count);
-
-					int i = 0;
-					int j = 0;
-
-					for (int valIndex = 1; valIndex < vals.Length; valIndex += 2)
-					{
-						Complex val = Complex.Parse(vals[valIndex], vals[valIndex + 1]);
-
-						green[index][i, j] = val;
-
-						i++;
-						if (i >= tb.Sites.Count)
-						{
-							i = 0;
-							j++;
-						}
-					}
-
-					if (j != tb.Sites.Count)
-						throw new InvalidDataException("Invalid data on line " + lineNumber.ToString() + ".");
-
-					index++;
-
-				}
-			}
-
-			return green;
-		}
 	}
 }
