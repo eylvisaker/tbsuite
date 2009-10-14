@@ -7,14 +7,16 @@ namespace TightBinding
 {
 	public class RpaParams
 	{
-		public RpaParams(int qptIndex, double temperature, double frequency, double mu)
+		public RpaParams(int qptIndex, Vector3 qptValue, double temperature, double frequency, double mu)
 		{
 			Qindex = qptIndex;
+			QptValue = qptValue;
 			Temperature = temperature;
 			Frequency = frequency;
 			ChemicalPotential = mu;
 		}
 
+		public Vector3 QptValue { get; private set; }
 		public int Qindex { get; private set; }
 		public double Temperature { get; private set; }
 		public double Frequency { get; private set; }

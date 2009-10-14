@@ -102,15 +102,19 @@ namespace TightBinding
 
 		private void GenerateKmesh()
 		{
-			kmesh = KptList.GenerateMesh(lattice, kgrid, shift, symmetries, false, false);
+			kmesh = KptList.GenerateMesh(lattice, kgrid, shift, symmetries, false);
 
 			Output.WriteLine("Applied {0} symmetries to get {1} irreducible kpoints from {2}.",
 				symmetries.Count, kmesh.Kpts.Count, kmesh.AllKpts.Count);
 
-			//for (int i = 0; i < kmesh.Kpts.Count; i++)
-			//{
-			//    Output.WriteLine("    {0}", kmesh.Kpts[i].Value);
-			//}
+			using (StreamWriter writer = new StreamWriter("kpts"))
+			{
+				for (int i = 0; i < kmesh.Kpts.Count; i++)
+				{
+					writer.WriteLine("    {0}", kmesh.Kpts[i].Value);
+				}
+			}
+
 			if (setQplane)
 			{
 				qplane = KptList.GeneratePlane(lattice, qplaneDef, symmetries, qgrid, null);

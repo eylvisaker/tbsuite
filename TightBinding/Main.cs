@@ -11,6 +11,11 @@ namespace TightBinding
 			System.Diagnostics.Stopwatch watch = new System.Diagnostics.Stopwatch();
 			watch.Start();
 
+			Console.WriteLine("-----------------------------------------------------");
+			Console.WriteLine("|             Tight-Binding / RPA code              |" );
+			Console.WriteLine("|             By Dr. Erik R. Ylvisaker              |");
+			Console.WriteLine("-----------------------------------------------------");
+			Console.WriteLine();
 
 			string filename = GetInputFile(args);
 			string outputfile = Path.GetFileNameWithoutExtension(filename) + ".out";

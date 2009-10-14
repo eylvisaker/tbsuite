@@ -20,17 +20,17 @@
 # orbitals transform into themselves.
 [Symmetry]
 E
-C2(y)
-C2(x)
-C2(z)
+#C2(y)
+#C2(x)
+#C2(z)
 #C2(xy)   
 #C3/4(z)  2 1
 #C1/4(z)  2 1
 #C2(x-y)  2 1
 I
-s(y)
-s(x)
-s(z)
+#s(y)
+#s(x)
+#s(z)
 #s(xy)    2 1
 #S1/4(z)  2 1
 #S3/4(z)  2 1
@@ -96,17 +96,24 @@ G        0              0             0
 
 # Gives a k-mesh for calculating the density of states and doing RPA.
 [KMesh]
-16 16 16 1 1 1
+12 12 12 1 1 1
 
 # Gives data for a plane of q-points in the BZ to plot.  There must be
 # four sets of three numbers here.
 # The first three numbers are the q-point mesh from which points are taken.
 # The next three groups of three numbers are q-points which define the plane.
 [QPlane]
-16 16 16
+12 12 12
 0   0   0  
 1   1   0
 0   0   1
+
+# Temperature mesh for RPA calculation
+# You may enter just a single number to calculate a single frequency,
+# or something of the form:
+#    lower_bound  upper_bound  num_points
+[Temperature]
+0.001
 
 # Frequency mesh for RPA calculation
 # You may enter just a single number to calculate a single frequency,
@@ -115,12 +122,7 @@ G        0              0             0
 [Frequency]
 0.0
 
-# Temperature mesh for RPA calculation
-# You may enter just a single number to calculate a single frequency,
-# or something of the form:
-#    lower_bound  upper_bound  num_points
-[Temperature]
-0.01
+
 
 # Hubbard model parameters for RPA calculation
 # U, U prime, J, J prime. (don't enter commas).

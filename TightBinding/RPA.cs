@@ -108,6 +108,7 @@ namespace TightBinding
 						{
 							rpa.Add(new RpaParams(
 								qIndex,
+								QMesh[qIndex].Value,
 								TemperatureMesh[tempIndex],
 								FrequencyMesh[freqIndex],
 								input.MuMesh[muIndex]));
@@ -151,11 +152,7 @@ namespace TightBinding
 
 					Output.WriteLine("Estimated total time {0:+hh.mm.ss}", s);
 				}
-				Complex val = new Complex();
-				for (int j = 0; j < rpa[i].X0.Rows; j++)
-				{
-					val += rpa[i].X0[j, j];
-				}
+				Complex val = rpa[i].X0.Trace();
 
 				Output.Write("q = {0}, T = {1:0.000}, mu = {2:0.000}, omega = {3:0.0000}",
 					rpa[i].Qindex+1, rpa[i].Temperature, rpa[i].ChemicalPotential, rpa[i].Frequency);
@@ -165,27 +162,84 @@ namespace TightBinding
 
 			double factor = InteractionAdjustment(rpa, S, C);
 
-			S /= factor;
-			C /= factor;
+			S *= factor;
+			C *= factor;
 
 			Output.WriteLine("Calculating dressed susceptibilities.");
+			Output.WriteLine();
+
+			RpaParams largestParams = null;
+			double largest = 0;
+			string indices = "";
+			bool charge = false;
 
 			for (int i = 0; i < rpa.Count; i++)
 			{
 				Matrix s_denom = (ident - S * rpa[i].X0);
 				Matrix c_denom = (ident + C * rpa[i].X0);
 
-				rpa[i].Xs = s_denom.Invert() * rpa[i].X0;
-				rpa[i].Xc = c_denom.Invert() * rpa[i].X0;
+				Matrix s_inv = s_denom.Invert();
+				Matrix c_inv = c_denom.Invert();
+
+				rpa[i].Xs = rpa[i].X0 * s_inv;
+				rpa[i].Xc = rpa[i].X0 * c_inv;
+
+				for (int l1 = 0; l1 < input.Sites.Count; l1++)
+				{
+					for (int l2 = 0; l2 < input.Sites.Count; l2++)
+					{
+						for (int l3 = 0; l3 < input.Sites.Count; l3++)
+						{
+							for (int l4 = 0; l4 < input.Sites.Count; l4++)
+							{
+								int a = GetIndex(input, l1, l2);
+								int b = GetIndex(input, l3, l4);
+
+								bool found = false;
+
+								if (rpa[i].Xs[a,b].MagnitudeSquared > largest)
+								{
+									largest = rpa[i].Xs[a,b].MagnitudeSquared;
+									charge = false;
+									found = true;
+								}
+								if (rpa[i].Xc[a, b].MagnitudeSquared > largest)
+								{
+									largest = rpa[i].Xc[a, b].MagnitudeSquared;
+									charge = true;
+									found = true;
+								}
+								if (found == false)
+									continue;
+
+								indices = string.Format("{0}{1}{2}{3}", l1, l2, l3, l4);
+								largestParams = rpa[i];
+							}
+						}
+					}
+				}
 			}
+
+			Output.WriteLine("Largest susceptibility found at:");
+			Output.WriteLine("    {0} susceptibility: {1}", charge ? "Charge" : "Spin", largest);
+			Output.WriteLine("    Indices: {0}", indices);
+			Output.WriteLine("    Temperature: {0}", largestParams.Temperature);
+			Output.WriteLine("    Frequency: {0}", largestParams.Frequency);
+			Output.WriteLine("    Chemical Potential: {0}", largestParams.ChemicalPotential);
+			Output.WriteLine("    Q: {0}", largestParams.QptValue);
+
 		}
 
 		double InteractionAdjustment(List<RpaParams> rpa, Matrix S, Matrix C)
 		{
 			double largest = 0;
+			RpaParams largestParams = null;
+			bool Cdiv = false;
 
-			foreach (Matrix x in rpa.Select(x => x.X0))
+			foreach (RpaParams p in rpa)
 			{
+				Matrix x = p.X0;
+
 				Matrix Bs = S * x;
 				Matrix Bc = C * x;
 				Matrix As = Bs * Bs.HermitianConjugate();
@@ -197,20 +251,39 @@ namespace TightBinding
 				double lv = eigenvals[eigenvals.Rows - 1, 0].RealPart;
 
 				if (lv > largest)
+				{
 					largest = lv;
+					largestParams = p;
+					Cdiv = false;
+				}
 
 				Ac.EigenValsVecs(out eigenvals, out eigenvecs);
 				lv = eigenvals[eigenvals.Rows - 1, 0].RealPart;
 
 				if (lv > largest)
+				{
 					largest = lv;
+					largestParams = p;
+					Cdiv = true;
+				}
 			}
 
 			largest = Math.Sqrt(largest);
-			largest *= 1.005;
 
-			Output.WriteLine("Adjusted interaction by dividing by {0}.", largest);
+			if (largest >= 1)
+			{
+				Output.WriteLine("Interaction should be divided by {0} to avoid divergence.", largest);
+			}
+			Output.WriteLine("Largest eigenvalue found at:");
+			Output.WriteLine("    q = {0}", largestParams.QptValue);
+			Output.WriteLine("    T = {0}", largestParams.Temperature);
+			Output.WriteLine("    u = {0}", largestParams.ChemicalPotential);
+			Output.WriteLine("    w = {0}", largestParams.Frequency);
+			Output.WriteLine("    {0} susceptibility", Cdiv ? "Charge" : "Spin");
 
+			largest *= 1.001;
+
+			Output.WriteLine();
 			return 1 / largest;
 		}
 
