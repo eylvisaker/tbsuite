@@ -4,9 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using ERY.EMath;
-using TightBinding;
 
-namespace PlotGreen
+namespace TightBindingSuite
 {
 	class PlotGreenProgram
 	{
@@ -23,13 +22,13 @@ namespace PlotGreen
 		}
 		void Run(string[] args)
 		{
-			string inputfile = TightBinding.MainClass.GetInputFile(args);
+			string inputfile = TightBindingSuite.MainClass.GetInputFile(args);
 
 			using (StreamWriter w = new StreamWriter("gplot.out"))
 			{
 				Output.SetFile(w);
 
-				TightBinding.TightBinding tb = new TightBinding.TightBinding();
+				TightBindingSuite.TightBinding tb = new TightBindingSuite.TightBinding();
 				tb.LoadTB(inputfile);
 
 				//if (File.Exists("green.dat") == false)
@@ -48,7 +47,7 @@ namespace PlotGreen
 			}
 		}
 
-		private Matrix[] CalcGreenFunction(TightBinding.TightBinding tb, RpaParams p, KptList kmesh)
+		private Matrix[] CalcGreenFunction(TightBindingSuite.TightBinding tb, RpaParams p, KptList kmesh)
 		{
 			int orbitalCount = tb.Sites.Count;
 			Matrix[] retval = new Matrix[kmesh.Kpts.Count];
@@ -95,12 +94,12 @@ namespace PlotGreen
 			return retval;
 		}
 
-		private void WriteGreenFunction(TightBinding.TightBinding tb, Matrix[] green, KptList kmesh)
+		private void WriteGreenFunction(TightBindingSuite.TightBinding tb, Matrix[] green, KptList kmesh)
 		{
 			WriteGreenFunctionPlane(tb, green, kmesh);
 		}
 
-		private void WriteGreenFunctionPlane(TightBinding.TightBinding tb, Matrix[] green, KptList kmesh)
+		private void WriteGreenFunctionPlane(TightBindingSuite.TightBinding tb, Matrix[] green, KptList kmesh)
 		{
 			Console.WriteLine("Output as a plane.");
 			Console.WriteLine();

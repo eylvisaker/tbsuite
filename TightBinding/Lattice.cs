@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using ERY.EMath;
 
-namespace TightBinding
+namespace TightBindingSuite
 {
 	public class Lattice
 	{

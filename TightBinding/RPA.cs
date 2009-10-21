@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using ERY.EMath;
 
-namespace TightBinding
+namespace TightBindingSuite
 {
 	class RPA
 	{

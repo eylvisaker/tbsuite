@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using ERY.EMath;
 
-namespace TightBinding
+namespace TightBindingSuite
 {
 	public class SiteList : List<Site>
 	{

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using ERY.EMath;
 
-namespace TightBinding
+namespace TightBindingSuite
 {
 	public class InteractionPair
 	{

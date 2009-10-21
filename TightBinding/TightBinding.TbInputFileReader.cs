@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using ERY.EMath;
 
-namespace TightBinding
+namespace TightBindingSuite
 {
 	public partial class TightBinding
 	{

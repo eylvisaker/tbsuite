@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using ERY.EMath;
 
-namespace TightBinding
+namespace TightBindingSuite
 {
 	public class KptList
 	{

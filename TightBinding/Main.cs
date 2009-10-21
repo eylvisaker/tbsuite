@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using ERY.EMath;
 
-namespace TightBinding
+namespace TightBindingSuite
 {
 	public class MainClass
 	{

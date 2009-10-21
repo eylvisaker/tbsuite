@@ -2,7 +2,7 @@
 using System;
 using System.IO;
 
-namespace TightBinding
+namespace TightBindingSuite
 {
 	public abstract class InputReader
 	{

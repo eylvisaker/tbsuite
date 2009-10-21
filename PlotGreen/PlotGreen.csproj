@@ -8,7 +8,7 @@
     <ProjectGuid>{EDDCC91B-663A-412C-8B91-0F597A310981}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>PlotGreen</RootNamespace>
+    <RootNamespace>TightBindingSuite</RootNamespace>
     <AssemblyName>PlotGreen</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>

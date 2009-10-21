@@ -13,7 +13,7 @@
     <OldToolsVersion>2.0</OldToolsVersion>
     <UpgradeBackupLocation>
     </UpgradeBackupLocation>
-    <RootNamespace>TightBinding</RootNamespace>
+    <RootNamespace>TightBindingSuite</RootNamespace>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>

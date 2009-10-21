@@ -4,7 +4,7 @@ using System.IO;
 using System.Text;
 using ERY.EMath;
 
-namespace TightBinding
+namespace TightBindingSuite
 {
 	public partial class TightBinding
 	{
