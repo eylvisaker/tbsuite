@@ -8,6 +8,70 @@ namespace TightBindingSuite
 {
 	class RPA
 	{
+		static void Main(string[] args)
+		{
+			string inputfile = InputHelper.GetInputFile("Random Phase Approximation code", "rpa", args);
+
+			RPA inst = new RPA();
+			inst.Run(inputfile);
+		}
+
+		void Run(string inputfile)
+		{
+			TightBinding tb = new TightBinding();
+			tb.LoadTB(inputfile);
+			tb.RunTB();
+
+			bool ranRPA = false;
+
+			if (tb.QPlane != null && tb.QPlane.Kpts.Count > 0)
+			{
+				RunRpa(tb, tb.QPlane);
+				ranRPA = true;
+			}
+
+			if (!ranRPA)
+				Output.WriteLine("No q-points defined, so we will not run the RPA.");
+
+		}
+
+		public void RunRpa(TightBinding tb, KptList qpts)
+		{
+			CalculateBands(tb);
+
+			List<KPoint> QMesh = qpts.Kpts;
+			double[] FrequencyMesh = tb.FrequencyMesh;
+			double[] TemperatureMesh = tb.TemperatureMesh;
+
+			List<RpaParams> rpa = new List<RpaParams>();
+
+			for (int tempIndex = 0; tempIndex < TemperatureMesh.Length; tempIndex++)
+			{
+				for (int muIndex = 0; muIndex < tb.MuMesh.Length; muIndex++)
+				{
+					for (int qIndex = 0; qIndex < QMesh.Count; qIndex++)
+					{
+						for (int freqIndex = 0; freqIndex < FrequencyMesh.Length; freqIndex++)
+						{
+							rpa.Add(new RpaParams(
+								qIndex,
+								QMesh[qIndex].Value,
+								TemperatureMesh[tempIndex],
+								FrequencyMesh[freqIndex],
+								tb.MuMesh[muIndex]));
+						}
+					}
+				}
+			}
+
+			CalcX0(tb, qpts, rpa);
+
+			SaveMatricesQPlane(tb, QMesh, rpa, x => x.X0, "chi_0");
+			SaveMatricesQPlane(tb, QMesh, rpa, x => x.Xs, "chi_s");
+			SaveMatricesQPlane(tb, QMesh, rpa, x => x.Xc, "chi_c");
+
+		}
+
 		Wavefunction[][] bands;
 		Wavefunction[][] kqbands;
 
@@ -109,43 +173,7 @@ namespace TightBindingSuite
 			}
 		}
 		
-		public void RunRpa(TightBinding tb, KptList qpts)
-		{
-			CalculateBands(tb);
-
-			List<KPoint> QMesh = qpts.Kpts;
-			double[] FrequencyMesh = tb.FrequencyMesh;
-			double[] TemperatureMesh = tb.TemperatureMesh;
-
-			List<RpaParams> rpa = new List<RpaParams>();
-
-			for (int tempIndex = 0; tempIndex < TemperatureMesh.Length; tempIndex++)
-			{
-				for (int muIndex = 0; muIndex < tb.MuMesh.Length; muIndex++)
-				{
-					for (int qIndex = 0; qIndex < QMesh.Count; qIndex++)
-					{
-						for (int freqIndex = 0; freqIndex < FrequencyMesh.Length; freqIndex++)
-						{
-							rpa.Add(new RpaParams(
-								qIndex,
-								QMesh[qIndex].Value,
-								TemperatureMesh[tempIndex],
-								FrequencyMesh[freqIndex],
-								tb.MuMesh[muIndex]));
-						}
-					}
-				}
-			}
-
-			CalcX0(tb, qpts, rpa);
-
-			SaveMatricesQPlane(tb, QMesh, rpa, x => x.X0, "chi_0");
-			SaveMatricesQPlane(tb, QMesh, rpa, x => x.Xs, "chi_s");
-			SaveMatricesQPlane(tb, QMesh, rpa, x => x.Xc, "chi_c");
-
-		}
-
+		
 		private void CalcX0(TightBinding tb, KptList qpts, List<RpaParams> rpa)
 		{
 			Matrix ident = Matrix.Identity(tb.Sites.Count * tb.Sites.Count);

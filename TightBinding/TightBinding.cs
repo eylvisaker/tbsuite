@@ -53,30 +53,6 @@ namespace TightBindingSuite
 		}
 		public void RunTB()
 		{
-			CalcValues();
-
-			bool ranRPA = false;
-
-			if (QPlane != null && QPlane.Kpts.Count > 0)
-			{
-				RunRPA(QPlane);
-				ranRPA = true;
-			}
-
-			if (!ranRPA)
-				Output.WriteLine("No q-points defined, so we will not run the RPA.");
-
-		}
-
-		private void RunRPA(KptList qptList)
-		{
-			RPA rpa = new RPA();
-
-			rpa.RunRpa(this, qptList);
-		}
-		
-		public void CalcValues()
-		{
 			CalcNelec();
 			DoBandStructure();
 			DoDensityOfStates();

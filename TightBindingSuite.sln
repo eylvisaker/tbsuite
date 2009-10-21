@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ErikMath", "ErikMath\ErikMa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlotGreen", "PlotGreen\PlotGreen.csproj", "{EDDCC91B-663A-412C-8B91-0F597A310981}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RPA", "RPA\RPA.csproj", "{ACB39091-6E45-414E-8A7F-7B27F9D10FB6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,6 +27,10 @@ Global
 		{EDDCC91B-663A-412C-8B91-0F597A310981}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EDDCC91B-663A-412C-8B91-0F597A310981}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EDDCC91B-663A-412C-8B91-0F597A310981}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ACB39091-6E45-414E-8A7F-7B27F9D10FB6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ACB39091-6E45-414E-8A7F-7B27F9D10FB6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ACB39091-6E45-414E-8A7F-7B27F9D10FB6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ACB39091-6E45-414E-8A7F-7B27F9D10FB6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

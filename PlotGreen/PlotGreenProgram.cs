@@ -11,18 +11,13 @@ namespace TightBindingSuite
 	{
 		static void Main(string[] args)
 		{
-			Console.WriteLine("-----------------------------------------------------");
-			Console.WriteLine("|            Green's function generator             |");
-			Console.WriteLine("|             By Dr. Erik R. Ylvisaker              |");
-			Console.WriteLine("-----------------------------------------------------");
-			Console.WriteLine();
+			string inputfile = InputHelper.GetInputFile("Green's function generator", "g", args);
 
 			PlotGreenProgram inst = new PlotGreenProgram();
-			inst.Run(args);
+			inst.Run(inputfile);
 		}
-		void Run(string[] args)
+		void Run(string inputfile)
 		{
-			string inputfile = TightBindingSuite.MainClass.GetInputFile(args);
 
 			using (StreamWriter w = new StreamWriter("gplot.out"))
 			{
