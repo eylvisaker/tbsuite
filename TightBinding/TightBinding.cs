@@ -6,26 +6,60 @@ using ERY.EMath;
 
 namespace TightBinding
 {
-	public class TightBinding
+	public partial class TightBinding
 	{
+		Lattice lattice;
+		SiteList sites;
+		HoppingPairList hoppings;
+		KptList kpath, kmesh;
+		KptList qplane;
+		List<int> poles = new List<int>();
+
+		public Lattice Lattice { get { return lattice; } }
+		public SiteList Sites { get { return sites; } }
+		public HoppingPairList Hoppings { get { return hoppings; } }
+		public KptList KPath { get { return kpath; } }
+		public KptList KMesh { get { return kmesh; } }
+		public KptList QPlane { get { return qplane; } }
+		public double[] FrequencyMesh { get; private set; }
+		public double[] TemperatureMesh { get; private set; }
+		public double[] MuMesh { get; private set; }
+		public List<int> PoleStates { get { return poles; } }
+		public SymmetryList Symmetries { get { return symmetries; } }
+		public double Nelec { get; private set; }
+
+		public InteractionList Interactions { get; private set; }
+
+		int[] kgrid = new int[3];
+		int[] shift = new int[] { 1, 1, 1 };
+		SymmetryList symmetries = new SymmetryList();
+
+		int[] qgrid = new int[3];
+		Vector3[] qplaneDef = new Vector3[3];
+		bool setQplane = false;
+
+
 		string outputfile;
 
-		public void RunTB(string filename, string outputPrefix)
+		public void LoadTB(string filename)
 		{
+			string outputPrefix = Path.GetFileNameWithoutExtension(filename);
 			this.outputfile = outputPrefix;
-			
-			TbInputFile r = new TbInputFile(filename);
+
+			TightBinding.TbInputFileReader r = new TightBinding.TbInputFileReader(filename, this);
 			r.ReadFile();
 
 			Output.WriteLine("Successfully parsed input file.");
-
-			CalcValues(r);
+		}
+		public void RunTB()
+		{
+			CalcValues();
 
 			bool ranRPA = false;
 
-			if (r.QPlane != null && r.QPlane.Kpts.Count > 0)
+			if (QPlane != null && QPlane.Kpts.Count > 0)
 			{
-				RunRPA(r, r.QPlane);
+				RunRPA(QPlane);
 				ranRPA = true;
 			}
 
@@ -34,18 +68,18 @@ namespace TightBinding
 
 		}
 
-		private void RunRPA(TbInputFile r , KptList qptList)
+		private void RunRPA(KptList qptList)
 		{
 			RPA rpa = new RPA();
 
-			rpa.RunRpa(this, r, qptList);
+			rpa.RunRpa(this, qptList);
 		}
 		
-		public void CalcValues(TbInputFile inp)
+		public void CalcValues()
 		{
-			CalcNelec(inp);
-			DoBandStructure(inp);
-			DoDensityOfStates(inp);
+			CalcNelec();
+			DoBandStructure();
+			DoDensityOfStates();
 		}
 
 
@@ -54,32 +88,32 @@ namespace TightBinding
 			return 1.0 / (Math.Exp(beta * (omega - mu)) + 1);
 		}
 
-		private void CalcNelec(TbInputFile inp)
+		private void CalcNelec()
 		{
-			KptList ks = inp.KMesh;
+			KptList ks = KMesh;
 			Matrix[] eigenvals = new Matrix[ks.Kpts.Count];
 
 			for (int i = 0; i < ks.Kpts.Count; i++)
 			{
-				Matrix m = CalcHamiltonian(inp, ks.Kpts[i]);
+				Matrix m = CalcHamiltonian(ks.Kpts[i]);
 				Matrix vals, vecs;
 				m.EigenValsVecs(out vals, out vecs);
 
 				eigenvals[i] = vals;
 			}
 
-			double beta = 1 / inp.TemperatureMesh[0];
+			double beta = 1 / TemperatureMesh[0];
 
-			double N = FindNelec(ks, eigenvals, inp.MuMesh[0], beta);
+			double N = FindNelec(ks, eigenvals, MuMesh[0], beta);
 
-			if (inp.Nelec != 0)
+			if (Nelec != 0)
 			{
-				inp.MuMesh[0] = FindMu(ks, eigenvals, inp.Nelec, beta);
-				Output.WriteLine("Found chemical potential of {0}", inp.MuMesh[0]);
+				MuMesh[0] = FindMu(ks, eigenvals, Nelec, beta);
+				Output.WriteLine("Found chemical potential of {0}", MuMesh[0]);
 			}
 			else
 			{
-				N = FindNelec(ks, eigenvals, inp.MuMesh[0], beta);
+				N = FindNelec(ks, eigenvals, MuMesh[0], beta);
 
 			}
 		}
@@ -192,20 +226,20 @@ namespace TightBinding
 			}
 			return N;
 		}
-		void DoDensityOfStates(TbInputFile inp)
+		void DoDensityOfStates()
 		{
-			KptList ks = inp.KMesh;
+			KptList ks = KMesh;
 			using (StreamWriter outf = new StreamWriter(outputfile + ".dos"))
 			{
 
-				double smearing = inp.TemperatureMesh[0];
+				double smearing = TemperatureMesh[0];
 				double effBeta = 1 / smearing;
 				
 				double emin = double.MaxValue, emax = double.MinValue;
 
 				for (int i = 0; i < ks.Kpts.Count; i++)
 				{
-					Matrix m = CalcHamiltonian(inp, ks.Kpts[i]);
+					Matrix m = CalcHamiltonian(ks.Kpts[i]);
 					Matrix vals, vecs;
 					m.EigenValsVecs(out vals, out vecs);
 
@@ -213,7 +247,7 @@ namespace TightBinding
 
 					for (int j = 0; j < vals.Rows; j++)
 					{
-						double ev = vals[j, 0].RealPart - inp.MuMesh[0];
+						double ev = vals[j, 0].RealPart - MuMesh[0];
 
 						if (emin > ev) emin = ev;
 						if (emax < ev) emax = ev;
@@ -226,7 +260,7 @@ namespace TightBinding
 				int epts = 3000;
 
 				double[] energyGrid = new double[epts];
-				double[,] dos = new double[epts, inp.Sites.Count + 1];
+				double[,] dos = new double[epts, Sites.Count + 1];
 				int zeroIndex = 0;
 
 				Output.WriteLine(
@@ -245,13 +279,13 @@ namespace TightBinding
 				
 				for (int i = 0; i < ks.Kpts.Count; i++)
 				{
-					Matrix m = CalcHamiltonian(inp, ks.Kpts[i]);
+					Matrix m = CalcHamiltonian(ks.Kpts[i]);
 					Matrix vals, vecs;
 					m.EigenValsVecs(out vals, out vecs);
 
 					for (int j = 0; j < vals.Rows; j++)
 					{
-						double energy = vals[j, 0].RealPart - inp.MuMesh[0];
+						double energy = vals[j, 0].RealPart - MuMesh[0];
 
 						int startIndex = FindIndex(energyGrid, energy - smearing * 10);
 						int endIndex = FindIndex(energyGrid, energy + smearing * 10);
@@ -265,20 +299,20 @@ namespace TightBinding
 							double weight = 0;
 							for (int l = 0; l < vecs.Rows; l++)
 							{
-								if (inp.PoleStates.Contains(l))
+								if (PoleStates.Contains(l))
 									continue;
 
 								double stateval = vecs[l, j].MagnitudeSquared;
 								weight += stateval;
 							}
-							if (inp.PoleStates.Count == 0 && Math.Abs(weight - 1) > 1e-8)
+							if (PoleStates.Count == 0 && Math.Abs(weight - 1) > 1e-8)
 								throw new Exception("Eigenvector not normalized!");
 
 							dos[k, 0] += smearWeight * weight;
 
 							for (int state = 0; state < vecs.Rows; state++)
 							{
-								if (inp.PoleStates.Contains(state))
+								if (PoleStates.Contains(state))
 									continue;
 
 								double wtk = vecs[state, j].MagnitudeSquared;//GetWeight(ks.Kpts[i], vecs, j, l);
@@ -293,12 +327,12 @@ namespace TightBinding
 				// symmetrize DOS for equivalent orbitals.
 				for (int k = 0; k < epts; k++)
 				{
-					for (int i = 0; i < inp.Sites.Count; i++)
+					for (int i = 0; i < Sites.Count; i++)
 					{
 						double wtk = dos[k, i + 1];
 						int count = 1;
 
-						foreach (int equiv in inp.Sites[i].Equivalent)
+						foreach (int equiv in Sites[i].Equivalent)
 						{
 							wtk += dos[k, equiv + 1];
 							count++;
@@ -306,7 +340,7 @@ namespace TightBinding
 
 						dos[k, i + 1] = wtk / count;
 
-						foreach (int equiv in inp.Sites[i].Equivalent)
+						foreach (int equiv in Sites[i].Equivalent)
 						{
 							dos[k, equiv + 1] = wtk / count;
 						}
@@ -322,7 +356,7 @@ namespace TightBinding
 				{
 					outf.Write("{0}     ", energyGrid[i]);
 
-					for (int j = 0; j < inp.Sites.Count + 1; j++)
+					for (int j = 0; j < Sites.Count + 1; j++)
 					{
 						outf.Write("{0}  ", dos[i, j]);
 					}
@@ -358,9 +392,9 @@ namespace TightBinding
 			return trial;
 		}
 
-		void DoBandStructure(TbInputFile inp)
+		void DoBandStructure()
 		{
-			KptList kpath = inp.KPath;
+			KptList kpath = KPath;
 
 			Output.WriteLine("Computing band structure with {0} k-points.",
 							  kpath.Kpts.Count);
@@ -369,7 +403,7 @@ namespace TightBinding
 
 			for (int i = 0; i < kpath.Kpts.Count; i++)
 			{
-				Matrix m = CalcHamiltonian(inp, kpath.Kpts[i]);
+				Matrix m = CalcHamiltonian(kpath.Kpts[i]);
 				Matrix vals, vecs;
 				m.EigenValsVecs(out vals, out vecs);
 				eigenvals.Add(vals);
@@ -397,7 +431,7 @@ namespace TightBinding
 				for (int i = 0; i < datasets; i++)
 				{
 					writer.WriteGraceDataset(kpath.Kpts.Count,
-						x => eigenvals[x][i, 0].RealPart - inp.MuMesh[0]);
+						x => eigenvals[x][i, 0].RealPart - MuMesh[0]);
 				}
 			}
 		}
@@ -416,17 +450,17 @@ namespace TightBinding
 			w.WriteLine();
 		}
 		
-		public Matrix CalcHamiltonian(TbInputFile inp, Vector3 kpt)
+		public Matrix CalcHamiltonian(Vector3 kpt)
 		{
-			Matrix m = new Matrix(inp.Sites.Count, inp.Sites.Count);
+			Matrix m = new Matrix(Sites.Count, Sites.Count);
 
 			kpt *= 2 * Math.PI;
 
-			for (int i = 0; i < inp.Sites.Count; i++)
+			for (int i = 0; i < Sites.Count; i++)
 			{
-				for (int j = 0; j < inp.Sites.Count; j++)
+				for (int j = 0; j < Sites.Count; j++)
 				{
-					HoppingPair p = inp.Hoppings.FindOrThrow(i, j);
+					HoppingPair p = Hoppings.FindOrThrow(i, j);
 					
 					Complex val = new Complex();
 					 
@@ -456,17 +490,17 @@ namespace TightBinding
 		/// </summary>
 		/// <param name="inp"></param>
 		/// <param name="outputfile"></param>
-		void tet_DoDensityOfStates(TbInputFile inp)
+		void tet_DoDensityOfStates(TightBinding.TbInputFileReader inp)
 		{
-			KptList ks = inp.KMesh;
+			KptList ks = KMesh;
 			StreamWriter outf = new StreamWriter(outputfile + ".dos");
 
-			double smearing = inp.TemperatureMesh[0];
+			double smearing = TemperatureMesh[0];
 			double smearNorm = 1 / smearing * Math.Pow(Math.PI, -0.5);
 			double oneOverSmearSquared = Math.Pow(smearing, -2);
 
 			double emin, emax;
-			inp.Hoppings.EnergyScale(out emin, out emax);
+			Hoppings.EnergyScale(out emin, out emax);
 
 			emin -= smearing * 5;
 			emax += smearing * 5;
@@ -475,7 +509,7 @@ namespace TightBinding
 			int epts = 2000;
 
 			double[] energyGrid = new double[epts];
-			double[,] dos = new double[epts, inp.Sites.Count + 1];
+			double[,] dos = new double[epts, Sites.Count + 1];
 
 			smearNorm /= ks.Kpts.Count;
 
@@ -499,7 +533,7 @@ namespace TightBinding
 
 				for (int i = 0; i < 4; i++)
 				{
-					Matrix m = CalcHamiltonian(inp, tet.Corners[i]);
+					Matrix m = CalcHamiltonian(tet.Corners[i]);
 					Matrix vals, vecs;
 					m.EigenValsVecs(out vals, out vecs);
 
@@ -534,7 +568,7 @@ namespace TightBinding
 			{
 				outf.Write("{0}     ", energyGrid[i]);
 
-				for (int j = 0; j < inp.Sites.Count + 1; j++)
+				for (int j = 0; j < Sites.Count + 1; j++)
 				{
 					outf.Write("{0}  ", dos[i, j]);
 				}
@@ -550,20 +584,20 @@ namespace TightBinding
 			outf.WriteLine("#\t1\t0\t" + ks.Kpts.Count.ToString());
 			outf.Write("# band index\te(k,n)\t");
 
-			for (int i = 0; i < inp.Sites.Count; i++)
+			for (int i = 0; i < Sites.Count; i++)
 			{
-				if (string.IsNullOrEmpty(inp.Sites[i].Name))
+				if (string.IsNullOrEmpty(Sites[i].Name))
 				{
 					outf.Write("TB{0}\t", i);
 				}
 				else
-					outf.Write("{0}\t", inp.Sites[i].Name);
+					outf.Write("{0}\t", Sites[i].Name);
 			}
 			outf.WriteLine();
 
 			for (int kindex = 0; kindex < ks.Kpts.Count; kindex++)
 			{
-				Matrix m = CalcHamiltonian(inp, ks.Kpts[kindex]);
+				Matrix m = CalcHamiltonian( ks.Kpts[kindex]);
 				Matrix vals, vecs;
 				m.EigenValsVecs(out vals, out vecs);
 

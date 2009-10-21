@@ -29,9 +29,8 @@ namespace PlotGreen
 			{
 				Output.SetFile(w);
 
-				TightBinding.TbInputFile tb = new TightBinding.TbInputFile(inputfile);
-
-				tb.ReadFile();
+				TightBinding.TightBinding tb = new TightBinding.TightBinding();
+				tb.LoadTB(inputfile);
 
 				//if (File.Exists("green.dat") == false)
 				//    throw new FileNotFoundException("The file green.dat is not present.", "green.dat");
@@ -49,26 +48,27 @@ namespace PlotGreen
 			}
 		}
 
-		private Matrix[] CalcGreenFunction(TbInputFile tb, RpaParams p, KptList kmesh)
+		private Matrix[] CalcGreenFunction(TightBinding.TightBinding tb, RpaParams p, KptList kmesh)
 		{
 			int orbitalCount = tb.Sites.Count;
 			Matrix[] retval = new Matrix[kmesh.Kpts.Count];
-			TightBinding.TightBinding tbobj = new TightBinding.TightBinding();
+			
+			Complex denomFactor = new Complex(0, p.Temperature);
 
 			for (int k = 0; k < kmesh.Kpts.Count; k++)
 			{
 				retval[k] = new Matrix(orbitalCount, orbitalCount);
 
-				Matrix hamilt = tbobj.CalcHamiltonian(tb, kmesh.Kpts[k].Value);
+				Matrix hamilt = tb.CalcHamiltonian(kmesh.Kpts[k].Value);
 				Matrix vals, vecs;
 				hamilt.EigenValsVecs(out vals, out vecs);
 
 
-				for (int n = 0; n < orbitalCount; n++)
+				for (int i = 0; i < orbitalCount; i++)
 				{
-					for (int i = 0; i < orbitalCount; i++)
+					for (int j = 0; j < orbitalCount; j++)
 					{
-						for (int j = 0; j < orbitalCount; j++)
+						for (int n = 0; n < orbitalCount; n++)
 						{
 							var wfk = new Wavefunction(orbitalCount);
 
@@ -83,8 +83,7 @@ namespace PlotGreen
 								wfk.Coeffs[i].Conjugate() *
 								wfk.Coeffs[j];
 
-							Complex g = 1.0 / (p.Frequency + p.ChemicalPotential - wfk.Energy + 
-														new Complex(0, p.Temperature));
+							Complex g = 1.0 / (p.Frequency + p.ChemicalPotential - wfk.Energy + denomFactor);
 
 							retval[k][i, j] += g * coeff;
 						}
@@ -96,12 +95,12 @@ namespace PlotGreen
 			return retval;
 		}
 
-		private void WriteGreenFunction(TbInputFile tb, Matrix[] green, KptList kmesh)
+		private void WriteGreenFunction(TightBinding.TightBinding tb, Matrix[] green, KptList kmesh)
 		{
 			WriteGreenFunctionPlane(tb, green, kmesh);
 		}
 
-		private void WriteGreenFunctionPlane(TbInputFile tb, Matrix[] green, KptList kmesh)
+		private void WriteGreenFunctionPlane(TightBinding.TightBinding tb, Matrix[] green, KptList kmesh)
 		{
 			Console.WriteLine("Output as a plane.");
 			Console.WriteLine();

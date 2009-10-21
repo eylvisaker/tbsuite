@@ -26,7 +26,8 @@ namespace TightBinding
 			{
 				Output.SetFile(output);
 
-				c.RunTB(filename, Path.GetFileNameWithoutExtension(filename));
+				c.LoadTB(filename);
+				c.RunTB();
 			}
 
 			watch.Stop();

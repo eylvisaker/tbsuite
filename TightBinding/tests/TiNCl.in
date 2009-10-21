@@ -21,7 +21,6 @@
 # one number for each orbital.  The orbital transforms are optional if the 
 # orbitals transform into themselves.
 [Symmetry]
-
 E
 
 

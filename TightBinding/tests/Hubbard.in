@@ -59,7 +59,7 @@ G        0       0       0
 # The next three groups of three numbers are q-points which are constrained to be
 # on the plane.
 [QPlane]
-40 40 1 
+10 10 1 
 0   0   0  
 0.5 0   0
 0   0.5 0
@@ -80,6 +80,7 @@ G        0       0       0
 # Hubbard model parameters for RPA calculation
 # U, U prime, J, J prime. (don't enter commas).
 [Interaction]
+adjust
 :a a:
 4 
 

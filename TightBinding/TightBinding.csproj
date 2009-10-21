@@ -64,7 +64,7 @@
     <Compile Include="RpaParams.cs" />
     <Compile Include="Symmetry.cs" />
     <Compile Include="SymmetryList.cs" />
-    <Compile Include="TbInputFile.cs" />
+    <Compile Include="TightBinding.TbInputFileReader.cs" />
     <Compile Include="Lattice.cs" />
     <Compile Include="SiteList.cs" />
     <Compile Include="HoppingPair.cs" />

@@ -21,19 +21,19 @@ namespace TightBinding
 		{
 			return kqbands[kqpt][band];
 		}
-		private void CalculateBands(TightBinding tb, TbInputFile input)
+		private void CalculateBands(TightBinding tb)
 		{
-			bands = new Wavefunction[input.KMesh.Kpts.Count][];
-			kqbands = new Wavefunction[input.KMesh.Kpts.Count][];
+			bands = new Wavefunction[tb.KMesh.Kpts.Count][];
+			kqbands = new Wavefunction[tb.KMesh.Kpts.Count][];
 			for (int i = 0; i < bands.Length; i++)
 			{
-				bands[i] = new Wavefunction[input.Sites.Count];
-				kqbands[i] = new Wavefunction[input.Sites.Count];
+				bands[i] = new Wavefunction[tb.Sites.Count];
+				kqbands[i] = new Wavefunction[tb.Sites.Count];
 			}
 
-			for (int k = 0; k < input.KMesh.Kpts.Count; k++)
+			for (int k = 0; k < tb.KMesh.Kpts.Count; k++)
 			{
-				Matrix m = tb.CalcHamiltonian(input, input.KMesh.Kpts[k]);
+				Matrix m = tb.CalcHamiltonian(tb.KMesh.Kpts[k]);
 				Matrix vals, vecs;
 
 				m.EigenValsVecs(out vals, out vecs);
@@ -61,7 +61,7 @@ namespace TightBinding
 
 				for (int n = 0; n < vals.Rows; n++)
 				{
-					var wfk = new Wavefunction(input.Sites.Count);
+					var wfk = new Wavefunction(tb.Sites.Count);
 
 					wfk.Energy = vals[n, 0].RealPart;
 
@@ -92,15 +92,15 @@ namespace TightBinding
 			return 1.0 / (Math.Exp(Beta * energy) + 1);
 		}
 
-		internal void CreateKQbands(TightBinding tb, TbInputFile input, Vector3 q)
+		internal void CreateKQbands(TightBinding tb, Vector3 q)
 		{
-			for (int i = 0; i < input.KMesh.Kpts.Count; i++)
+			for (int i = 0; i < tb.KMesh.Kpts.Count; i++)
 			{
-				Vector3 kq = input.KMesh.Kpts[i].Value + q;
+				Vector3 kq = tb.KMesh.Kpts[i].Value + q;
 				List<int> orbitalMap;
 
-				int index = input.KMesh.GetKindex(
-					input.Lattice, kq, out orbitalMap, input.Symmetries);
+				int index = tb.KMesh.GetKindex(
+					tb.Lattice, kq, out orbitalMap, tb.Symmetries);
 
 				for (int n = 0; n < bands[i].Length; n++)
 				{
@@ -109,19 +109,19 @@ namespace TightBinding
 			}
 		}
 		
-		public void RunRpa(TightBinding tb, TbInputFile input, KptList qpts)
+		public void RunRpa(TightBinding tb, KptList qpts)
 		{
-			CalculateBands(tb, input);
+			CalculateBands(tb);
 
 			List<KPoint> QMesh = qpts.Kpts;
-			double[] FrequencyMesh = input.FrequencyMesh;
-			double[] TemperatureMesh = input.TemperatureMesh;
+			double[] FrequencyMesh = tb.FrequencyMesh;
+			double[] TemperatureMesh = tb.TemperatureMesh;
 
 			List<RpaParams> rpa = new List<RpaParams>();
 
 			for (int tempIndex = 0; tempIndex < TemperatureMesh.Length; tempIndex++)
 			{
-				for (int muIndex = 0; muIndex < input.MuMesh.Length; muIndex++)
+				for (int muIndex = 0; muIndex < tb.MuMesh.Length; muIndex++)
 				{
 					for (int qIndex = 0; qIndex < QMesh.Count; qIndex++)
 					{
@@ -132,26 +132,26 @@ namespace TightBinding
 								QMesh[qIndex].Value,
 								TemperatureMesh[tempIndex],
 								FrequencyMesh[freqIndex],
-								input.MuMesh[muIndex]));
+								tb.MuMesh[muIndex]));
 						}
 					}
 				}
 			}
 
-			CalcX0(input, qpts, rpa);
+			CalcX0(tb, qpts, rpa);
 
-			SaveMatricesQPlane(input, QMesh, rpa, x => x.X0, "chi_0");
-			SaveMatricesQPlane(input, QMesh, rpa, x => x.Xs, "chi_s");
-			SaveMatricesQPlane(input, QMesh, rpa, x => x.Xc, "chi_c");
+			SaveMatricesQPlane(tb, QMesh, rpa, x => x.X0, "chi_0");
+			SaveMatricesQPlane(tb, QMesh, rpa, x => x.Xs, "chi_s");
+			SaveMatricesQPlane(tb, QMesh, rpa, x => x.Xc, "chi_c");
 
 		}
 
-		private void CalcX0(TbInputFile input, KptList qpts, List<RpaParams> rpa)
+		private void CalcX0(TightBinding tb, KptList qpts, List<RpaParams> rpa)
 		{
-			Matrix ident = Matrix.Identity(input.Sites.Count * input.Sites.Count);
+			Matrix ident = Matrix.Identity(tb.Sites.Count * tb.Sites.Count);
 
 			Matrix[] S, C;
-			CalcSpinChargeMatrices(input, rpa, out S, out C);
+			CalcSpinChargeMatrices(tb, rpa, out S, out C);
 
 			Output.WriteLine("Calculating X0...");
 
@@ -161,7 +161,7 @@ namespace TightBinding
 			{
 				SetTemperature(rpa[i].Temperature, rpa[i].ChemicalPotential);
 
-				rpa[i].X0 = CalcX0(input, rpa[i].Frequency, qpts.Kpts[rpa[i].Qindex]);
+				rpa[i].X0 = CalcX0(tb, rpa[i].Frequency, qpts.Kpts[rpa[i].Qindex]);
 
 				if (i == 0)
 				{
@@ -180,7 +180,7 @@ namespace TightBinding
 
 			double factor = InteractionAdjustment(rpa, S, C);
 
-			if (input.Interactions.AdjustInteractions)
+			if (tb.Interactions.AdjustInteractions)
 			{
 				for (int i = 0; i < rpa.Count; i++)
 				{
@@ -213,16 +213,16 @@ namespace TightBinding
 				rpa[i].Xs = rpa[i].X0 * s_inv;
 				rpa[i].Xc = rpa[i].X0 * c_inv;
 
-				for (int l1 = 0; l1 < input.Sites.Count; l1++)
+				for (int l1 = 0; l1 < tb.Sites.Count; l1++)
 				{
-					for (int l2 = 0; l2 < input.Sites.Count; l2++)
+					for (int l2 = 0; l2 < tb.Sites.Count; l2++)
 					{
-						for (int l3 = 0; l3 < input.Sites.Count; l3++)
+						for (int l3 = 0; l3 < tb.Sites.Count; l3++)
 						{
-							for (int l4 = 0; l4 < input.Sites.Count; l4++)
+							for (int l4 = 0; l4 < tb.Sites.Count; l4++)
 							{
-								int a = GetIndex(input, l1, l2);
-								int b = GetIndex(input, l3, l4);
+								int a = GetIndex(tb, l1, l2);
+								int b = GetIndex(tb, l3, l4);
 
 								bool found = false;
 
@@ -320,7 +320,7 @@ namespace TightBinding
 
 		delegate Matrix MatrixGetter(RpaParams p);
 
-		private void SaveByTemperature(TbInputFile input, List<KPoint> QMesh, List<RpaParams> rpa, MatrixGetter g, string name)
+		private void SaveByTemperature(TightBinding tb, List<KPoint> QMesh, List<RpaParams> rpa, MatrixGetter g, string name)
 		{
 			rpa.Sort(RpaParams.TemperatureComparison);
 
@@ -328,16 +328,16 @@ namespace TightBinding
 			double[] chimag = new double[rpa.Count];
 			double[] chimagsqr = new double[rpa.Count];
 
-			for (int l1 = 0; l1 < input.Sites.Count; l1++)
+			for (int l1 = 0; l1 < tb.Sites.Count; l1++)
 			{
-				for (int l2 = 0; l2 < input.Sites.Count; l2++)
+				for (int l2 = 0; l2 < tb.Sites.Count; l2++)
 				{
-					for (int l3 = 0; l3 < input.Sites.Count; l3++)
+					for (int l3 = 0; l3 < tb.Sites.Count; l3++)
 					{
-						for (int l4 = 0; l4 < input.Sites.Count; l4++)
+						for (int l4 = 0; l4 < tb.Sites.Count; l4++)
 						{
-							int i = GetIndex(input, l1, l2);
-							int j = GetIndex(input, l3, l4);
+							int i = GetIndex(tb, l1, l2);
+							int j = GetIndex(tb, l3, l4);
 
 							// organize by temperature
 							string filename = string.Format(
@@ -382,7 +382,7 @@ namespace TightBinding
 				}
 			}
 		}
-		private void SaveByQPlane(TbInputFile input, List<KPoint> QMesh, List<RpaParams> rpa, MatrixGetter g, string name)
+		private void SaveByQPlane(TightBinding tb, List<KPoint> QMesh, List<RpaParams> rpa, MatrixGetter g, string name)
 		{
 			rpa.Sort(RpaParams.QIndexComparison);
 
@@ -390,13 +390,13 @@ namespace TightBinding
 			double[] chimag = new double[rpa.Count];
 			double[] chimagsqr = new double[rpa.Count];
 
-			for (int l1 = 0; l1 < input.Sites.Count; l1++)
+			for (int l1 = 0; l1 < tb.Sites.Count; l1++)
 			{
-				for (int l2 = 0; l2 < input.Sites.Count; l2++)
+				for (int l2 = 0; l2 < tb.Sites.Count; l2++)
 				{
-					for (int l3 = 0; l3 < input.Sites.Count; l3++)
+					for (int l3 = 0; l3 < tb.Sites.Count; l3++)
 					{
-						for (int l4 = 0; l4 < input.Sites.Count; l4++)
+						for (int l4 = 0; l4 < tb.Sites.Count; l4++)
 						{
 							double lastFreq = double.MinValue;
 							double lastMu = double.MinValue;
@@ -404,9 +404,9 @@ namespace TightBinding
 
 							int baseIndex = 0;
 
-							for (int ti = 0; ti < input.TemperatureMesh.Length; ti++)
+							for (int ti = 0; ti < tb.TemperatureMesh.Length; ti++)
 							{
-								for (int wi = 0; wi < input.FrequencyMesh.Length; wi++)
+								for (int wi = 0; wi < tb.FrequencyMesh.Length; wi++)
 								{
 									string filename_re = string.Format("{0}.re.{1}{2}{3}{4}.w{5}.T{6}.qm",
 														   name, l1, l2, l3, l4, wi, ti);
@@ -425,15 +425,15 @@ namespace TightBinding
 										double last_t;
 										double last_s;
 
-										input.QPlane.GetPlaneST(input.QPlane.AllKpts[0], out last_s, out last_t);
+										tb.QPlane.GetPlaneST(tb.QPlane.AllKpts[0], out last_s, out last_t);
 
-										for (int qi = 0; qi < input.QPlane.AllKpts.Count; qi++)
+										for (int qi = 0; qi < tb.QPlane.AllKpts.Count; qi++)
 										{
-											Vector3 qpt = input.QPlane.AllKpts[qi];
+											Vector3 qpt = tb.QPlane.AllKpts[qi];
 											List<int> orbitalMap;
 
 											double s, t;
-											input.QPlane.GetPlaneST(input.QPlane.AllKpts[qi], out s, out t);
+											tb.QPlane.GetPlaneST(tb.QPlane.AllKpts[qi], out s, out t);
 
 											if (Math.Abs(t - last_t) > 1e-6)
 											{
@@ -443,7 +443,7 @@ namespace TightBinding
 											}
 
 											int index =
-												input.QPlane.GetKindex(input.Lattice, qpt, out orbitalMap, input.Symmetries);
+												tb.QPlane.GetKindex(tb.Lattice, qpt, out orbitalMap, tb.Symmetries);
 
 											index += baseIndex;
 
@@ -452,8 +452,8 @@ namespace TightBinding
 											int newL3 = TransformOrbital(orbitalMap, l3);
 											int newL4 = TransformOrbital(orbitalMap, l4);
 
-											int newii = GetIndex(input, newL1, newL2);
-											int newjj = GetIndex(input, newL3, newL4);
+											int newii = GetIndex(tb, newL1, newL2);
+											int newjj = GetIndex(tb, newL3, newL4);
 
 											Complex val = g(rpa[index])[newii, newjj];
 
@@ -522,15 +522,15 @@ namespace TightBinding
 				 return false;
 		}
 
-		private void SaveMatricesQPlane(TbInputFile input, List<KPoint> QMesh, List<RpaParams> chi, MatrixGetter g, string name)
+		private void SaveMatricesQPlane(TightBinding tb, List<KPoint> QMesh, List<RpaParams> chi, MatrixGetter g, string name)
 		{
-			if (input.TemperatureMesh.Length > 1)
+			if (tb.TemperatureMesh.Length > 1)
 			{
 				Directory.CreateDirectory("temperature");
-				SaveByTemperature(input, QMesh, chi, g, name);
+				SaveByTemperature(tb, QMesh, chi, g, name);
 			}
 
-			SaveByQPlane(input, QMesh, chi, g, name);
+			SaveByQPlane(tb, QMesh, chi, g, name);
 		}
 		private void Analyze(string name, Matrix S)
 		{
@@ -563,7 +563,7 @@ namespace TightBinding
 
 		}
 
-		private void CalcSpinChargeMatrices(TbInputFile input, List<RpaParams> rpa, out Matrix[] S, out Matrix[] C)
+		private void CalcSpinChargeMatrices(TightBinding tb, List<RpaParams> rpa, out Matrix[] S, out Matrix[] C)
 		{
 			S = new Matrix[rpa.Count];
 			C = new Matrix[rpa.Count];
@@ -572,12 +572,12 @@ namespace TightBinding
 			{
 				Vector3 q = rpa[rpa_index].QptValue;
 
-				int size = input.Sites.Count * input.Sites.Count;
+				int size = tb.Sites.Count * tb.Sites.Count;
 
 				Matrix _S = new Matrix(size, size);
 				Matrix _C = new Matrix(size, size);
 
-				foreach (var interaction in input.Interactions)
+				foreach (var interaction in tb.Interactions)
 				{
 					double structureFactor = interaction.StructureFactor(q);
 
@@ -589,12 +589,12 @@ namespace TightBinding
 							{
 								foreach (int l4 in interaction.SitesRight)
 								{
-									int i = GetIndex(input, l1, l2);
-									int j = GetIndex(input, l3, l4);
+									int i = GetIndex(tb, l1, l2);
+									int j = GetIndex(tb, l3, l4);
 
 									if (l1 == l2 && l2 == l3 && l3 == l4)
 									{
-										_S[i, j] += interaction.HubbardU *structureFactor;
+										_S[i, j] += interaction.HubbardU * structureFactor;
 										_C[i, j] += interaction.HubbardU * structureFactor;
 									}
 									else if (l1 == l4 && l4 != l2 && l2 == l3)
@@ -623,9 +623,9 @@ namespace TightBinding
 			}
 		}
 
-		Matrix CalcX0(TbInputFile input, double freq, Vector3 q)
+		Matrix CalcX0(TightBinding tb, double freq, Vector3 q)
 		{
-			int orbitalCount = input.Sites.Count;
+			int orbitalCount = tb.Sites.Count;
 			int size = orbitalCount * orbitalCount;
 			Matrix x = new Matrix(size, size);
 
@@ -636,7 +636,7 @@ namespace TightBinding
 
 			//using (StreamWriter ww = new StreamWriter("hamilt"))
 			//{
-			//    for (int i = 0; i < input.KMesh.Kpts.Count; i++)
+			//    for (int i = 0; i < tb.KMesh.Kpts.Count; i++)
 			//    {
 
 			//        for (int n = 0; n < orbitalCount; n++)
@@ -662,15 +662,15 @@ namespace TightBinding
 					{
 						for (int l2 = l4; l2 < orbitalCount; l2++)
 						{
-							int i = GetIndex(input, l1, l2);
-							int j = GetIndex(input, l3, l4);
+							int i = GetIndex(tb, l1, l2);
+							int j = GetIndex(tb, l3, l4);
 							bool foundSymmetry = false;
 
 							
 
-							for (int s = 0; s < input.Symmetries.Count; s++)
+							for (int s = 0; s < tb.Symmetries.Count; s++)
 							{
-								Symmetry sym = input.Symmetries[s];
+								Symmetry sym = tb.Symmetries[s];
 								
 								if (sym.OrbitalTransform == null || sym.OrbitalTransform.Count == 0)
 									continue;
@@ -680,8 +680,8 @@ namespace TightBinding
 								int newL3 = sym.OrbitalTransform[l3];
 								int newL4 = sym.OrbitalTransform[l4];
 
-								int newI = GetIndex(input, newL1, newL2);
-								int newJ = GetIndex(input, newL3, newL4);
+								int newI = GetIndex(tb, newL1, newL2);
+								int newJ = GetIndex(tb, newL3, newL4);
 
 								if (newI == i && newJ == j)
 									continue;
@@ -711,19 +711,19 @@ namespace TightBinding
 
 							Complex total = 0;
 
-							for (int allkindex = 0; allkindex < input.KMesh.AllKpts.Count; allkindex++)
+							for (int allkindex = 0; allkindex < tb.KMesh.AllKpts.Count; allkindex++)
 							{
 								Complex val = 0;
-								Vector3 k = input.KMesh.AllKpts[allkindex];
+								Vector3 k = tb.KMesh.AllKpts[allkindex];
 								Vector3 kq = k + q;
 
 								List<int> kOrbitalMap;
 								List<int> kqOrbitalMap;
 
-								int kindex = input.KMesh.GetKindex(
-									input.Lattice, k, out kOrbitalMap, input.Symmetries);
-								int kqindex = input.KMesh.GetKindex(
-									input.Lattice, kq, out kqOrbitalMap, input.Symmetries);
+								int kindex = tb.KMesh.GetKindex(
+									tb.Lattice, k, out kOrbitalMap, tb.Symmetries);
+								int kqindex = tb.KMesh.GetKindex(
+									tb.Lattice, kq, out kqOrbitalMap, tb.Symmetries);
 
 								int newL1 = TransformOrbital(kqOrbitalMap, l1);
 								int newL2 = TransformOrbital(kOrbitalMap, l2);
@@ -783,8 +783,8 @@ namespace TightBinding
 								//w.WriteLine("{0}  {1}   total           {2} + {3}i", kindex, kqindex,
 								//    Math.Round(val.RealPart, 4), Math.Round(val.ImagPart, 4));
 
-								//Output.WriteLine(input.KMesh.AllKpts[kindex].Weight.ToString());
-								val *= input.KMesh.AllKpts[kindex].Weight;
+								//Output.WriteLine(tb.KMesh.AllKpts[kindex].Weight.ToString());
+								val *= tb.KMesh.AllKpts[kindex].Weight;
 								total += val;
 							}
 
@@ -813,11 +813,11 @@ namespace TightBinding
 		}
 
 
-		int GetIndex(TbInputFile input, int l1, int l2)
+		int GetIndex(TightBinding tb, int l1, int l2)
 		{
 			// if this changes, be sure to correct the way 
 			// x[i,j] and x[j,i] are set in CalcX0.
-			return l1 * input.Sites.Count + l2;
+			return l1 * tb.Sites.Count + l2;
 		}
 
 	}
