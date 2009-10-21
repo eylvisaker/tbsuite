@@ -1349,7 +1349,7 @@ namespace ERY.EMath
 			int a = shiftStart;
 			int b = a + 1;
 			bool bad = false;
-			if (input[a, b] != input[b,a].Conjugate())				bad = true;
+			if ((input[a, b] - input[b,a].Conjugate()).Magnitude > 1e-7)				bad = true;
 			if (Math.Abs(input[a, a].RealPart) > 1e-12 && Math.Abs(input[a,a].ImagPart / input[a,a].RealPart) > 1e-10)				bad = true;
 			if (Math.Abs(input[b, b].RealPart) > 1e-12 && Math.Abs(input[b, b].ImagPart / input[b, b].RealPart) > 1e-10) bad = true;
 			if (input[a, a].RealPart == 0 && Math.Abs(input[a, a].ImagPart) > 1e-10) bad = true;
