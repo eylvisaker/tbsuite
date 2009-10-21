@@ -10,8 +10,8 @@
 # Number of orbitals / sites and their locations 
 # Positions are in cartesian coordinates
 [Sites]
-  1.581999136091590     -2.740102881240705      4.941633816858237   Nb1  2a  dz2
- -1.581999136091590      2.740102881240705     -4.941633816858237   Nb2  2a  dz2
+  1.581999136091590     -2.740102881240705      4.941633816858237   Nb1  a  dz2
+ -1.581999136091590      2.740102881240705     -4.941633816858237   Nb2  b  dz2
 
 # Symmetries in the crystal.
 # The numbers following the symmetry name indicate how the orbitals transform 
@@ -193,6 +193,9 @@ A        0              0             0.025295276665
 
 # Hubbard model parameters for RPA calculation
 # U, U prime, J, J prime. (don't enter commas).
-[Hubbard]
-4 4 1 1 
+[Interaction]
+adjust
+:a a:
+2
+
 

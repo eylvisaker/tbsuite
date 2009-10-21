@@ -79,6 +79,7 @@ G        0       0       0
 
 # Hubbard model parameters for RPA calculation
 # U, U prime, J, J prime. (don't enter commas).
-[Hubbard]
-4 4 1 1 
+[Interaction]
+:a a:
+4 
 

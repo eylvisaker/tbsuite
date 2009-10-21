@@ -352,6 +352,7 @@ namespace TightBinding
 			else
 				return true;
 		}
+		
 		public static KptList GenerateMesh(Lattice lattice, int[] kgrid, int[] shift, SymmetryList syms, bool includeEnds)
 		{
 			KptList retval = new KptList();
@@ -457,7 +458,7 @@ namespace TightBinding
 
 			return retval;
 		}
-
+		
 		private static void TranslateKptToNearGamma(Lattice lattice, ref Vector3 kptValue)
 		{
 			Vector3 newkpt = kptValue;
@@ -536,8 +537,9 @@ namespace TightBinding
 			return compatSyms;
 		}
 
-		public static KptList oldGenerateMesh(Lattice lattice, int[] kgrid, int[] shift, SymmetryList syms, bool includeEnds, bool centerGamma)
+		public static KptList oldGenerateMesh(Lattice lattice, int[] kgrid, int[] shift, SymmetryList syms, bool includeEnds)
 		{
+			bool centerGamma = false;
 			KptList retval = new KptList();
 			int zmax = kgrid[2] * 2;
 			int ymax = kgrid[1] * 2;
@@ -601,9 +603,9 @@ namespace TightBinding
 						int testi, testj, testk;
 						retval.ReduceKpt(lattice, new Vector3(pt), out testi, out testj, out testk);
 
-						System.Diagnostics.Debug.Assert(i == testi);
-						System.Diagnostics.Debug.Assert(j == testj);
-						System.Diagnostics.Debug.Assert(k == testk);
+						//System.Diagnostics.Debug.Assert(i == testi);
+						//System.Diagnostics.Debug.Assert(j == testj);
+						//System.Diagnostics.Debug.Assert(k == testk);
 
 #endif
 						foreach (var symmetry in compatSyms)

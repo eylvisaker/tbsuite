@@ -55,6 +55,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AgrWriter.cs" />
+    <Compile Include="InteractionPair.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="InputReader.cs" />
@@ -70,6 +71,9 @@
     <Compile Include="KptList.cs" />
     <Compile Include="KPoint.cs" />
     <None Include="tests\testdiag.in">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="tests\CuO2.in">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <Compile Include="Tetrahedron.cs" />

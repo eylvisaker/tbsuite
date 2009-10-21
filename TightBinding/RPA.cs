@@ -38,6 +38,27 @@ namespace TightBinding
 
 				m.EigenValsVecs(out vals, out vecs);
 
+				StreamWriter w = new StreamWriter("matrix");
+
+				for (int i = 0; i < m.Rows; i++)
+				{
+					for (int j = 0; j < m.Columns; j++)
+					{
+						w.Write("{0}  {1}   ", m[i, j].RealPart, m[i, j].ImagPart);
+					}
+					w.WriteLine();
+				}
+				for (int i = 0; i < m.Rows; i++)
+				{
+					for (int j = 0; j < m.Columns; j++)
+					{
+						w.Write("{0}  {1}  ", vecs[i, j].RealPart, vecs[i, j].ImagPart);
+					}
+					w.WriteLine();
+				}
+
+				w.Close();
+
 				for (int n = 0; n < vals.Rows; n++)
 				{
 					var wfk = new Wavefunction(input.Sites.Count);
@@ -129,11 +150,8 @@ namespace TightBinding
 		{
 			Matrix ident = Matrix.Identity(input.Sites.Count * input.Sites.Count);
 
-			Matrix S, C;
-			CalcSpinChargeMatrices(input, out S, out C);
-
-			Analyze("S", S);
-			Analyze("C", C);
+			Matrix[] S, C;
+			CalcSpinChargeMatrices(input, rpa, out S, out C);
 
 			Output.WriteLine("Calculating X0...");
 
@@ -162,8 +180,19 @@ namespace TightBinding
 
 			double factor = InteractionAdjustment(rpa, S, C);
 
-			S *= factor;
-			C *= factor;
+			if (input.Interactions.AdjustInteractions)
+			{
+				for (int i = 0; i < rpa.Count; i++)
+				{
+					S[i] *= factor;
+					C[i] *= factor;
+				}
+			}
+			else if (factor < 1)
+			{
+				Output.WriteLine("WARNING:  There will be divergent geometric series.");
+				Output.WriteLine("          Interpret results with care!");
+			}
 
 			Output.WriteLine("Calculating dressed susceptibilities.");
 			Output.WriteLine();
@@ -175,8 +204,8 @@ namespace TightBinding
 
 			for (int i = 0; i < rpa.Count; i++)
 			{
-				Matrix s_denom = (ident - S * rpa[i].X0);
-				Matrix c_denom = (ident + C * rpa[i].X0);
+				Matrix s_denom = (ident - S[i] * rpa[i].X0);
+				Matrix c_denom = (ident + C[i] * rpa[i].X0);
 
 				Matrix s_inv = s_denom.Invert();
 				Matrix c_inv = c_denom.Invert();
@@ -221,7 +250,7 @@ namespace TightBinding
 			}
 
 			Output.WriteLine("Largest susceptibility found at:");
-			Output.WriteLine("    {0} susceptibility: {1}", charge ? "Charge" : "Spin", largest);
+			Output.WriteLine("    {0} susceptibility: {1}", charge ? "Charge" : "Spin", Math.Sqrt(largest));
 			Output.WriteLine("    Indices: {0}", indices);
 			Output.WriteLine("    Temperature: {0}", largestParams.Temperature);
 			Output.WriteLine("    Frequency: {0}", largestParams.Frequency);
@@ -230,25 +259,18 @@ namespace TightBinding
 
 		}
 
-		double InteractionAdjustment(List<RpaParams> rpa, Matrix S, Matrix C)
+		double InteractionAdjustment(List<RpaParams> rpa, Matrix[] S, Matrix[] C)
 		{
 			double largest = 0;
 			RpaParams largestParams = null;
 			bool Cdiv = false;
 
-			foreach (RpaParams p in rpa)
+			for (int i = 0; i < rpa.Count; i++)
 			{
-				Matrix x = p.X0;
+				RpaParams p = rpa[i];
+				Matrix x0 = p.X0;
 
-				Matrix Bs = S * x;
-				Matrix Bc = C * x;
-				Matrix As = Bs * Bs.HermitianConjugate();
-				Matrix Ac = Bc * Bc.HermitianConjugate();
-
-				Matrix eigenvals, eigenvecs;
-
-				As.EigenValsVecs(out eigenvals, out eigenvecs);
-				double lv = eigenvals[eigenvals.Rows - 1, 0].RealPart;
+				double lv = LargestEigenvalue(x0 * S[i]);
 
 				if (lv > largest)
 				{
@@ -257,8 +279,7 @@ namespace TightBinding
 					Cdiv = false;
 				}
 
-				Ac.EigenValsVecs(out eigenvals, out eigenvecs);
-				lv = eigenvals[eigenvals.Rows - 1, 0].RealPart;
+				lv = LargestEigenvalue(x0 * C[i]);
 
 				if (lv > largest)
 				{
@@ -285,6 +306,16 @@ namespace TightBinding
 
 			Output.WriteLine();
 			return 1 / largest;
+		}
+
+		private static double LargestEigenvalue(Matrix x)
+		{
+			Matrix As = x * x.HermitianConjugate();
+			Matrix eigenvals, eigenvecs;
+
+			As.EigenValsVecs(out eigenvals, out eigenvecs);
+			double lv = eigenvals[eigenvals.Rows - 1, 0].RealPart;
+			return lv;
 		}
 
 		delegate Matrix MatrixGetter(RpaParams p);
@@ -377,13 +408,19 @@ namespace TightBinding
 							{
 								for (int wi = 0; wi < input.FrequencyMesh.Length; wi++)
 								{
-									string filename = string.Format("{0}.{1}{2}{3}{4}.w{5}.T{6}.qm",
+									string filename_re = string.Format("{0}.re.{1}{2}{3}{4}.w{5}.T{6}.qm",
+														   name, l1, l2, l3, l4, wi, ti);
+									string filename_im = string.Format("{0}.im.{1}{2}{3}{4}.w{5}.T{6}.qm",
+														   name, l1, l2, l3, l4, wi, ti);
+									string filename_mag = string.Format("{0}.mag.{1}{2}{3}{4}.w{5}.T{6}.qm",
 														   name, l1, l2, l3, l4, wi, ti);
 
 									Complex maxvalue = new Complex(double.MinValue, double.MinValue);
 									Complex minvalue = new Complex(double.MaxValue, double.MaxValue);
 
-									using (StreamWriter w = new StreamWriter(filename))
+									using (StreamWriter w_re = new StreamWriter(filename_re))
+									using (StreamWriter w_im = new StreamWriter(filename_im))
+									using (StreamWriter w_mag = new StreamWriter(filename_mag))
 									{
 										double last_t;
 										double last_s;
@@ -399,7 +436,11 @@ namespace TightBinding
 											input.QPlane.GetPlaneST(input.QPlane.AllKpts[qi], out s, out t);
 
 											if (Math.Abs(t - last_t) > 1e-6)
-												w.WriteLine();
+											{
+												w_re.WriteLine();
+												w_im.WriteLine();
+												w_mag.WriteLine();
+											}
 
 											int index =
 												input.QPlane.GetKindex(input.Lattice, qpt, out orbitalMap, input.Symmetries);
@@ -416,8 +457,9 @@ namespace TightBinding
 
 											Complex val = g(rpa[index])[newii, newjj];
 
-											w.WriteLine(" {0}       {1}       {2}",
-												s, t, val.RealPart);
+											w_re.WriteLine(" {0}       {1}       {2}", s, t, val.RealPart);
+											w_im.WriteLine(" {0}       {1}       {2}", s, t, val.ImagPart);
+											w_mag.WriteLine(" {0}       {1}       {2}", s, t, val.Magnitude);
 
 											if (val.RealPart > maxvalue.RealPart) maxvalue.RealPart = val.RealPart;
 											if (val.ImagPart > maxvalue.ImagPart) maxvalue.ImagPart = val.ImagPart;
@@ -429,25 +471,37 @@ namespace TightBinding
 										}
 									}
 
-									string gpfilename = "gnuplot." + filename;
-
-									//minvalue.RealPart = Math.Floor(minvalue.RealPart);
-									//maxvalue.RealPart = Math.Ceiling(maxvalue.RealPart);
-
-									using (StreamWriter w = new StreamWriter(gpfilename))
+									for (int i = 0; i < 3; i++)
 									{
-										w.WriteLine("#!/usr/bin/gnuplot");
-										//w.WriteLine("set pm3d at bs flush center ftriangles scansbackward interpolate 1,1");
-										w.WriteLine("set pm3d map flush center ftriangles scansbackward interpolate 5,5");
-										w.WriteLine("set palette rgbformula 28,9,32");
-										//w.WriteLine("set border 895");
-										w.WriteLine("set key off");
-										//w.WriteLine("set zrange [{0}:{1}]", minvalue.RealPart, maxvalue.RealPart);
-										// label z = minvalue - 0.5 * (maxvalue - minvalue)
-										//  set label 1 "G" at 0,0,1 font "Symbol" center front
-										w.WriteLine("splot '{0}' with pm3d", filename);
-									}
+										string filename;
+										switch (i)
+										{
+											case 0: filename = filename_re; break;
+											case 1: filename = filename_im; break;
+											case 2: filename = filename_mag; break;
+											default:
+												continue;
+										}
 
+										string gpfilename = "gnuplot." + filename;
+
+										//minvalue.RealPart = Math.Floor(minvalue.RealPart);
+										//maxvalue.RealPart = Math.Ceiling(maxvalue.RealPart);
+
+										using (StreamWriter w = new StreamWriter(gpfilename))
+										{
+											w.WriteLine("#!/usr/bin/gnuplot");
+											//w.WriteLine("set pm3d at bs flush center ftriangles scansbackward interpolate 1,1");
+											w.WriteLine("set pm3d map flush center ftriangles scansbackward interpolate 5,5");
+											w.WriteLine("set palette rgbformula 23,9,-36");
+											//w.WriteLine("set border 895");
+											w.WriteLine("set key off");
+											//w.WriteLine("set zrange [{0}:{1}]", minvalue.RealPart, maxvalue.RealPart);
+											// label z = minvalue - 0.5 * (maxvalue - minvalue)
+											//  set label 1 "G" at 0,0,1 font "Symbol" center front
+											w.WriteLine("splot '{0}' with pm3d", filename);
+										}
+									}
 								}
 
 								baseIndex += QMesh.Count;
@@ -509,47 +563,63 @@ namespace TightBinding
 
 		}
 
-		private void CalcSpinChargeMatrices(TbInputFile  input, out Matrix S, out Matrix C)
+		private void CalcSpinChargeMatrices(TbInputFile input, List<RpaParams> rpa, out Matrix[] S, out Matrix[] C)
 		{
-			int size = input.Sites.Count * input.Sites.Count;
+			S = new Matrix[rpa.Count];
+			C = new Matrix[rpa.Count];
 
-			S = new Matrix(size, size);
-			C = new Matrix(size, size);
-
-			for (int l1 = 0; l1 < input.Sites.Count; l1++)
+			for (int rpa_index = 0; rpa_index < rpa.Count; rpa_index++)
 			{
-				for (int l2 = 0; l2 < input.Sites.Count; l2++)
-				{
-					for (int l3 = 0; l3 < input.Sites.Count; l3++)
-					{
-						for (int l4 = 0; l4 < input.Sites.Count; l4++)
-						{
-							int i = GetIndex(input, l1, l2);
-							int j = GetIndex(input, l3, l4);
+				Vector3 q = rpa[rpa_index].QptValue;
 
-							if (l1 == l2 && l2 == l3 && l3 == l4)
+				int size = input.Sites.Count * input.Sites.Count;
+
+				Matrix _S = new Matrix(size, size);
+				Matrix _C = new Matrix(size, size);
+
+				foreach (var interaction in input.Interactions)
+				{
+					double structureFactor = interaction.StructureFactor(q);
+
+					foreach (int l1 in interaction.SitesLeft)
+					{
+						foreach (int l2 in interaction.SitesLeft)
+						{
+							foreach (int l3 in interaction.SitesRight)
 							{
-								S[i, j] = input.HubU;
-								C[i, j] = input.HubU;
-							}
-							else if (l1 == l4 && l4 != l2 && l2 == l3)
-							{
-								S[i, j] = input.HubUp;
-								C[i, j] = -input.HubUp + input.HubJ;
-							}
-							else if (l1 == l2 && l2 != l4 && l4 == l3)
-							{
-								S[i, j] = input.HubJ;
-								C[i, j] = 2 * input.HubUp - input.HubJ;
-							}
-							else if (l1 == l3 && l3 != l2 && l2 == l4)
-							{
-								S[i, j] = input.HubJp;
-								C[i, j] = input.HubJp;
+								foreach (int l4 in interaction.SitesRight)
+								{
+									int i = GetIndex(input, l1, l2);
+									int j = GetIndex(input, l3, l4);
+
+									if (l1 == l2 && l2 == l3 && l3 == l4)
+									{
+										_S[i, j] += interaction.HubbardU *structureFactor;
+										_C[i, j] += interaction.HubbardU * structureFactor;
+									}
+									else if (l1 == l4 && l4 != l2 && l2 == l3)
+									{
+										_S[i, j] += interaction.InterorbitalU * structureFactor;
+										_C[i, j] += (-interaction.InterorbitalU + interaction.Exchange) * structureFactor;
+									}
+									else if (l1 == l2 && l2 != l3 && l3 == l4)
+									{
+										_S[i, j] += interaction.Exchange * structureFactor;
+										_C[i, j] += (2 * interaction.InterorbitalU - interaction.Exchange) * structureFactor;
+									}
+									else if (l1 == l3 && l3 != l2 && l2 == l4)
+									{
+										_S[i, j] += interaction.PairHopping * structureFactor;
+										_C[i, j] += interaction.PairHopping * structureFactor;
+									}
+								}
 							}
 						}
 					}
 				}
+
+				S[rpa_index] = _S;
+				C[rpa_index] = _C;
 			}
 		}
 
@@ -564,6 +634,26 @@ namespace TightBinding
 
 			Complex denom_factor = new Complex(0, 1e-4);
 
+			//using (StreamWriter ww = new StreamWriter("hamilt"))
+			//{
+			//    for (int i = 0; i < input.KMesh.Kpts.Count; i++)
+			//    {
+
+			//        for (int n = 0; n < orbitalCount; n++)
+			//        {
+			//            var wfk = Bands(i, n);
+
+			//            ww.Write("{0}   {1}   {2}          ", i, n, wfk.Energy);
+
+			//            for (int c = 0; c < orbitalCount; c++)
+			//            {
+			//                ww.Write("     {0}", wfk.Coeffs[c]);
+			//            }
+
+			//            ww.WriteLine();
+			//        }
+			//    }
+			//}
 			for (int l1 = 0; l1 < orbitalCount; l1++)
 			{
 				for (int l4 = 0; l4 < orbitalCount; l4++)
@@ -575,6 +665,8 @@ namespace TightBinding
 							int i = GetIndex(input, l1, l2);
 							int j = GetIndex(input, l3, l4);
 							bool foundSymmetry = false;
+
+							
 
 							for (int s = 0; s < input.Symmetries.Count; s++)
 							{
@@ -612,7 +704,11 @@ namespace TightBinding
 
 							if (foundSymmetry)
 								continue;
-							
+
+							//string filename = string.Format("vars.{0}{1}{2}{3}", l1, l2, l3, l4);
+							//StreamWriter w = new StreamWriter(File.Open(filename, FileMode.Append));
+							//w.WriteLine("total for q = {0}", q);
+
 							Complex total = 0;
 
 							for (int allkindex = 0; allkindex < input.KMesh.AllKpts.Count; allkindex++)
@@ -656,6 +752,8 @@ namespace TightBinding
 											wfq.Coeffs[newL1] * wfq.Coeffs[newL4].Conjugate() *
 											wfk.Coeffs[newL3] * wfk.Coeffs[newL2].Conjugate();
 
+										//coeff = 1;
+
 										if (coeff == 0) continue;
 										if (f1 < 1e-15 && f2 < 1e-15) continue;
 
@@ -665,10 +763,13 @@ namespace TightBinding
 										Complex lindhard = (f1 - f2) * (1.0 / denom_p);
 										Complex contrib = coeff * lindhard;
 
-										if (f1 == f2 && freq == 0.0)
+										if (Math.Abs(f1 - f2) < 1e-11 && freq == 0.0)
 										{
 											contrib = coeff * f1 * (1 - f1) * Beta;
 										}
+
+										//w.Write("{0}  {1}   {2}   {3}           ", kindex, kqindex, n1, n2);
+										//w.WriteLine("{0}   {1}   {2}   {3}   {4}", coeff, e1, e2, f1, f2);
 
 										if (double.IsNaN(contrib.RealPart) || double.IsNaN(contrib.ImagPart))
 										{
@@ -676,9 +777,11 @@ namespace TightBinding
 										}
 
 										val += contrib;
-
 									}
 								}
+
+								//w.WriteLine("{0}  {1}   total           {2} + {3}i", kindex, kqindex,
+								//    Math.Round(val.RealPart, 4), Math.Round(val.ImagPart, 4));
 
 								//Output.WriteLine(input.KMesh.AllKpts[kindex].Weight.ToString());
 								val *= input.KMesh.AllKpts[kindex].Weight;
@@ -690,6 +793,9 @@ namespace TightBinding
 
 							x[i, j] = total;
 							x[j, i] = total.Conjugate();
+
+							//w.WriteLine("total is : {0}", total);
+							//w.Close();
 						}
 					}
 				}

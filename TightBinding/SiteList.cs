@@ -7,7 +7,6 @@ namespace TightBinding
 {
 	public class SiteList : List<Site>
 	{
-		
 		public SiteList()
 		{
 		}
@@ -25,6 +24,15 @@ namespace TightBinding
 			}
 			
 			return -1;
+		}
+
+		public IEnumerable<int> SitesAt(string siteName)
+		{
+			for (int i = 0; i < Count; i++)
+			{
+				if (this[i].SiteName == siteName)
+					yield return i;
+			}
 		}
 	}
 

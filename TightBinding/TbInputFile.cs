@@ -29,8 +29,8 @@ namespace TightBinding
 		public SymmetryList Symmetries { get { return symmetries; } }
 		public double Nelec { get; private set; }
 
-		public double HubU, HubUp, HubJ, HubJp;
-
+		public InteractionList Interactions { get; private set; }
+		
 		int[] kgrid = new int[3];
 		int[] shift = new int[] { 1, 1, 1 };
 		SymmetryList symmetries = new SymmetryList();
@@ -111,7 +111,9 @@ namespace TightBinding
 			{
 				for (int i = 0; i < kmesh.Kpts.Count; i++)
 				{
-					writer.WriteLine("    {0}", kmesh.Kpts[i].Value);
+					Vector3 red = lattice.ReducedCoords(kmesh.Kpts[i].Value);
+
+					writer.WriteLine("{0}     {1}", i, red);
 				}
 			}
 
@@ -122,10 +124,15 @@ namespace TightBinding
 					qplane.Kpts.Count, qplane.AllKpts.Count);
 
 
-				//for (int i = 0; i < qplane.Kpts.Count; i++)
-				//{
-				//    Output.WriteLine("    {0}", qplane.Kpts[i].Value);
-				//}
+				using (StreamWriter writer = new StreamWriter("qpts"))
+				{
+					for (int i = 0; i < qplane.Kpts.Count; i++)
+					{
+						Vector3 red = lattice.ReducedCoords(qplane.Kpts[i].Value);
+
+						writer.WriteLine("{0}     {1}", i, red);
+					}
+				}
 			}
 		}
 
@@ -146,7 +153,12 @@ namespace TightBinding
 					break;
 
 				case "Hubbard":
-					ReadHubbardSection();
+					Output.WriteLine("Hubbard section is obsolete.  Please use the interaction section.");
+					ThrowEx("Hubbard section is obsolete.");
+					break;
+
+				case "Interaction":
+					ReadInteractionSection();
 					break;
 
 				case "KPath":
@@ -210,13 +222,6 @@ namespace TightBinding
 			setQplane = true;
 		}
 
-		private void ReadHubbardSection()
-		{
-			HubU = double.Parse(LineWords[0]);
-			HubUp = double.Parse(LineWords[1]);
-			HubJ = double.Parse(LineWords[2]);
-			HubJp = double.Parse(LineWords[3]);
-		}
 
 
 		private void ReadNelec()
@@ -416,13 +421,7 @@ namespace TightBinding
 
 			while (!EOF && LineType != LineType.NewSection)
 			{
-				string pair = Line.Substring(1, Line.Length - 2);
-				string[] values = pair.Split(' ');
-
-				Output.WriteLine(Line);
-
-				if (values.Length != 2)
-					ThrowEx("Could not understand hopping pair.");
+				string[] values = ReadSubSectionParameters();
 
 				int left = int.Parse(values[0]) - 1;
 				int right = int.Parse(values[1]) - 1;
@@ -457,6 +456,76 @@ namespace TightBinding
 
 				Output.WriteLine("Count: {0}", p.Hoppings.Count);
 
+			}
+		}
+
+		private void ReadInteractionSection()
+		{
+			if (Interactions != null)
+				ThrowEx("Multiple Interaction sections found.");
+
+			Interactions = new InteractionList();
+
+			if (LineType != LineType.NewSubSection && LineType != LineType.NewSection)
+			{
+				if (Line.ToLowerInvariant() == "adjust")
+				{
+					Interactions.AdjustInteractions = true;
+				}
+
+				ReadNextLine();
+			}
+
+
+			if (LineType != LineType.NewSubSection)
+				ThrowEx("Could not understand contents of interaction section.");
+
+			while (!EOF && LineType != LineType.NewSection)
+			{
+				string[] values = ReadSubSectionParameters();
+
+				InteractionPair inter = new InteractionPair(sites, values[0], values[1]);
+
+				if (inter.SitesLeft.Count == 0) ThrowEx("Could not identify site \"" + values[0] + "\".");
+				if (inter.SitesRight.Count == 0) ThrowEx("Could not identify site \"" + values[1] + "\".");
+
+				ReadNextLine();
+				string[] interactionVals = Line.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+				double[] vals = interactionVals.Select(x => double.Parse(x)).ToArray();
+
+				ReadNextLine();
+				while (!EOF && LineType != LineType.NewSection && LineType != LineType.NewSubSection)
+				{
+					Vector3 vec = Vector3.Parse(Line);
+					
+					inter.Vectors.Add(vec);
+
+					ReadNextLine();
+				}
+
+				if (inter.OnSite)
+				{
+					if (interactionVals.Length > 4)
+						ThrowEx("Found too many parameters in the interaction.");
+
+					inter.HubbardU = double.Parse(interactionVals[0]);
+
+					if (interactionVals.Length > 1) inter.InterorbitalU = double.Parse(interactionVals[1]);
+					if (interactionVals.Length > 2) inter.Exchange = double.Parse(interactionVals[2]);
+					if (interactionVals.Length > 3) inter.PairHopping = double.Parse(interactionVals[3]);
+				}
+				else
+				{
+					if (interactionVals.Length > 2)
+						ThrowEx("Found too many parameters in the interaction.  Only two (Hubbard and exchange) allowed for intersite interaction");
+
+					inter.InterorbitalU = double.Parse(interactionVals[0]);
+					inter.Exchange = double.Parse(interactionVals[1]);
+				}
+
+				Interactions.Add(inter);
+
+				ReadNextLine();
 			}
 		}
 

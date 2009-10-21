@@ -66,10 +66,12 @@ namespace TightBinding
 			catch(EndOfInputException)
 			{
 			}
-			//catch(Exception ex)
-			//{
-			//	ThrowEx(ex);	
-			//}
+#if !DEBUG
+			catch (Exception ex)
+			{
+				ThrowEx(ex);
+			}
+#endif
 		}
 		protected abstract void ReadSection(string sectionName);
 		
@@ -136,10 +138,24 @@ namespace TightBinding
 				}
 				
 				return LineType.Unknown;
-				
 			}
 		}
-		
+
+		protected string[] ReadSubSectionParameters()
+		{
+			if (LineType != LineType.NewSubSection)
+				ThrowEx("Expected a : : delimited subsection.");
+
+			string pair = Line.Substring(1, Line.Length - 2);
+			string[] values = pair.Split(' ');
+
+			Output.WriteLine(Line);
+
+			if (values.Length != 2)
+				ThrowEx("Subsection does not contain a pair of values.");
+
+			return values;
+		}
 			  
 	}
 	
