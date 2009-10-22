@@ -9,9 +9,9 @@
  
 # Number of orbitals / sites and their locations 
 # Positions are in cartesian coordinates
-[Sites]
- 0 0 0 pi_x a px
- 0 0 0 pi_y a py
+[Orbitals]
+ 0 0 0 pi_x 1a px a
+ 0 0 0 pi_y 1a py a
  
 # Symmetries in the crystal.
 # The numbers following the symmetry name indicate how the orbitals transform 
@@ -96,7 +96,7 @@ G        0              0             0
 
 # Gives a k-mesh for calculating the density of states and doing RPA.
 [KMesh]
-24 24 24 1 1 1
+48 48 48 1 1 1
 
 # Gives data for a plane of q-points in the BZ to plot.  There must be
 # four sets of three numbers here.
@@ -113,7 +113,7 @@ G        0              0             0
 # or something of the form:
 #    lower_bound  upper_bound  num_points
 [Temperature]
-0.04
+0.002
 
 # Frequency mesh for RPA calculation
 # You may enter just a single number to calculate a single frequency,

@@ -339,18 +339,55 @@ namespace TightBindingSuite
 
 		private static double LargestPositiveEigenvalue(Matrix x)
 		{
-			Matrix As = x * x.HermitianConjugate();
-			Matrix eigenvals, eigenvecs;
+			Complex lastEv = double.MinValue;
+			Complex largest = LargestEigenvalue(x);
+			double shift = 0;
+			double iter = 0;
 
-			As.EigenValsVecs(out eigenvals, out eigenvecs);
-			double lv = Math.Sqrt(eigenvals[eigenvals.Rows - 1, 0].RealPart);
+			do
+			{
+				shift = Math.Max(shift, largest.Magnitude);
 
-			Matrix x1 = x + Matrix.Identity(x.Rows) * 1000;
-			As = x1 * x1.HermitianConjugate();
-			As.EigenValsVecs(out eigenvals, out eigenvecs);
-			double lv2 = Math.Sqrt(eigenvals[eigenvals.Rows - 1, 0].RealPart);
+				Matrix y = x + shift * Matrix.Identity(x.Rows);
 
-			return lv2 - 1000;
+				lastEv = largest;
+				largest = LargestEigenvalue(y);
+				largest -= shift;
+
+				iter++;
+			} while ((largest - lastEv).Magnitude / largest.Magnitude > 1e-3 && iter < 10);
+
+			return largest.Magnitude;
+		}
+
+		private static Complex LargestEigenvalue(Matrix x)
+		{
+			Matrix vec = new Matrix(x.Rows, 1);
+			System.Random rnd = new Random();
+
+			for (int i = 0; i < x.Rows; i++)
+				vec[i, 0] = rnd.NextDouble();
+
+			for (int i = 0; i < 10; i++)
+			{
+				for (int j = 0; j < 20; j++)
+				{
+					vec = x * vec;
+				}
+
+				vec /= Math.Sqrt((vec.HermitianConjugate() * vec)[0, 0].Magnitude);
+			}
+
+			// now get actual eigenvalue
+			Matrix res_vec = x * vec;
+
+			for (int i = 0; i < vec.Rows; i++)
+			{
+				if (vec[i, 0].Magnitude > 1e-8)
+					return res_vec[i, 0] / vec[i, 0];
+			}
+
+			throw new Exception("Vector of all zeroes.");
 		}
 
 		delegate Matrix MatrixGetter(RpaParams p);
