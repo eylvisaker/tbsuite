@@ -9,14 +9,14 @@ namespace TightBindingSuite
 	public partial class TightBinding
 	{
 		Lattice lattice;
-		SiteList sites;
+		OrbitalList sites;
 		HoppingPairList hoppings;
 		KptList kpath, kmesh;
 		KptList qplane;
 		List<int> poles = new List<int>();
 
 		public Lattice Lattice { get { return lattice; } }
-		public SiteList Sites { get { return sites; } }
+		public OrbitalList Orbitals { get { return sites; } }
 		public HoppingPairList Hoppings { get { return hoppings; } }
 		public KptList KPath { get { return kpath; } }
 		public KptList KMesh { get { return kmesh; } }
@@ -26,7 +26,7 @@ namespace TightBindingSuite
 		public double[] MuMesh { get; private set; }
 		public List<int> PoleStates { get { return poles; } }
 		public SymmetryList Symmetries { get { return symmetries; } }
-		public double Nelec { get; private set; }
+		public double[] Nelec { get; private set; }
 
 		public InteractionList Interactions { get; private set; }
 
@@ -34,10 +34,11 @@ namespace TightBindingSuite
 		int[] shift = new int[] { 1, 1, 1 };
 		SymmetryList symmetries = new SymmetryList();
 
+
 		int[] qgrid = new int[3];
 		Vector3[] qplaneDef = new Vector3[3];
 		bool setQplane = false;
-
+		bool specifiedNelec = false;
 
 		string outputfile;
 
@@ -50,10 +51,11 @@ namespace TightBindingSuite
 			r.ReadFile();
 
 			Output.WriteLine("Successfully parsed input file.");
+
+			CalcNelec();
 		}
 		public void RunTB()
 		{
-			CalcNelec();
 			DoBandStructure();
 			DoDensityOfStates();
 		}
@@ -82,15 +84,32 @@ namespace TightBindingSuite
 
 			double N = FindNelec(ks, eigenvals, MuMesh[0], beta);
 
-			if (Nelec != 0)
+			if (specifiedNelec)
 			{
-				MuMesh[0] = FindMu(ks, eigenvals, Nelec, beta);
-				Output.WriteLine("Found chemical potential of {0}", MuMesh[0]);
+				MuMesh = new double[Nelec.Length];
+
+				for (int i = 0; i < MuMesh.Length; i++)
+				{
+					MuMesh[i] = FindMu(ks, eigenvals, Nelec[i], beta);
+				}
 			}
 			else
 			{
-				N = FindNelec(ks, eigenvals, MuMesh[0], beta);
+				Nelec = new double[MuMesh.Length];
 
+				for (int i = 0; i < MuMesh.Length; i++)
+				{
+					Nelec[i] = FindNelec(ks, eigenvals, MuMesh[i], beta);
+				}
+			}
+
+			Output.WriteLine("           mu         Nelec");
+
+			for (int i = 0; i < MuMesh.Length; i++)
+			{
+				MuMesh[i] = FindMu(ks, eigenvals, Nelec[i], beta);
+
+				Output.WriteLine("     {0:0.000000}      {1:0.000000}", MuMesh[i], Nelec[i]);
 			}
 		}
 
@@ -236,7 +255,7 @@ namespace TightBindingSuite
 				int epts = 3000;
 
 				double[] energyGrid = new double[epts];
-				double[,] dos = new double[epts, Sites.Count + 1];
+				double[,] dos = new double[epts, Orbitals.Count + 1];
 				int zeroIndex = 0;
 
 				Output.WriteLine(
@@ -303,12 +322,12 @@ namespace TightBindingSuite
 				// symmetrize DOS for equivalent orbitals.
 				for (int k = 0; k < epts; k++)
 				{
-					for (int i = 0; i < Sites.Count; i++)
+					for (int i = 0; i < Orbitals.Count; i++)
 					{
 						double wtk = dos[k, i + 1];
 						int count = 1;
 
-						foreach (int equiv in Sites[i].Equivalent)
+						foreach (int equiv in Orbitals[i].Equivalent)
 						{
 							wtk += dos[k, equiv + 1];
 							count++;
@@ -316,7 +335,7 @@ namespace TightBindingSuite
 
 						dos[k, i + 1] = wtk / count;
 
-						foreach (int equiv in Sites[i].Equivalent)
+						foreach (int equiv in Orbitals[i].Equivalent)
 						{
 							dos[k, equiv + 1] = wtk / count;
 						}
@@ -332,7 +351,7 @@ namespace TightBindingSuite
 				{
 					outf.Write("{0}     ", energyGrid[i]);
 
-					for (int j = 0; j < Sites.Count + 1; j++)
+					for (int j = 0; j < Orbitals.Count + 1; j++)
 					{
 						outf.Write("{0}  ", dos[i, j]);
 					}
@@ -428,13 +447,13 @@ namespace TightBindingSuite
 		
 		public Matrix CalcHamiltonian(Vector3 kpt)
 		{
-			Matrix m = new Matrix(Sites.Count, Sites.Count);
+			Matrix m = new Matrix(Orbitals.Count, Orbitals.Count);
 
 			kpt *= 2 * Math.PI;
 
-			for (int i = 0; i < Sites.Count; i++)
+			for (int i = 0; i < Orbitals.Count; i++)
 			{
-				for (int j = 0; j < Sites.Count; j++)
+				for (int j = 0; j < Orbitals.Count; j++)
 				{
 					HoppingPair p = Hoppings.FindOrThrow(i, j);
 					
@@ -485,7 +504,7 @@ namespace TightBindingSuite
 			int epts = 2000;
 
 			double[] energyGrid = new double[epts];
-			double[,] dos = new double[epts, Sites.Count + 1];
+			double[,] dos = new double[epts, Orbitals.Count + 1];
 
 			smearNorm /= ks.Kpts.Count;
 
@@ -544,7 +563,7 @@ namespace TightBindingSuite
 			{
 				outf.Write("{0}     ", energyGrid[i]);
 
-				for (int j = 0; j < Sites.Count + 1; j++)
+				for (int j = 0; j < Orbitals.Count + 1; j++)
 				{
 					outf.Write("{0}  ", dos[i, j]);
 				}
@@ -560,14 +579,14 @@ namespace TightBindingSuite
 			outf.WriteLine("#\t1\t0\t" + ks.Kpts.Count.ToString());
 			outf.Write("# band index\te(k,n)\t");
 
-			for (int i = 0; i < Sites.Count; i++)
+			for (int i = 0; i < Orbitals.Count; i++)
 			{
-				if (string.IsNullOrEmpty(Sites[i].Name))
+				if (string.IsNullOrEmpty(Orbitals[i].Name))
 				{
 					outf.Write("TB{0}\t", i);
 				}
 				else
-					outf.Write("{0}\t", Sites[i].Name);
+					outf.Write("{0}\t", Orbitals[i].Name);
 			}
 			outf.WriteLine();
 

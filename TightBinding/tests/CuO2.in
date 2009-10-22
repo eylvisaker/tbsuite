@@ -75,7 +75,7 @@ G        0       0       0
 
 # Number of electrons for both tightbinding and RPA calculations.
 [Nelec]
-5.2
+5
 
 # Gives a k-mesh for calculating the density of states and doing RPA.
 [KMesh]

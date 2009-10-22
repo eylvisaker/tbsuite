@@ -11,10 +11,13 @@ namespace TightBindingSuite
 	{
 		static void Main(string[] args)
 		{
-			string inputfile = InputHelper.GetInputFile("Green's function generator", "g", args);
+			using (BootStrap b = new BootStrap())
+			{
+				string inputfile = b.GetInputFile("Green's function generator", "g", args);
 
-			PlotGreenProgram inst = new PlotGreenProgram();
-			inst.Run(inputfile);
+				PlotGreenProgram inst = new PlotGreenProgram();
+				inst.Run(inputfile);
+			}
 		}
 		void Run(string inputfile)
 		{
@@ -44,7 +47,7 @@ namespace TightBindingSuite
 
 		private Matrix[] CalcGreenFunction(TightBindingSuite.TightBinding tb, RpaParams p, KptList kmesh)
 		{
-			int orbitalCount = tb.Sites.Count;
+			int orbitalCount = tb.Orbitals.Count;
 			Matrix[] retval = new Matrix[kmesh.Kpts.Count];
 			
 			Complex denomFactor = new Complex(0, p.Temperature);

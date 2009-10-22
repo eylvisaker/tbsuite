@@ -5,9 +5,9 @@ using ERY.EMath;
 
 namespace TightBindingSuite
 {
-	public class SiteList : List<Site>
+	public class OrbitalList : List<Orbitals>
 	{
-		public SiteList()
+		public OrbitalList()
 		{
 		}
 		
@@ -26,37 +26,39 @@ namespace TightBindingSuite
 			return -1;
 		}
 
-		public IEnumerable<int> SitesAt(string siteName)
+		public IEnumerable<int> OrbitalsInInteractionGroup(string group)
 		{
 			for (int i = 0; i < Count; i++)
 			{
-				if (this[i].SiteName == siteName)
+				if (this[i].InteractionGroup == group)
 					yield return i;
 			}
 		}
 	}
 
-	public class Site
+	public class Orbitals
 	{
 		Vector3 vec;
 		string name;
 		List<int> equivalentSites = new List<int>();
 
-		public Site(Vector3 vec)
+		public Orbitals(Vector3 vec)
 		{
 			this.vec = vec;
 		}
-		public Site(Vector3 vec, string name, string site, string localSym)
+		public Orbitals(Vector3 vec, string name, string symmPos, string localSym, string interactionGroup)
 		{
 			this.vec = vec;
 			this.name = name;
-			this.SiteName = site;
+			this.SymmetryPosition = symmPos;
 			this.LocalSymmetry = localSym;
+			this.InteractionGroup = interactionGroup;
 		}
 
-		public string Name { get { return name; } set { name = value; } }
-		public string SiteName { get; set; }
-		public string LocalSymmetry { get; set; }
+		public string Name { get; private set; }
+		public string SymmetryPosition { get; private set; }
+		public string LocalSymmetry { get; private set; }
+		public string InteractionGroup { get; private set; }
 		public Vector3 Location { get { return vec; } set { vec = value; } }
 		public List<int> Equivalent { get { return equivalentSites; } }
 

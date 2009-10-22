@@ -39,27 +39,28 @@ namespace TightBindingSuite
 				if (tb.symmetries.Count == 0)
 					tb.symmetries.Add(new Symmetry(Matrix.Identity(3)));
 
-				if (tb.Nelec > 0)
+				if (tb.Nelec != null)
 				{
 					if (tb.MuMesh != null)
 						ThrowEx(@"Specify only one of Nelec or Mu.");
 
-					tb.MuMesh = new double[1];
+					tb.MuMesh = new double[tb.Nelec.Length];
 
-					if (tb.Nelec > tb.Sites.Count * 2)
-						ThrowEx(@"Nelec is too large.");
+					for (int i = 0; i < tb.Nelec.Length; i++)
+					{
+						if (tb.Nelec[i] > tb.Orbitals.Count * 2)
+							ThrowEx(@"Nelec is too large.");
+						else if (tb.Nelec[i] < 0)
+							ThrowEx(@"Nelec cannot be less than zero.");
+					}
 				}
-				else if (tb.Nelec < 0)
-					ThrowEx(@"Nelec cannot be less than zero.");
-
+				
+				if (tb.MuMesh == null)
+					tb.MuMesh = new double[] { 0 };
 				if (tb.TemperatureMesh == null)
-				{
 					tb.TemperatureMesh = new double[] { 1 };
-				}
 				if (tb.FrequencyMesh == null)
-				{
 					tb.FrequencyMesh = new double[] { 0 };
-				}
 
 				foreach (HoppingPair h in tb.hoppings)
 				{
@@ -120,7 +121,11 @@ namespace TightBindingSuite
 						break;
 
 					case "Sites":
-						ReadSitesSection();
+						ThrowEx("Sites section has been renamed to \"Orbitals\".");
+						break;
+
+					case "Orbitals":
+						ReadOrbitalsSection();
 						break;
 
 					case "Hoppings":
@@ -128,8 +133,7 @@ namespace TightBindingSuite
 						break;
 
 					case "Hubbard":
-						Output.WriteLine("Hubbard section is obsolete.  Please use the interaction section.");
-						ThrowEx("Hubbard section is obsolete.");
+						ThrowEx("Hubbard section is obsolete.  Please use the interaction section.");
 						break;
 
 					case "Interaction":
@@ -201,7 +205,8 @@ namespace TightBindingSuite
 
 			private void ReadNelec()
 			{
-				tb.Nelec = double.Parse(Line);
+				tb.Nelec = ReadDoubleMesh();
+				tb.specifiedNelec = true;
 			}
 			private void ReadChemicalPotential()
 			{
@@ -229,7 +234,7 @@ namespace TightBindingSuite
 					for (int i = 0; i < array.Length; i++)
 						array[i] = double.Parse(words[i]);
 				}
-				else if (words.Length > 1)
+				else if (words.Length == 3)
 				{
 					double f1 = double.Parse(words[0]);
 					double f2 = double.Parse(words[1]);
@@ -248,6 +253,12 @@ namespace TightBindingSuite
 					else
 						singlePoint = true;
 				}
+				else if (words.Length == 2)
+				{
+					array = new double[2];
+					array[0] = double.Parse(words[0]);
+					array[1] = double.Parse(words[1]);
+				}
 				else
 					singlePoint = true;
 
@@ -256,6 +267,7 @@ namespace TightBindingSuite
 					array = new double[1];
 					array[0] = double.Parse(words[0]);
 				}
+
 				return array;
 			}
 
@@ -356,12 +368,12 @@ namespace TightBindingSuite
 				tb.lattice = new Lattice(a[0], a[1], a[2]);
 
 			}
-			void ReadSitesSection()
+			void ReadOrbitalsSection()
 			{
 				if (tb.sites != null)
 					ThrowEx("Multiple sites sections found.");
 
-				tb.sites = new SiteList();
+				tb.sites = new OrbitalList();
 
 				while (EOF == false && LineType != LineType.NewSection)
 				{
@@ -371,15 +383,16 @@ namespace TightBindingSuite
 					if (vals[2].EndsWith(")"))
 						vals[2] = vals[2].Substring(0, vals[2].Length - 1);
 
-					if (vals.Length < 6)
+					if (vals.Length < 7)
 						ThrowEx("Insufficient information about site.");
 
 					Vector3 loc = new Vector3(double.Parse(vals[0]), double.Parse(vals[1]), double.Parse(vals[2]));
 					string name = vals[3];
 					string sitename = vals[4];
 					string localsym = vals[5];
+					string interactionGroup = vals[6];
 
-					tb.sites.Add(new Site(loc, name, sitename, localsym));
+					tb.sites.Add(new Orbitals(loc, name, sitename, localsym, interactionGroup));
 
 					ReadNextLine();
 				}
@@ -461,15 +474,14 @@ namespace TightBindingSuite
 
 					InteractionPair inter = new InteractionPair(tb.sites, values[0], values[1]);
 
-					if (inter.SitesLeft.Count == 0) ThrowEx("Could not identify site \"" + values[0] + "\".");
-					if (inter.SitesRight.Count == 0) ThrowEx("Could not identify site \"" + values[1] + "\".");
+					if (inter.OrbitalsLeft.Count == 0) ThrowEx("Could not identify site \"" + values[0] + "\".");
+					if (inter.OrbitalsRight.Count == 0) ThrowEx("Could not identify site \"" + values[1] + "\".");
 
 					ReadNextLine();
 					string[] interactionVals = Line.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
 					double[] vals = interactionVals.Select(x => double.Parse(x)).ToArray();
 
-					if (!EOF)
-						ReadNextLine();
+					ReadNextLine();
 
 					while (!EOF && LineType != LineType.NewSection && LineType != LineType.NewSubSection)
 					{
@@ -842,7 +854,7 @@ namespace TightBindingSuite
 							var site = tb.sites[i];
 							Vector3 loc = sym * site.Location;
 
-							int index = tb.Sites.FindIndex(tb.lattice, loc);
+							int index = tb.Orbitals.FindIndex(tb.lattice, loc);
 
 							if (index == -1)
 							{

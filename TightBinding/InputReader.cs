@@ -78,7 +78,13 @@ namespace TightBindingSuite
 		protected void ReadNextLine()
 		{
 			if (reader.EndOfStream)
-				throw new EndOfInputException();
+			{
+				if (string.IsNullOrEmpty(line))
+					throw new EndOfInputException();
+
+				line = "";
+				return;
+			}
 			
 			lineIndex++;
 			line = reader.ReadLine().Trim();
@@ -112,7 +118,10 @@ namespace TightBindingSuite
 		{
 			get 
 			{
-				return reader.EndOfStream;	
+				if (string.IsNullOrEmpty(Line) && reader.EndOfStream)
+					return true;
+				else
+					return false;
 			}
 		}
 		

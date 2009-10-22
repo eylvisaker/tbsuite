@@ -6,9 +6,11 @@ using System.Text;
 
 namespace TightBindingSuite
 {
-	public static class InputHelper
+	public class BootStrap : IDisposable 
 	{
-		public static string GetInputFile(string programName, string outSuffix, string[] args)
+		StreamWriter output;
+
+		public string GetInputFile(string programName, string outSuffix, string[] args)
 		{
 			string text = new string(' ', (51 - programName.Length) / 2) +
 							programName;
@@ -32,7 +34,7 @@ namespace TightBindingSuite
 
 			string outputFile = Path.GetFileNameWithoutExtension(filename) + "." + outSuffix + ".out";
 
-			StreamWriter output = new StreamWriter(outputFile);
+			output = new StreamWriter(outputFile);
 			Output.SetFile(output);
 
 			Output.WriteLine("-----------------------------------------------------");
@@ -43,7 +45,7 @@ namespace TightBindingSuite
 
 			return filename;
 		}
-		public static string GetOutputPrefix(string inputFile)
+		public string GetOutputPrefix(string inputFile)
 		{
 			return Path.GetFileNameWithoutExtension(inputFile);
 		}
@@ -88,5 +90,14 @@ namespace TightBindingSuite
 			return name;
 		}
 
+
+		#region IDisposable Members
+
+		public void Dispose()
+		{
+			output.Dispose();
+		}
+
+		#endregion
 	}
 }
