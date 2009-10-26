@@ -72,6 +72,8 @@ namespace TestMath
 			{
 				Console.WriteLine("Eigenvectors differ:");
 				Console.WriteLine();
+				Console.WriteLine("Eigenvalues:");
+				Console.WriteLine(eigenvals_a.ToString());
 				Console.WriteLine("Eigenvectors:");
 				Console.WriteLine(eigenvecs_a.ToString("0.0000"));
 				Console.WriteLine();

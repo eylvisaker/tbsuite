@@ -1226,8 +1226,8 @@ namespace ERY.EMath
 
 			Matrix transform ;
 			Matrix tri = ToTriDiagonal(out transform);
-			Console.WriteLine();
-			Console.WriteLine(tri.ToString("0.00"));
+			//Console.WriteLine();
+			//Console.WriteLine(tri.ToString("0.00"));
 
 			Matrix Q = Identity(this.Rows);
 			Matrix input = tri.Clone();
@@ -1277,8 +1277,8 @@ namespace ERY.EMath
 						Q[k, j] = Qki * GTij + Qkj * GTjj;
 					}
 
-					System.Diagnostics.Debug.Assert((Q * Q.HermitianConjugate()).IsIdentity);
-					System.Diagnostics.Debug.Assert((Q * R - input).IsZero);
+					//System.Diagnostics.Debug.Assert((Q * Q.HermitianConjugate()).IsIdentity);
+					//System.Diagnostics.Debug.Assert((Q * R - input).IsZero);
 				}
 
 				input = R * Q;
@@ -1287,11 +1287,11 @@ namespace ERY.EMath
 				for (int i = 0; i < Rows; i++)
 					input[i, i] += shift;
 
-				Console.WriteLine();
-				Console.WriteLine(input.ToString("0.000"));
-				Console.WriteLine(transform.ToString("0.000"));
-				Console.WriteLine();
-				System.Diagnostics.Debug.Assert((transform * transform.HermitianConjugate()).IsIdentity);
+				//Console.WriteLine();
+				//Console.WriteLine(input.ToString("0.000"));
+				//Console.WriteLine(transform.ToString("0.000"));
+				//Console.WriteLine();
+				//System.Diagnostics.Debug.Assert((transform * transform.HermitianConjugate()).IsIdentity);
 
 				double val = 0;
 				const double tolerance = 1e-14;
