@@ -124,6 +124,9 @@
     <None Include="tests\bcc.in">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="tests\Cr.in">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="tests\Hubbard-1band-ee.in">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -134,6 +137,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="tests\RbO2.in">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="tests\TiNCl-4orb.in">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="tests\TiNCl.in">

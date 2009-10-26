@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 
 
 namespace ERY.EMath
@@ -318,9 +319,36 @@ namespace ERY.EMath
 			return _x.GetHashCode() - _y.GetHashCode();
 		}
 
-		public static Complex Parse(string real)
+		public static Complex Parse(string val)
 		{
-			return new Complex(double.Parse(real));
+			val = val.Trim();
+
+			Regex number = new Regex(@"[+-]? *[0-9]+(\.[0-9]+)?([dDeE][+-][0-9]*)?[^i]");
+			Regex cplxr = new Regex(@"[+-]?[0-9]+(\.[0-9]+)?([dDeE][+-][0-9]*)? *[+-] *[0-9]+(\.[0-9]+)?([dDeE][+-][0-9]*)?i");
+			Regex imaginary = new Regex(@"[+-]? *[0-9]+(\.[0-9]+)?([dDeE][+-][0-9]*)?i");
+
+			var m = cplxr.Matches(val, 0);
+			var im = imaginary.Matches(val, 0);
+
+			if (m.Count == 0 && im.Count == 0)
+				return new Complex(double.Parse(val));
+			else if (m.Count == 0)
+			{
+				string imag = val.Remove(val.IndexOf('i'));
+
+				Complex retval = new Complex(0, double.Parse(imag));
+				return retval;
+			}
+			else
+			{
+				m = number.Matches(val, 0);
+
+				string real = m[0].ToString().Trim();
+				string imag = m[1].ToString().Replace(" ", "");
+
+				Complex retval = new Complex(double.Parse(real), double.Parse(imag));
+				return retval;
+			}
 		}
 		public static Complex Parse(string real, string imag)
 		{

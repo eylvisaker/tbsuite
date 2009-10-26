@@ -474,8 +474,8 @@ namespace TightBindingSuite
 
 					InteractionPair inter = new InteractionPair(tb.sites, values[0], values[1]);
 
-					if (inter.OrbitalsLeft.Count == 0) ThrowEx("Could not identify site \"" + values[0] + "\".");
-					if (inter.OrbitalsRight.Count == 0) ThrowEx("Could not identify site \"" + values[1] + "\".");
+					if (inter.OrbitalsLeft.Count == 0) ThrowEx("Could not identify interaction group \"" + values[0] + "\".");
+					if (inter.OrbitalsRight.Count == 0) ThrowEx("Could not identify interaction group \"" + values[1] + "\".");
 
 					ReadNextLine();
 					string[] interactionVals = Line.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
