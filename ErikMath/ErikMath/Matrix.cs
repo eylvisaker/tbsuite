@@ -1336,7 +1336,7 @@ namespace ERY.EMath
 				if (val < tolerance)
 					break;
 
-				doshift = iter > 10;// val < 0.1;
+				doshift = iter > 10 && val < 0.1;
 			}
 
 			//Console.WriteLine("Niter: {0}", iter);
