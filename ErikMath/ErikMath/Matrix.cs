@@ -1240,8 +1240,8 @@ namespace ERY.EMath
 
 			Matrix transform ;
 			Matrix tri = ToTriDiagonal(out transform);
-			//Console.WriteLine();
-			//Console.WriteLine(tri.ToString("0.00"));
+			Console.WriteLine();
+			Console.WriteLine(tri.ToString("0.00"));
 
 			Matrix Q = Identity(this.Rows);
 			Matrix input = tri.Clone();
@@ -1250,7 +1250,7 @@ namespace ERY.EMath
 			int shiftStart = Rows - 2;
 			int iter;
 			Matrix R;
-			double shiftValTolerance = 0.1;
+			double shiftValTolerance = 1;
 			bool doshift = false;
 			double matrixNorm = 0, lastMatrixNorm;
 			const double matrixNormTolerance = 1e-24;
@@ -1305,11 +1305,11 @@ namespace ERY.EMath
 					//System.Diagnostics.Debug.Assert((Q * R - input).IsZero);
 				}
 
-				//Console.WriteLine("R:");
-				//Console.WriteLine(R.ToString("0.00"));
-				//Console.WriteLine("Q:");
-				//Console.WriteLine(Q.ToString("0.00"));
-				//Console.WriteLine();
+				Console.WriteLine("R:");
+				Console.WriteLine(R.ToString("0.00"));
+				Console.WriteLine("Q:");
+				Console.WriteLine(Q.ToString("0.00"));
+				Console.WriteLine();
 				
 				input = R * Q;
 				transform = transform * Q;
@@ -1320,12 +1320,12 @@ namespace ERY.EMath
 						input[i, i] += shift;
 				}
 
-				//Console.WriteLine("Input:");
-				//Console.WriteLine(input.ToString("0.000"));
-				//Console.WriteLine("Transform:");
-				//Console.WriteLine(transform.ToString("0.000"));
-				//Console.WriteLine();
-				//System.Diagnostics.Debug.Assert((transform * transform.HermitianConjugate()).IsIdentity);
+				Console.WriteLine("Transform:");
+				Console.WriteLine(transform.ToString("0.000"));
+				Console.WriteLine("Input:");
+				Console.WriteLine(input.ToString("0.000"));
+				Console.WriteLine();
+				System.Diagnostics.Debug.Assert((transform * transform.HermitianConjugate()).IsIdentity);
 
 				lastMatrixNorm = matrixNorm;
 				matrixNorm = 0;
@@ -1346,14 +1346,15 @@ namespace ERY.EMath
 
 				if (doshift && matrixNorm > shiftValTolerance)
 				{
-					shiftValTolerance /= 2;
+					shiftValTolerance /= 1.2;
 				}
 
 				doshift = matrixNorm < shiftValTolerance;
+
 				if (matrixNorm > lastMatrixNorm * 2 && lastMatrixNorm > 0)
 				{
 					doshift = false;
-					shiftValTolerance /= 2;
+					shiftValTolerance /= 1.2;
 				}
 			}
 
@@ -1423,10 +1424,10 @@ namespace ERY.EMath
 			double ev1 = 0.5 * (sum - Math.Sqrt(diff * diff + offdiag));
 			double ev2 = 0.5 * (sum + Math.Sqrt(diff * diff + offdiag));
 
-			double diff_1 = ev1 - input[b,b].Magnitude;
-			double diff_2 = ev2 - input[b,b].Magnitude;
+			Complex diff_1 = ev1 - input[b,b];
+			Complex diff_2 = ev2 - input[b, b];
 
-			if (diff_1 * diff_1 < diff_2 * diff_2)
+			if (diff_1.MagnitudeSquared < diff_2.MagnitudeSquared)
 				return ev1;
 			else
 				return ev2;
