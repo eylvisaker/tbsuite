@@ -7,8 +7,13 @@
         2.749551511865673     -2.749551511865673      2.749551511865673
         2.749551511865673      2.749551511865673     -2.749551511865673
        
-# Number of orbitals / sites and their locations 
+# Locations of orbitals and their names / symmetry designations, etc.
 # Positions are in cartesian coordinates
+# First three parameters are numbers indicating the location of the orbital.
+# Fourth parameter is the name of the orbital.
+# Fifth parameter is the symmetry designation (Wyckoff position)
+# Sixth parameter is the orbital symmetry (eg. dxy)
+# Seventh parameter is the interaction group.
 [Orbitals]
  0   0   0       Cr-dxy d d-2 a
  0   0   0       Cr-dyz d d-1 a
@@ -520,7 +525,12 @@ P        0.09092 0.09092 0.09092
 0.01             
 
 # Hubbard model parameters for RPA calculation
-# U, U prime, J, J prime. (don't enter commas).
+# If the word "adjust" is the first word, then the interaction will 
+# be scaled to avoid the divergence in the RPA geometric series (recommended).
+# Each section is followed by U, U prime, J, J prime. (don't enter commas).
+# After the interaction parameters, vectors for long range interactions can be
+# entered.
+# For long range interactions, only enter two values, which are U prime and J.
 [Interaction]
 adjust
 :a a:

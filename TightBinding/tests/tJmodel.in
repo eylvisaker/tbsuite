@@ -50,11 +50,11 @@ G        0       0       0
 
 # Chemical potential for both tightbinding and RPA calculation.
 [Mu]
-0 -0.15 4
+0 # -0.15 4
 
 # Gives a k-mesh for calculating the density of states and doing RPA.
 [KMesh]
-300 300 1 1 1 1
+80 80 1 1 1 1
 
 # Gives data for a plane of q-points in the BZ to plot.  There must be
 # four sets of three numbers here.
@@ -81,11 +81,17 @@ G        0       0       0
 0.01
 
 # Hubbard model parameters for RPA calculation
-# U, U prime, J, J prime. (don't enter commas).
+# * If the word "adjust" is the first word, then the interaction will 
+#   be scaled to avoid the divergence in the RPA geometric series (recommended).
+# * Each section gives a pair of interaction groups, defined in the orbitals list.
+# * Each section is followed by U, U', J, J' (don't enter commas). for short
+#   range interactions, or just V and J for long range interactions.
+# * After the interaction parameters, vectors for long range interactions can be
+#   entered.
 [Interaction]
 adjust
 :a a:
-0 1
+0 -1
   1  0  0      
  -1  0  0      
   0  1  0      
