@@ -9,9 +9,9 @@
  
 # Number of orbitals / sites and their locations 
 # Positions are in cartesian coordinates
-[Sites]
-  1.581999136091590     -2.740102881240705      4.941633816858237   Nb1  a  dz2
- -1.581999136091590      2.740102881240705     -4.941633816858237   Nb2  b  dz2
+[Orbitals]
+  1.581999136091590     -2.740102881240705      4.941633816858237   Nb1  a  dz2   a
+ -1.581999136091590      2.740102881240705     -4.941633816858237   Nb2  b  dz2   b
 
 # Symmetries in the crystal.
 # The numbers following the symmetry name indicate how the orbitals transform 
@@ -197,5 +197,6 @@ A        0              0             0.025295276665
 adjust
 :a a:
 2
-
+:b b:
+2
 

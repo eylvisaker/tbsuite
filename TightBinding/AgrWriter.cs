@@ -98,16 +98,18 @@ namespace TightBindingSuite
 		}
 
 
-		public void WriteGraceDataset(int length, Func<int, double> data)
+		public void WriteGraceDataset(int length, Func<int, Pair<double,double>> data)
 		{
 			file.WriteLine("@type xy");
 			for (int i = 0; i < length; i++)
 			{
-				file.WriteLine("{0}   {1}", i, data(i));
+				var val = data(i);
+
+				file.WriteLine("{0}   {1}", val.First, val.Second);
 			}
 			file.WriteLine("&");
 		}
-		public void WriteGraceDataset(string type, int length, Func<int, Pair<double, double>> data)
+		public void WriteGraceDataset(string type, int length, Func<int, Triplet<double, double,double>> data)
 		{
 			file.WriteLine("@type {0}", type);
 			for (int i = 0; i < length; i++)
@@ -116,7 +118,7 @@ namespace TightBindingSuite
 				if (val == null)
 					continue;
 
-				file.WriteLine("{0}   {1}   {2}", i, val.First, val.Second);
+				file.WriteLine("{0}   {1}   {2}", val.First, val.Second, val.Third);
 			}
 			file.WriteLine("&");
 		}

@@ -428,7 +428,7 @@ namespace TightBindingSuite
 				for (int i = 0; i < datasets; i++)
 				{
 					writer.WriteGraceDataset(kpath.Kpts.Count,
-						x => eigenvals[x][i, 0].RealPart - MuMesh[0]);
+						x => new Pair<double,double>(x, eigenvals[x][i, 0].RealPart - MuMesh[0]));
 				}
 			}
 			// Do fat bands plot
@@ -449,26 +449,23 @@ namespace TightBindingSuite
 
 				for (int j = 0; j < Orbitals.Count; j++)
 				{
-					for (int i = 0; i < datasets; i++)
-					{
-						int color = j+1;
-						if (color > 15)
-							color -= 15;
+					int color = j + 1;
+					if (color > 15)
+						color -= 15;
 
-						writer.WriteGraceSetLineColor(set, color);
-						writer.WriteGraceSetSymbol(set, 1);
-						writer.WriteGraceSetSymbolColor(set, color);
-						writer.WriteGraceSetSymbolFill(set, 1);
+					writer.WriteGraceSetLineColor(set, color);
+					writer.WriteGraceSetSymbol(set, 1);
+					writer.WriteGraceSetSymbolColor(set, color);
+					writer.WriteGraceSetSymbolFill(set, 1);
 
-						set++;
-					}
+					set++;
 				}
 
 				set = datasets + 1;
 				for (int j = 0; j < Orbitals.Count; j++)
 				{
 					writer.WriteGraceLegend(set, Orbitals[j].Name);
-					set += datasets;
+					set += 1;
 				}
 
 				writer.WriteGraceBaseline(kpath.Kpts.Count);
@@ -481,25 +478,25 @@ namespace TightBindingSuite
 				for (int i = 0; i < datasets; i++)
 				{
 					writer.WriteGraceDataset(kpath.Kpts.Count,
-						x => eigenvals[x][i, 0].RealPart - MuMesh[0]);
+						x => new Pair<double, double>(x, eigenvals[x][i, 0].RealPart - MuMesh[0]));
 				}
 
 				for (int j = 0; j < Orbitals.Count; j++)
 				{
-					for (int i = 0; i < datasets; i++)
-					{
-						writer.WriteGraceDataset("xysize", kpath.Kpts.Count,
-							x => {
-								double mag = eigenvecs[x][j,i].MagnitudeSquared;
-								//if (mag < 0.02)
-								//    return null;
+					writer.WriteGraceDataset("xysize", kpath.Kpts.Count * datasets,
+						x =>
+						{
+							int k = x % kpath.Kpts.Count;
+							int i = x / kpath.Kpts.Count;
+							double mag = eigenvecs[k][j, i].MagnitudeSquared;
+							if (mag < 0.0001)
+								return null;
 
-								return new Pair<double, double>(
-								eigenvals[x][i, 0].RealPart - MuMesh[0],
+							return new Triplet<double,double, double>(
+								k,
+								eigenvals[k][i, 0].RealPart - MuMesh[0],
 								mag);
-							});
-
-					}
+						});
 				}
 			}
 		}

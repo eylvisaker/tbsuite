@@ -72,9 +72,6 @@
     <Compile Include="HoppingPair.cs" />
     <Compile Include="KptList.cs" />
     <Compile Include="KPoint.cs" />
-    <None Include="tests\testdiag.in">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Include="tests\CuO2.in">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
