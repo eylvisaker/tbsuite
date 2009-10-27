@@ -1240,20 +1240,21 @@ namespace ERY.EMath
 
 			Matrix transform ;
 			Matrix tri = ToTriDiagonal(out transform);
-			Console.WriteLine();
-			Console.WriteLine(tri.ToString("0.00"));
+			//Console.WriteLine();
+			//Console.WriteLine(tri.ToString("0.00"));
 
 			Matrix Q = Identity(this.Rows);
 			Matrix input = tri.Clone();
 
 			double shift = 0;
 			int shiftStart = Rows - 2;
+			int shiftIter = 0;
 			int iter;
 			Matrix R;
 			double shiftValTolerance = 1;
 			bool doshift = false;
 			double matrixNorm = 0, lastMatrixNorm;
-			const double matrixNormTolerance = 1e-24;
+			double matrixNormTolerance = 1e-24 * Rows * Rows;
 
 			// construct an upper triangular matrix by doing a generalized Givens rotation
 			// on the tridiagonal form of this matrix
@@ -1261,7 +1262,7 @@ namespace ERY.EMath
 			{
 				if (doshift)
 				{
-					shift = CalcShift(input, ref shiftStart);
+					shift = CalcShift(input, ref shiftStart, ref shiftIter);
 
 					for (int i = 0; i < Rows; i++)
 						input[i, i] -= shift;
@@ -1305,11 +1306,11 @@ namespace ERY.EMath
 					//System.Diagnostics.Debug.Assert((Q * R - input).IsZero);
 				}
 
-				Console.WriteLine("R:");
-				Console.WriteLine(R.ToString("0.00"));
-				Console.WriteLine("Q:");
-				Console.WriteLine(Q.ToString("0.00"));
-				Console.WriteLine();
+				//Console.WriteLine("R:");
+				//Console.WriteLine(R.ToString("0.00"));
+				//Console.WriteLine("Q:");
+				//Console.WriteLine(Q.ToString("0.00"));
+				//Console.WriteLine();
 				
 				input = R * Q;
 				transform = transform * Q;
@@ -1320,12 +1321,12 @@ namespace ERY.EMath
 						input[i, i] += shift;
 				}
 
-				Console.WriteLine("Transform:");
-				Console.WriteLine(transform.ToString("0.000"));
-				Console.WriteLine("Input:");
-				Console.WriteLine(input.ToString("0.000"));
-				Console.WriteLine();
-				System.Diagnostics.Debug.Assert((transform * transform.HermitianConjugate()).IsIdentity);
+				//Console.WriteLine("Transform:");
+				//Console.WriteLine(transform.ToString("0.000"));
+				//Console.WriteLine("Input:");
+				//Console.WriteLine(input.ToString("0.000"));
+				//Console.WriteLine();
+				//System.Diagnostics.Debug.Assert((transform * transform.HermitianConjugate()).IsIdentity);
 
 				lastMatrixNorm = matrixNorm;
 				matrixNorm = 0;
@@ -1384,7 +1385,7 @@ namespace ERY.EMath
 				eigenvals[i, 0] = temp[i, i].RealPart;  // take real part here because matrix was hermitian to begin with!
 		}
 
-		private double CalcShift(Matrix input, ref int shiftStart)
+		private double CalcShift(Matrix input, ref int shiftStart, ref int shiftIter)
 		{
 			bool foundNonzero = false;
 			for (int i = shiftStart+1; i < input.Rows; i++)
@@ -1396,15 +1397,20 @@ namespace ERY.EMath
 				}
 			}
 
-			if (foundNonzero == false && shiftStart > 0)
+			shiftIter++;
+
+			if (foundNonzero == false || shiftIter > 3)
 			{
 				--shiftStart;
-				//return CalcShift(input, ref shiftStart);
 			}
-			else if (foundNonzero == false)
+
+			if (shiftStart < 0)
 			{
 				shiftStart = input.Rows - 2;
 			}
+			if (shiftIter > 3)
+				shiftIter = 0;
+			
 
 			int a = shiftStart;
 			int b = a + 1;
@@ -1468,7 +1474,7 @@ namespace ERY.EMath
 			Complex a = matrix[rowa, rowa];
 			Complex b = matrix[rowb, rowa];
 
-			if (b.MagnitudeSquared < 1e-25)
+			if (b.MagnitudeSquared < 1e-26)
 			{
 				Gaa = 1;
 				Gab = 0;
