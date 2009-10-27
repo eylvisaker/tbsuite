@@ -86,8 +86,13 @@ namespace TestMath
 			}
 			if (badValue)
 			{
-				Console.WriteLine("Eigenvalus differ:");
-
+				Console.WriteLine("Eigenvalues differ:");
+				Console.WriteLine("Eigenvalues:");
+				Console.WriteLine(eigenvals_a.ToString());
+				Console.WriteLine("Reference:");
+				Console.WriteLine(eigenvals_b.ToString());
+				Console.WriteLine("Difference:");
+				Console.WriteLine(evDiff.ToString());
 				throw new Exception();
 			}
 		}
@@ -111,7 +116,8 @@ namespace TestMath
 			if (bad == true)
 			{
 				Console.WriteLine("Eigenvectors not orthonormal.");
-				Console.WriteLine(eigenvecs_a.ToString());
+				Console.WriteLine(eigenvecs_a.ToString("0.0000"));
+				Console.WriteLine(ident.ToString("0.0000"));
 				throw new Exception();
 
 			}
