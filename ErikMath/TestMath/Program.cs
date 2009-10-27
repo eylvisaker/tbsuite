@@ -40,7 +40,7 @@ namespace TestMath
 					double mag = dot[i, j].Magnitude;
 					double mag_one = Math.Abs(dot[i, j].Magnitude - 1);
 
-					if (mag > 1e-5 && mag_one < 1e-5)
+					if (mag > 1e-4 && mag_one < 1e-4)
 					{
 						if (found == false)
 						{
@@ -53,7 +53,7 @@ namespace TestMath
 						else
 							badVector = true;
 					}
-					else if (mag > 1e-5 && mag_one > 1e-5)
+					else if (mag > 1e-4 && mag_one > 1e-4)
 					{
 						evDiff[i, 0] = eigenvals_a[i, 0] - eigenvals_b[j, 0];
 

@@ -10,6 +10,14 @@ namespace ERY.EMath
 	{
 		public static double tolerance = 1e-10;
 
+		private int mRows;
+		private int mCols;
+
+		private Complex[][] mElements;
+
+		private bool mValidDeterminant = false;
+		private Complex mDeterminant;
+
 		public Matrix()
 		{
 			mElements = null;
@@ -1036,14 +1044,7 @@ namespace ERY.EMath
 		}
 
 
-		private int mRows;
-		private int mCols;
-
-		private Complex[][] mElements;
-
-		private bool mValidDeterminant = false;
-		private Complex mDeterminant;
-
+		
 		/// <summary>
 		/// Returns a matrix containing only the real parts of the values in this matrix.
 		/// </summary>
@@ -1253,8 +1254,8 @@ namespace ERY.EMath
 			Matrix R;
 			double shiftValTolerance = 1;
 			bool doshift = false;
-			double matrixNorm = 0, lastMatrixNorm;
-			double matrixNormTolerance = 1e-24 * Rows * Rows;
+			double matrixNorm = double.MaxValue, smallestMatrixNorm = double.MaxValue;
+			double matrixNormTolerance = 1e-23 * Rows * Rows;
 
 			// construct an upper triangular matrix by doing a generalized Givens rotation
 			// on the tridiagonal form of this matrix
@@ -1264,8 +1265,7 @@ namespace ERY.EMath
 				{
 					shift = CalcShift(input, ref shiftStart, ref shiftIter);
 
-					for (int i = 0; i < Rows; i++)
-						input[i, i] -= shift;
+					ShiftDiagonal(input, shift);
 				}
 
 				R = input;
@@ -1280,27 +1280,7 @@ namespace ERY.EMath
 					if (nontrivial == false)
 						continue;
 
-					// do matrix multiplication by hand for speed
-					for (int k = 0; k < Columns; k++)
-					{
-						Complex Rik = R[i, k], Rjk = R[j, k];
-
-						R[i, k] = Gii * Rik + Gij * Rjk;
-						R[j, k] = Gji * Rik + Gjj * Rjk;
-					}
-
-					Complex GTii = Gii.Conjugate(),
-						GTij = Gji.Conjugate(),
-						GTji = Gij.Conjugate(),
-						GTjj = Gjj.Conjugate();
-
-					for (int k = 0; k < Rows; k++)
-					{
-						Complex Qki = Q[k, i], Qkj = Q[k, j];
-
-						Q[k, i] = Qki * GTii + Qkj * GTji;
-						Q[k, j] = Qki * GTij + Qkj * GTjj;
-					}
+					PerformGivensRotation(Q, R, i, j, ref Gii, ref Gij, ref Gji, ref Gjj);
 
 					//System.Diagnostics.Debug.Assert((Q * Q.HermitianConjugate()).IsIdentity);
 					//System.Diagnostics.Debug.Assert((Q * R - input).IsZero);
@@ -1317,8 +1297,7 @@ namespace ERY.EMath
 
 				if (doshift)
 				{
-					for (int i = 0; i < Rows; i++)
-						input[i, i] += shift;
+					ShiftDiagonal(input, -shift);
 				}
 
 				//Console.WriteLine("Transform:");
@@ -1328,38 +1307,29 @@ namespace ERY.EMath
 				//Console.WriteLine();
 				//System.Diagnostics.Debug.Assert((transform * transform.HermitianConjugate()).IsIdentity);
 
-				lastMatrixNorm = matrixNorm;
-				matrixNorm = 0;
-
-				// check to see if we've diagonalized the matrix
-				for (int i = 0; i < Rows; i++)
-				{
-					for (int j = 0; j < Columns; j++)
-					{
-						if (i == j)
-							continue;
-
-						matrixNorm += input[i, j].MagnitudeSquared;
-					}
-				}
+				//smallestMatrixNorm = Math.Min(smallestMatrixNorm, matrixNorm);
+				matrixNorm = CalculateOffDiagonalNorm(input);
 				if (matrixNorm < matrixNormTolerance)
 					break;
 
-				if (doshift && matrixNorm > shiftValTolerance)
-				{
-					shiftValTolerance /= 1.2;
-				}
+				//if (doshift && matrixNorm > shiftValTolerance)
+				//{
+				//    shiftValTolerance /= 1.2;
+				//}
 
-				doshift = matrixNorm < shiftValTolerance;
+				//doshift = matrixNorm < shiftValTolerance;
 
-				if (matrixNorm > lastMatrixNorm * 2 && lastMatrixNorm > 0)
-				{
-					doshift = false;
-					shiftValTolerance /= 1.2;
-				}
+				//if (doshift && matrixNorm > smallestMatrixNorm * 10)
+				//{
+				//    doshift = false;
+				//    shiftValTolerance /= 1.2;
+				//    smallestMatrixNorm = matrixNorm;
+				//}
+
+				doshift = iter % 3 > 0;
 			}
 
-			Console.WriteLine("Niter: {0}", iter);
+			//Console.WriteLine("Niter: {0}", iter);
 
 			if (matrixNorm > matrixNormTolerance * 10)
 			{
@@ -1385,33 +1355,81 @@ namespace ERY.EMath
 				eigenvals[i, 0] = temp[i, i].RealPart;  // take real part here because matrix was hermitian to begin with!
 		}
 
-		private double CalcShift(Matrix input, ref int shiftStart, ref int shiftIter)
+		private void ShiftDiagonal(Matrix input, double shift)
 		{
-			bool foundNonzero = false;
-			for (int i = shiftStart+1; i < input.Rows; i++)
+			for (int i = 0; i < Rows; i++)
+				input[i, i] -= shift;
+		}
+
+		private double CalculateOffDiagonalNorm(Matrix input)
+		{
+			double matrixNorm = 0;
+
+			// check to see if we've diagonalized the matrix
+			for (int i = 0; i < Rows; i++)
 			{
-				if (input[i, shiftStart].MagnitudeSquared > 1e-12)
+				for (int j = 0; j < Columns; j++)
 				{
-					foundNonzero = true;
-					break;
+					if (i == j)
+						continue;
+
+					matrixNorm += input[i, j].MagnitudeSquared;
 				}
 			}
+			return matrixNorm;
+		}
+
+		private void PerformGivensRotation(Matrix Q, Matrix R, int i, int j, ref Complex Gii, ref Complex Gij, ref Complex Gji, ref Complex Gjj)
+		{
+			// do matrix multiplication by hand for speed
+			for (int k = 0; k < Columns; k++)
+			{
+				Complex Rik = R[i, k], Rjk = R[j, k];
+
+				R[i, k] = Gii * Rik + Gij * Rjk;
+				R[j, k] = Gji * Rik + Gjj * Rjk;
+			}
+
+			Complex GTii = Gii.Conjugate(),
+				GTij = Gji.Conjugate(),
+				GTji = Gij.Conjugate(),
+				GTjj = Gjj.Conjugate();
+
+			for (int k = 0; k < Rows; k++)
+			{
+				Complex Qki = Q[k, i], Qkj = Q[k, j];
+
+				Q[k, i] = Qki * GTii + Qkj * GTji;
+				Q[k, j] = Qki * GTij + Qkj * GTjj;
+			}
+		}
+
+		private double CalcShift(Matrix input, ref int shiftStart, ref int shiftIter)
+		{
+			bool foundNonzero = OffDiagonalInColumn(input, shiftStart);
 
 			shiftIter++;
 
 			if (foundNonzero == false || shiftIter > 3)
 			{
-				--shiftStart;
-			}
-
-			if (shiftStart < 0)
-			{
-				shiftStart = input.Rows - 2;
-			}
-			if (shiftIter > 3)
 				shiftIter = 0;
-			
 
+				int newCol = shiftStart;
+
+				for (int i = 1; i <= Rows; i++)
+				{
+					newCol--;
+
+					if (newCol < 0)
+						newCol = input.Rows - 2;
+
+					if (OffDiagonalInColumn(input, newCol))
+						break;
+				}
+				shiftStart = newCol;
+			}
+
+			
 			int a = shiftStart;
 			int b = a + 1;
 			bool bad = false;
@@ -1438,6 +1456,20 @@ namespace ERY.EMath
 			else
 				return ev2;
 
+		}
+
+		private static bool OffDiagonalInColumn(Matrix input, int col)
+		{
+			bool foundNonzero = false;
+			for (int i = col + 1; i < input.Rows; i++)
+			{
+				if (input[i, col].MagnitudeSquared > 1e-12)
+				{
+					foundNonzero = true;
+					break;
+				}
+			}
+			return foundNonzero;
 		}
 
 		private void OrderEigenvectors(ref Matrix eigenvals, ref Matrix eigenvecs)
