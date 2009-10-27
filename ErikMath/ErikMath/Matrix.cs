@@ -13,24 +13,16 @@ namespace ERY.EMath
 		private int mRows;
 		private int mCols;
 
-		private Complex[][] mElements;
+		private Complex[] mElements;
 
 		private bool mValidDeterminant = false;
 		private Complex mDeterminant;
 
 		public Matrix()
-		{
-			mElements = null;
-			mRows = 0;
-			mCols = 0;
-		}
+		{		}
 
 		public Matrix(int rows, int cols)
 		{
-			mElements = null;
-			mRows = 0;
-			mCols = 0;
-
 			SetMatrixSize(rows, cols);
 		}
 		public Matrix(int rows, int cols, params double[] vals)
@@ -123,14 +115,14 @@ namespace ERY.EMath
 				if (row < 0 || row >= mRows || col < 0 || col >= mCols)
 					throw new Exception("Invalid matrix element accessed.");
 
-				return mElements[row][col];
+				return mElements[row * mCols + col];
 			}
 			set
 			{
 				if (row < 0 || row >= mRows || col < 0 || col >= mCols)
 					throw new Exception("Invalid matrix element accessed.");
 
-				mElements[row][col] = value;
+				mElements[row * mCols + col] = value;
 
 				if (mValidDeterminant)
 					mValidDeterminant = false;
@@ -191,9 +183,7 @@ namespace ERY.EMath
 		{
 			ClearMatrix();
 
-			mElements = new Complex[rows][];
-			for (int i = 0; i < rows; i++)
-				mElements[i] = new Complex[cols];
+			mElements = new Complex[rows * cols];
 
 			mRows = rows;
 			mCols = cols;
@@ -747,20 +737,53 @@ namespace ERY.EMath
 
 			Matrix retval = new Matrix(a.mRows, b.mCols);
 
+			//for (int i = 0; i < retval.mRows; i++)
+			//{
+			//    for (int j = 0; j < retval.mCols; j++)
+			//    {
+			//        retval[i, j] = 0;
+
+			//        for (int k = 0; k < a.mCols; k++)
+			//        {
+			//            retval[i, j] += a[i, k] * b[k, j];
+			//        }
+			//    }
+
+			//}
+
+			Complex result = new Complex();
+
 			for (int i = 0; i < retval.mRows; i++)
 			{
 				for (int j = 0; j < retval.mCols; j++)
 				{
-					retval[i, j] = 0;
+					int index = i * retval.mCols + j;
+					
+					int m = i * a.mCols;
+					int n = j;
+
+					result.x = 0;
+					result.y = 0;
 
 					for (int k = 0; k < a.mCols; k++)
 					{
-						retval[i, j] += a[i, k] * b[k, j];
+						Complex aval = a.mElements[m];
+						Complex bval = b.mElements[n];
+
+						double new_x = aval.x * bval.x - aval.y * bval.y;
+						double new_y = aval.x * bval.y + aval.y * bval.x;
+
+						result.x += new_x;
+						result.y += new_y;
+
+						m += 1;
+						n += b.mCols;
 					}
+
+					retval.mElements[index] = result;
 				}
 
 			}
-
 			return retval;
 
 		}
@@ -1106,13 +1129,8 @@ namespace ERY.EMath
 		{
 			Matrix retval = new Matrix(Rows, Columns);
 
-			retval.mElements = new Complex[Rows][];
-
-			for (int i = 0; i < Rows; i++)
-			{
-				retval.mElements[i] = new Complex[Columns];
-				mElements[i].CopyTo(retval.mElements[i], 0);
-			}
+			retval.mElements = new Complex[Rows * Columns];
+			mElements.CopyTo(retval.mElements, 0);
 
 			return retval;
 		}

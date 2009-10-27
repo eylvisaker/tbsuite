@@ -11,25 +11,20 @@ namespace ERY.EMath
 	{
 		public const double TOLERANCE = 1e-10;
 
-		private double _x, _y;
+		public double x, y;
 
-		[Obsolete("Use RealPart instead.")]
-		public double mx { get { return _x; } set { _x = value; } }
-		[Obsolete("Use ImagPart instead.")]
-		public double my { get { return _y; } set { _y = value; } }
-
-		public double RealPart { get { return _x; } set { _x = value; } }
-		public double ImagPart { get { return _y; } set { _y = value; } }
+		public double RealPart { get { return x; } set { x = value; } }
+		public double ImagPart { get { return y; } set { y = value; } }
 
 		public Complex(double real)
 		{
-			_x = real;
-			_y = 0;
+			x = real;
+			y = 0;
 		}
 		public Complex(double real, double imag)
 		{
-			_x = real;
-			_y = imag;
+			x = real;
+			y = imag;
 		}
 		public static implicit operator Complex(double x)
 		{
@@ -38,14 +33,14 @@ namespace ERY.EMath
 
 		public void Set(double real, double imag)
 		{
-			_x = real;
-			_y = imag;
+			x = real;
+			y = imag;
 		}
 
 		public void SetPolar(double mag, double arg)
 		{
-			_x = mag * Math.Cos(arg);
-			_y = mag * Math.Sin(arg);
+			x = mag * Math.Cos(arg);
+			y = mag * Math.Sin(arg);
 		}
 
 
@@ -58,13 +53,13 @@ namespace ERY.EMath
 		public string ToString(string formatString)
 		{
 			string buffer;
-			double rx = _x, ry = _y;
+			double rx = x, ry = y;
 
 			if (formatString != "")
 				formatString = ":" + formatString;
 
-			string real = string.Format("{0" + formatString + "}", _x);
-			string imag = string.Format("{0" + formatString + "}", Math.Abs(_y));
+			string real = string.Format("{0" + formatString + "}", x);
+			string imag = string.Format("{0" + formatString + "}", Math.Abs(y));
 
 			if (double.Parse(imag) == 0)
 				ry = 0;
@@ -95,46 +90,46 @@ namespace ERY.EMath
 		{
 			get
 			{
-				return _x * _x + _y * _y;
+				return x * x + y * y;
 			}
 		}
 		public double Argument
 		{
 			get
 			{
-				return Math.Atan2(_y, _x);
+				return Math.Atan2(y, x);
 			}
 		}
 
 		public Complex Conjugate()
 		{
-			return new Complex(_x, -_y);
+			return new Complex(x, -y);
 		}
 		public Complex Invert()
 		{
-			double denom = _x * _x + _y * _y;
+			double denom = x * x + y * y;
 
-			Complex retval = new Complex(_x / denom, -_y / denom);
+			Complex retval = new Complex(x / denom, -y / denom);
 
 			return retval;
 		}
 
 		public static Complex operator -(Complex t)
 		{
-			return new Complex(-t._x, -t._y);
+			return new Complex(-t.x, -t.y);
 		}
 		public static Complex operator +(Complex a, Complex b)
 		{
-			return new Complex(a._x + b._x, a._y + b._y);
+			return new Complex(a.x + b.x, a.y + b.y);
 		}
 		public static Complex operator -(Complex a, Complex b)
 		{
-			return new Complex(a._x - b._x, a._y - b._y);
+			return new Complex(a.x - b.x, a.y - b.y);
 		}
 		public static Complex operator *(Complex a, Complex b)
 		{
-			double new_x = a._x * b._x - a._y * b._y;
-			double new_y = a._x * b._y + a._y * b._x;
+			double new_x = a.x * b.x - a.y * b.y;
+			double new_y = a.x * b.y + a.y * b.x;
 
 			return new Complex(new_x, new_y);
 		}
@@ -186,7 +181,7 @@ namespace ERY.EMath
 		}
 		public static Complex operator *(double r, Complex t)
 		{
-			return new Complex(t._x * r, t._y * r);
+			return new Complex(t.x * r, t.y * r);
 		}
 		public static Complex operator /(double r, Complex t)
 		{
@@ -195,7 +190,7 @@ namespace ERY.EMath
 
 		public static Complex operator *(Complex t, double r)
 		{
-			return new Complex(t._x * r, t._y * r);
+			return new Complex(t.x * r, t.y * r);
 		}
 
 		public static Complex Hypot(Complex a, Complex b)
@@ -221,7 +216,7 @@ namespace ERY.EMath
 		{
 			Complex retval = new Complex();
 
-			retval.SetPolar(Math.Exp(t._x), t._y);
+			retval.SetPolar(Math.Exp(t.x), t.y);
 
 			return retval;
 		}
@@ -242,8 +237,8 @@ namespace ERY.EMath
 
 
 			retval.SetPolar(
-				Math.Pow(t.Magnitude, u._x) * Math.Exp(-t.Argument * u._y),
-					t.Argument * u._x + u._y * Math.Log(t.Magnitude));
+				Math.Pow(t.Magnitude, u.x) * Math.Exp(-t.Argument * u.y),
+					t.Argument * u.x + u.y * Math.Log(t.Magnitude));
 
 			return retval;
 		}
@@ -257,22 +252,22 @@ namespace ERY.EMath
 		}
 		public static Complex Sin(Complex t)
 		{
-			return new Complex(Math.Sin(t._x) * Math.Cosh(t._y), Math.Cos(t._x) * Math.Sinh(t._y));
+			return new Complex(Math.Sin(t.x) * Math.Cosh(t.y), Math.Cos(t.x) * Math.Sinh(t.y));
 		}
 		public static Complex Cos(Complex t)
 		{
-			return new Complex(Math.Cos(t._x) * Math.Cosh(t._y), -Math.Sin(t._x) * Math.Sinh(t._y));
+			return new Complex(Math.Cos(t.x) * Math.Cosh(t.y), -Math.Sin(t.x) * Math.Sinh(t.y));
 		}
 		public static Complex Tan(Complex t)
 		{
-			return new Complex(Math.Tan(t._x), Math.Tanh(t._y)) /
-				new Complex(1, -Math.Tan(t._x) * Math.Tanh(t._y));
+			return new Complex(Math.Tan(t.x), Math.Tanh(t.y)) /
+				new Complex(1, -Math.Tan(t.x) * Math.Tanh(t.y));
 		}
 
 		public static bool operator ==(Complex a, Complex b)
 		{
-			double dx = a._x - b._x;
-			double dy = a._y - b._y;
+			double dx = a.x - b.x;
+			double dy = a.y - b.y;
 
 			if (dx < 0) dx = -dx;
 			if (dy < 0) dy = -dy;
@@ -295,10 +290,10 @@ namespace ERY.EMath
 		}
 		public Complex Round(double tolerance)
 		{
-			Complex retval = new Complex(_x, _y);
+			Complex retval = new Complex(x, y);
 
-			if (Math.Abs(_x) < tolerance) retval._x = 0;
-			if (Math.Abs(_y) < tolerance) retval._y = 0;
+			if (Math.Abs(x) < tolerance) retval.x = 0;
+			if (Math.Abs(y) < tolerance) retval.y = 0;
 
 			return retval;
 		}
@@ -316,7 +311,7 @@ namespace ERY.EMath
 		}
 		public override int GetHashCode()
 		{
-			return _x.GetHashCode() - _y.GetHashCode();
+			return x.GetHashCode() - y.GetHashCode();
 		}
 
 		public static Complex Parse(string val)
