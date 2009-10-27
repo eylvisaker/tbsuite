@@ -76,8 +76,12 @@ namespace TightBindingSuite
 			{
 				string label = pts[i].Second.Name;
 
-				if (label == "G")
-					label = @"\xG";
+				if (label.StartsWith("G"))
+					label = @"\xG\f{}" + label.Substring(1);
+				
+				label = label.Replace("$_", @"\s");
+				label = label.Replace("$^", @"\S");
+				label = label.Replace("$.", @"\N");
 
 				file.WriteLine("@    xaxis  tick major {0}, {1}", i, pts[i].First);
 				file.WriteLine("@    xaxis  ticklabel {0}, \"{1}\"", i, label);

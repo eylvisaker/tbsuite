@@ -1247,7 +1247,7 @@ namespace ERY.EMath
 			Matrix input = tri.Clone();
 
 			double shift = 0;
-			int shiftStart = 0;
+			int shiftStart = Rows - 2;
 			int iter;
 			Matrix R;
 
@@ -1312,11 +1312,12 @@ namespace ERY.EMath
 						input[i, i] += shift;
 				}
 
-				//Console.WriteLine();
-				//Console.WriteLine(input.ToString("0.000"));
-				//Console.WriteLine(transform.ToString("0.000"));
-				//Console.WriteLine();
-				//System.Diagnostics.Debug.Assert((transform * transform.HermitianConjugate()).IsIdentity);
+				Console.WriteLine("Input:");
+				Console.WriteLine(input.ToString("0.000"));
+				Console.WriteLine("Transform:");
+				Console.WriteLine(transform.ToString("0.000"));
+				Console.WriteLine();
+				System.Diagnostics.Debug.Assert((transform * transform.HermitianConjugate()).IsIdentity);
 
 				double val = 0;
 				const double tolerance = 1e-24;
@@ -1330,18 +1331,12 @@ namespace ERY.EMath
 							continue;
 
 						val += input[i, j].MagnitudeSquared;
-
-						if (val > 2 * tolerance)
-							break;
 					}
-
-					if (val > 2 * tolerance)
-						break;
 				}
 				if (val < tolerance)
 					break;
 
-				doshift = val < 1e-4;
+				doshift = iter > 10;// val < 0.1;
 			}
 
 			//Console.WriteLine("Niter: {0}", iter);

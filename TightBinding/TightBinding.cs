@@ -434,8 +434,8 @@ namespace TightBindingSuite
 			// Do fat bands plot
 			using (AgrWriter writer = new AgrWriter(outputfile + ".bweights.agr"))
 			{
-				// set all lines to black
-				int[] colors = new int[datasets * (Orbitals.Count+1)];
+				// set all band lines to black
+				int[] colors = new int[datasets];
 				for (int i = 0; i < colors.Length; i++)
 					colors[i] = 1;
 
@@ -446,14 +446,16 @@ namespace TightBindingSuite
 				writer.WriteGraceSetLineColor(1, colors);
 
 				int set = datasets + 1;
-				for (int i = 0; i < datasets; i++)
+
+				for (int j = 0; j < Orbitals.Count; j++)
 				{
-					for (int j = 0; j < Orbitals.Count; j++)
+					for (int i = 0; i < datasets; i++)
 					{
 						int color = j+1;
 						if (color > 15)
 							color -= 15;
 
+						writer.WriteGraceSetLineColor(set, color);
 						writer.WriteGraceSetSymbol(set, 1);
 						writer.WriteGraceSetSymbolColor(set, color);
 						writer.WriteGraceSetSymbolFill(set, 1);
@@ -466,7 +468,7 @@ namespace TightBindingSuite
 				for (int j = 0; j < Orbitals.Count; j++)
 				{
 					writer.WriteGraceLegend(set, Orbitals[j].Name);
-					set++;
+					set += datasets;
 				}
 
 				writer.WriteGraceBaseline(kpath.Kpts.Count);
@@ -482,15 +484,15 @@ namespace TightBindingSuite
 						x => eigenvals[x][i, 0].RealPart - MuMesh[0]);
 				}
 
-				for (int i = 0; i < datasets; i++)
+				for (int j = 0; j < Orbitals.Count; j++)
 				{
-					for (int j = 0; j < Orbitals.Count; j++)
+					for (int i = 0; i < datasets; i++)
 					{
 						writer.WriteGraceDataset("xysize", kpath.Kpts.Count,
 							x => {
 								double mag = eigenvecs[x][j,i].MagnitudeSquared;
-								if (mag < 0.02)
-									return null;
+								//if (mag < 0.02)
+								//    return null;
 
 								return new Pair<double, double>(
 								eigenvals[x][i, 0].RealPart - MuMesh[0],
