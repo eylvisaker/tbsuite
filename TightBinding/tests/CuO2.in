@@ -9,10 +9,10 @@
  
 # Number of orbitals / sites and their locations 
 # Positions are in cartesian coordinates
-[Sites]
- 0   0   0       Cu-d d dxy
- 0.5 0   0       O1-p p px
- 0   0.5 0       O2-p p py
+[Orbitals]
+ 0   0   0       Cu-d Cu dxy  a
+ 0.5 0   0       O1-p O1 px   b
+ 0   0.5 0       O2-p O2 py   c
 
 # Symmetries in the crystal.
 # The numbers following the symmetry name indicate how the orbitals transform 
@@ -110,6 +110,6 @@ G        0       0       0
 # U, U prime, J, J prime. (don't enter commas).
 [Interaction]
 adjust
-:d d:
+:a a:
 5 0 0 0
 

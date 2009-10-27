@@ -395,6 +395,7 @@ namespace TightBindingSuite
 							  kpath.Kpts.Count);
 
 			List<Matrix> eigenvals = new List<Matrix>();
+			List<Matrix> eigenvecs = new List<Matrix>();
 
 			for (int i = 0; i < kpath.Kpts.Count; i++)
 			{
@@ -402,6 +403,7 @@ namespace TightBindingSuite
 				Matrix vals, vecs;
 				m.EigenValsVecs(out vals, out vecs);
 				eigenvals.Add(vals);
+				eigenvecs.Add(vecs);
 
 				for (int j = 0; j < vals.Rows; j++)
 				{
@@ -418,7 +420,7 @@ namespace TightBindingSuite
 					colors[i] = 1;
 
 				writer.WriteGraceHeader(kpath);
-				writer.WriteGraceDottedSetStyle(0);
+				writer.WriteGraceSetLineStyle(0, 2);
 				writer.WriteGraceSetLineColor(0);
 				writer.WriteGraceSetLineColor(1, colors);
 				writer.WriteGraceBaseline(kpath.Kpts.Count);
@@ -427,6 +429,75 @@ namespace TightBindingSuite
 				{
 					writer.WriteGraceDataset(kpath.Kpts.Count,
 						x => eigenvals[x][i, 0].RealPart - MuMesh[0]);
+				}
+			}
+			// Do fat bands plot
+			using (AgrWriter writer = new AgrWriter(outputfile + ".bweights.agr"))
+			{
+				// set all lines to black
+				int[] colors = new int[datasets * (Orbitals.Count+1)];
+				for (int i = 0; i < colors.Length; i++)
+					colors[i] = 1;
+
+				writer.WriteGraceHeader(kpath);
+				writer.WriteGraceSetLineStyle(0, 2);
+				
+				writer.WriteGraceSetLineColor(0);
+				writer.WriteGraceSetLineColor(1, colors);
+
+				int set = datasets + 1;
+				for (int i = 0; i < datasets; i++)
+				{
+					for (int j = 0; j < Orbitals.Count; j++)
+					{
+						int color = j+1;
+						if (color > 15)
+							color -= 15;
+
+						writer.WriteGraceSetSymbol(set, 1);
+						writer.WriteGraceSetSymbolColor(set, color);
+						writer.WriteGraceSetSymbolFill(set, 1);
+
+						set++;
+					}
+				}
+
+				set = datasets + 1;
+				for (int j = 0; j < Orbitals.Count; j++)
+				{
+					writer.WriteGraceLegend(set, Orbitals[j].Name);
+					set++;
+				}
+
+				writer.WriteGraceBaseline(kpath.Kpts.Count);
+
+				for (int i = 0; i < datasets * Orbitals.Count; i++)
+				{
+					writer.WriteGraceSetLineStyle(i + datasets + 1, 0);
+				}
+
+				for (int i = 0; i < datasets; i++)
+				{
+					writer.WriteGraceDataset(kpath.Kpts.Count,
+						x => eigenvals[x][i, 0].RealPart - MuMesh[0]);
+				}
+
+				for (int i = 0; i < datasets; i++)
+				{
+					for (int j = 0; j < Orbitals.Count; j++)
+					{
+						writer.WriteGraceDataset("xysize", kpath.Kpts.Count,
+							x => {
+								double mag = eigenvecs[x][j,i].MagnitudeSquared;
+								if (mag < 0.02)
+									return null;
+
+								return new Pair<double, double>(
+								eigenvals[x][i, 0].RealPart - MuMesh[0],
+								mag);
+							});
+
+					}
 				}
 			}
 		}

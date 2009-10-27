@@ -7,8 +7,13 @@
  0 1 0
  0 0 1
  
-# Number of orbitals / sites and their locations 
+# Locations of orbitals and their names / symmetry designations, etc.
 # Positions are in cartesian coordinates
+# First three parameters are numbers indicating the location of the orbital.
+# Fourth parameter is the name of the orbital.
+# Fifth parameter is the symmetry designation (Wyckoff position)
+# Sixth parameter is the orbital symmetry (eg. dxy)
+# Seventh parameter is the interaction group.
 [Orbitals]
  0 0 0   s  1a  s  a
 
@@ -18,12 +23,13 @@
 # one number for each orbital.  The orbital transforms are optional if the 
 # orbitals transform into themselves.
 [Symmetry]
-E
 #I
 
 
-# Each hopping is followed by a list of Bravais lattice vectors.
-# Those vectors must be composed of integer values.
+# Tight binding hoppings
+# The first three numbers are the hopping vector, in real space (same units as
+# lattice vectors).
+# The fourth number is the hopping matrix element.
 [Hoppings]
 :1 1:
   0  0  0       0
@@ -46,8 +52,21 @@ R       .5      .5      .5
 G        0       0       0
 
 # Chemical potential for both tightbinding and RPA calculation.
+# You may enter just a single number to calculate at a single chemical potential
+# or something of the form:
+#    lower_bound  upper_bound  num_points
+# or a list of values (must be more than three).
 [Mu]
 0
+
+# Number of electrons for both tightbinding and RPA calculation.
+# You may enter either Mu or Nelec but not both.
+# You may enter just a single number to calculate at a single particle count
+# or something of the form:
+#    lower_bound  upper_bound  num_points
+# or a list of values (must be more than three).
+#[Nelec]
+#1
 
 # Gives a k-mesh for calculating the density of states and doing RPA.
 [KMesh]
@@ -78,7 +97,12 @@ G        0       0       0
  0.05
 
 # Hubbard model parameters for RPA calculation
-# U, U prime, J, J prime. (don't enter commas).
+# If the word "adjust" is the first word, then the interaction will 
+# be scaled to avoid the divergence in the RPA geometric series (recommended).
+# Each section is followed by U, U prime, J, J prime. (don't enter commas).
+# After the interaction parameters, vectors for long range interactions can be
+# entered.
+# For long range interactions, only enter two values, which are U prime and J.
 [Interaction]
 adjust
 :a a:

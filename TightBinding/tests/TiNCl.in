@@ -8,11 +8,11 @@
 
 # Number of orbitals / sites and their locations 
 # Positions are in cartesian coordinates
-[Sites]
-      1.838183844934389     -1.511875386301122      1.425409518032102    Ti1  a    dxy
-     -1.838183844934389      1.511875386301122     -1.425409518032102    Ti2  b    dxy
-      1.838183844934389      1.511875386301122     -0.739982950906018    N1   c    px
-     -1.838183844934389     -1.511875386301122      0.739982950906018    N2   d    px
+[Orbitals]
+      1.838183844934389     -1.511875386301122      1.425409518032102    Ti1  a    dxy  a
+     -1.838183844934389      1.511875386301122     -1.425409518032102    Ti2  b    dxy  b
+      1.838183844934389      1.511875386301122     -0.739982950906018    N1   c    px   c
+     -1.838183844934389     -1.511875386301122      0.739982950906018    N2   d    px   d
 
 
 # Symmetries in the crystal.
@@ -117,12 +117,12 @@ Z   0          0           0.0183083
 
 # Hubbard model parameters for RPA calculation
 # U, U prime, J, J prime. (don't enter commas).
-[Hubbard]
+[Interaction]
 :a a: 
 2 1.5 0.8 0.8
 
 :a b:
-1 0:
+1 0
 
 :b b: 
 0 0

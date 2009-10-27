@@ -392,7 +392,7 @@ namespace TightBindingSuite
 					string localsym = vals[5];
 					string interactionGroup = vals[6];
 
-					tb.sites.Add(new Orbitals(loc, name, sitename, localsym, interactionGroup));
+					tb.sites.Add(new Orbital(loc, name, sitename, localsym, interactionGroup));
 
 					ReadNextLine();
 				}

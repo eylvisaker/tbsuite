@@ -5,7 +5,7 @@ using ERY.EMath;
 
 namespace TightBindingSuite
 {
-	public class OrbitalList : List<Orbitals>
+	public class OrbitalList : List<Orbital>
 	{
 		public OrbitalList()
 		{
@@ -36,20 +36,19 @@ namespace TightBindingSuite
 		}
 	}
 
-	public class Orbitals
+	public class Orbital
 	{
 		Vector3 vec;
-		string name;
 		List<int> equivalentSites = new List<int>();
 
-		public Orbitals(Vector3 vec)
+		public Orbital(Vector3 vec)
 		{
 			this.vec = vec;
 		}
-		public Orbitals(Vector3 vec, string name, string symmPos, string localSym, string interactionGroup)
+		public Orbital(Vector3 vec, string name, string symmPos, string localSym, string interactionGroup)
 		{
 			this.vec = vec;
-			this.name = name;
+			this.Name = name;
 			this.SymmetryPosition = symmPos;
 			this.LocalSymmetry = localSym;
 			this.InteractionGroup = interactionGroup;

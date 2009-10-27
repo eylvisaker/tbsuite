@@ -68,7 +68,7 @@
     <Compile Include="SymmetryList.cs" />
     <Compile Include="TightBinding.TbInputFileReader.cs" />
     <Compile Include="Lattice.cs" />
-    <Compile Include="SiteList.cs" />
+    <Compile Include="Orbital.cs" />
     <Compile Include="HoppingPair.cs" />
     <Compile Include="KptList.cs" />
     <Compile Include="KPoint.cs" />

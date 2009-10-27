@@ -20,9 +20,14 @@ namespace TightBindingSuite
 			file.Dispose();
 		}
 
+		[Obsolete]
 		public void WriteGraceDottedSetStyle(int index)
 		{
-			file.WriteLine("@    s{0} line linestyle 2", index);
+			WriteGraceSetLineStyle(index, 2);
+		}
+		public void WriteGraceSetLineStyle(int index, int linestyle)
+		{
+			file.WriteLine("@    s{0} line linestyle {1}", index, linestyle);
 		}
 
 		public void WriteGraceLegend(int dataset, string text)
@@ -36,6 +41,19 @@ namespace TightBindingSuite
 				file.WriteLine("@    s{0} line linewidth 2.0", i + start);
 				file.WriteLine("@    s{0} line color {1}", i + start, linecolor[i]);
 			}
+		}
+		public void WriteGraceSetSymbol(int set, int symbol)
+		{
+			file.WriteLine("@    s{0} symbol {1}", set, symbol);
+		}
+		public void WriteGraceSetSymbolColor(int set, int symbolcolor)
+		{
+			file.WriteLine("@    s{0} symbol color {1}", set, symbolcolor);
+			file.WriteLine("@    s{0} symbol fill color {1}", set, symbolcolor);
+		}
+		public void WriteGraceSetSymbolFill(int set, int symbolfill)
+		{
+			file.WriteLine("@    s{0} symbol fill pattern {1}", set, symbolfill);
 		}
 
 		public void WriteGraceHeader(KptList kpath)
@@ -75,12 +93,26 @@ namespace TightBindingSuite
 			file.WriteLine("&");
 		}
 
+
 		public void WriteGraceDataset(int length, Func<int, double> data)
 		{
 			file.WriteLine("@type xy");
 			for (int i = 0; i < length; i++)
 			{
 				file.WriteLine("{0}   {1}", i, data(i));
+			}
+			file.WriteLine("&");
+		}
+		public void WriteGraceDataset(string type, int length, Func<int, Pair<double, double>> data)
+		{
+			file.WriteLine("@type {0}", type);
+			for (int i = 0; i < length; i++)
+			{
+				var val = data(i);
+				if (val == null)
+					continue;
+
+				file.WriteLine("{0}   {1}   {2}", i, val.First, val.Second);
 			}
 			file.WriteLine("&");
 		}
