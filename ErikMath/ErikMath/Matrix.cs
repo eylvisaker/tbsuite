@@ -156,7 +156,23 @@ namespace ERY.EMath
 
 			return result;
 		}
+		/// <summary>
+		/// Calculate the sum of the squares of all the elements in a row.
+		/// If you wish to normalize the row, this value must be square-rooted.
+		/// </summary>
+		/// <param name="colIndex"></param>
+		/// <returns></returns>
+		public double CalcRowNorm(int rowIndex)
+		{
+			double result = 0;
 
+			for (int i = 0; i < Columns; i++)
+			{
+				result += this[rowIndex, i].MagnitudeSquared;
+			}
+
+			return result;
+		}
 		public void ClearMatrix()
 		{
 			mElements = null;
@@ -1190,9 +1206,9 @@ namespace ERY.EMath
 			Matrix retval = this.Clone();
 			transform = Matrix.Identity(this.Rows);
 
-			for (int block = 1; block < this.Rows-1; block++)
+			for (int block = 1; block < this.Rows - 1; block++)
 			{
-				Matrix x = retval.SubMatrix(block, block-1, this.Rows - block, 1);
+				Matrix x = retval.SubMatrix(block, block - 1, this.Rows - block, 1);
 
 				const int sign = -1;
 				double alpha = x[0, 0].Argument;
@@ -1214,8 +1230,6 @@ namespace ERY.EMath
 				retval = transform.HermitianConjugate() * this * transform;
 			}
 
-			retval = transform.HermitianConjugate() * this * transform;
-
 			return retval;
 		}
 
@@ -1232,28 +1246,36 @@ namespace ERY.EMath
 			Matrix Q = Identity(this.Rows);
 			Matrix input = tri.Clone();
 
-			double shift;
+			double shift = 0;
 			int shiftStart = 0;
 			int iter;
 			Matrix R;
+
+			bool doshift = false;
 
 			// construct an upper triangular matrix by doing a generalized Givens rotation
 			// on the tridiagonal form of this matrix
 			for (iter = 0; iter < 300; iter++)
 			{
-				shift = CalcShift(input, ref shiftStart);
+				if (doshift)
+				{
+					shift = CalcShift(input, ref shiftStart);
 
-				for (int i = 0; i < Rows; i++)
-					input[i, i] -= shift;
+					for (int i = 0; i < Rows; i++)
+						input[i, i] -= shift;
+				}
 
-				R = input.Clone();
+				R = input;
 				Q = Identity(this.Rows);
 
 				for (int i = 0; i < Rows - 1; i++)
 				{
 					Complex Gii, Gij, Gji, Gjj;
 					int j = i + 1;
-					GivensRotation(R, i, j, out Gii, out Gij, out Gji, out Gjj);
+					bool nontrivial = GivensRotation(R, i, j, out Gii, out Gij, out Gji, out Gjj);
+
+					if (nontrivial == false)
+						continue;
 
 					// do matrix multiplication by hand for speed
 					for (int k = 0; k < Columns; k++)
@@ -1284,8 +1306,11 @@ namespace ERY.EMath
 				input = R * Q;
 				transform = transform * Q;
 
-				for (int i = 0; i < Rows; i++)
-					input[i, i] += shift;
+				if (doshift)
+				{
+					for (int i = 0; i < Rows; i++)
+						input[i, i] += shift;
+				}
 
 				//Console.WriteLine();
 				//Console.WriteLine(input.ToString("0.000"));
@@ -1294,8 +1319,9 @@ namespace ERY.EMath
 				//System.Diagnostics.Debug.Assert((transform * transform.HermitianConjugate()).IsIdentity);
 
 				double val = 0;
-				const double tolerance = 1e-14;
+				const double tolerance = 1e-24;
 
+				// check to see if we've diagonalized the matrix
 				for (int i = 0; i < Rows; i++)
 				{
 					for (int j = 0; j < Columns; j++)
@@ -1314,7 +1340,10 @@ namespace ERY.EMath
 				}
 				if (val < tolerance)
 					break;
+
+				doshift = val < 1e-4;
 			}
+
 			//Console.WriteLine("Niter: {0}", iter);
 			eigenvals = transform.HermitianConjugate() * this * transform;
 			eigenvecs = transform;
@@ -1334,17 +1363,21 @@ namespace ERY.EMath
 			bool foundNonzero = false;
 			for (int i = shiftStart+1; i < input.Rows; i++)
 			{
-				if (input[i, shiftStart].MagnitudeSquared > 1e-6)
+				if (input[i, shiftStart].MagnitudeSquared > 1e-12)
 				{
 					foundNonzero = true;
 					break;
 				}
 			}
 
-			if (foundNonzero == false && shiftStart < input.Rows - 2)
+			if (foundNonzero == false && shiftStart > 0)
 			{
-				++shiftStart;
-				return CalcShift(input, ref shiftStart);
+				--shiftStart;
+				//return CalcShift(input, ref shiftStart);
+			}
+			else if (foundNonzero == false)
+			{
+				shiftStart = input.Rows - 2;
 			}
 
 			int a = shiftStart;
@@ -1362,8 +1395,8 @@ namespace ERY.EMath
 			double diff = input[a,a].RealPart - input[b,b].RealPart;
 			double offdiag = input[b,a].MagnitudeSquared;
 
-			double ev1 = 0.5 * (sum + Math.Sqrt(diff * diff + offdiag));
-			double ev2 = 0.5 * (sum - Math.Sqrt(diff * diff + offdiag));
+			double ev1 = 0.5 * (sum - Math.Sqrt(diff * diff + offdiag));
+			double ev2 = 0.5 * (sum + Math.Sqrt(diff * diff + offdiag));
 
 			double diff_1 = ev1 - input[a, a].RealPart;
 			double diff_2 = ev2 - input[a, a].RealPart;
@@ -1401,7 +1434,7 @@ namespace ERY.EMath
 			
 		}
 
-		private void GivensRotation(Matrix matrix, int rowa, int rowb, out Complex Gaa, out Complex Gab, out Complex Gba, out Complex Gbb)
+		private bool GivensRotation(Matrix matrix, int rowa, int rowb, out Complex Gaa, out Complex Gab, out Complex Gba, out Complex Gbb)
 		{
 			if (matrix.IsSquare != true)
 				throw new InvalidOperationException();
@@ -1409,34 +1442,45 @@ namespace ERY.EMath
 			Complex a = matrix[rowa, rowa];
 			Complex b = matrix[rowb, rowa];
 
-			if (b.MagnitudeSquared < 1e-16)
+			if (b.MagnitudeSquared < 1e-25)
 			{
 				Gaa = 1;
 				Gab = 0;
 				Gba = 0;
 				Gbb = 1;
-				return;
+				return false;
 			}
-			Complex ratio = a / b;
-			double rotationAngle = Math.Atan2(b.Magnitude, a.Magnitude);
-			if (a.ImagPart != 0 || b.ImagPart != 0)
-			{
-				double theta = a.Argument - b.Argument;
+			double r = Math.Sqrt(a.MagnitudeSquared + b.MagnitudeSquared);
 
-				Gaa = Math.Cos(rotationAngle);
-				Gab = Math.Sin(rotationAngle) * Complex.Exp(new Complex(0, theta));
-				Gba = Math.Sin(rotationAngle);
-				Gbb = -Math.Cos(rotationAngle) * Complex.Exp(new Complex(0, theta));
-			}
-			else
-			{
-				double sign = Math.Sign(a.RealPart * b.RealPart);
+			Complex c = a.Conjugate() / r;
+			Complex s = b.Conjugate() / r;
 
-				Gaa = Math.Cos(rotationAngle);
-				Gab = Math.Sin(rotationAngle) * sign;
-				Gba = Math.Sin(rotationAngle);
-				Gbb = -Math.Cos(rotationAngle) * sign;
-			}
+			Gaa = c;
+			Gab = s;
+			Gba = -s.Conjugate();
+			Gbb = c.Conjugate();
+			//Complex ratio = a / b;
+			//double rotationAngle = Math.Atan2(b.Magnitude, a.Magnitude);
+			//if (a.ImagPart != 0 || b.ImagPart != 0)
+			//{
+			//    double theta = a.Argument - b.Argument;
+
+			//    Gaa = Math.Cos(rotationAngle);
+			//    Gab = Math.Sin(rotationAngle) * Complex.Exp(new Complex(0, theta));
+			//    Gba = Math.Sin(rotationAngle);
+			//    Gbb = -Math.Cos(rotationAngle) * Complex.Exp(new Complex(0, theta));
+			//}
+			//else
+			//{
+			//    double sign = Math.Sign(a.RealPart * b.RealPart);
+
+			//    Gaa = Math.Cos(rotationAngle);
+			//    Gab = Math.Sin(rotationAngle) * sign;
+			//    Gba = Math.Sin(rotationAngle);
+			//    Gbb = -Math.Cos(rotationAngle) * sign;
+			//}
+
+			return true;
 		}
 		private void SetSubMatrix(int startRow, int startCol, Matrix newSub)
 		{
