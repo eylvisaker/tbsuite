@@ -21,4 +21,7 @@
     <VerifyUploadedFiles>false</VerifyUploadedFiles>
     <ProjectView>ProjectFiles</ProjectView>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <StartWorkingDirectory>C:\Users\Erik\Documents\devel\Physics\tbsuite\out\tests</StartWorkingDirectory>
+  </PropertyGroup>
 </Project>

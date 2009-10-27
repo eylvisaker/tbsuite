@@ -2,4 +2,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <StartWorkingDirectory>C:\Users\Erik\Documents\devel\Physics\tbsuite\out\tests</StartWorkingDirectory>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <StartWorkingDirectory>C:\Users\Erik\Documents\devel\Physics\tbsuite\out\tests</StartWorkingDirectory>
+  </PropertyGroup>
 </Project>
