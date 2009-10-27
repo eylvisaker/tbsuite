@@ -1252,10 +1252,12 @@ namespace ERY.EMath
 			Matrix R;
 			double shiftValTolerance = 0.1;
 			bool doshift = false;
+			double matrixNorm = 0, lastMatrixNorm;
+			const double matrixNormTolerance = 1e-24;
 
 			// construct an upper triangular matrix by doing a generalized Givens rotation
 			// on the tridiagonal form of this matrix
-			for (iter = 0; iter < 300; iter++)
+			for (iter = 0; iter < 500; iter++)
 			{
 				if (doshift)
 				{
@@ -1290,7 +1292,7 @@ namespace ERY.EMath
 						GTij = Gji.Conjugate(),
 						GTji = Gij.Conjugate(),
 						GTjj = Gjj.Conjugate();
-					
+
 					for (int k = 0; k < Rows; k++)
 					{
 						Complex Qki = Q[k, i], Qkj = Q[k, j];
@@ -1303,6 +1305,12 @@ namespace ERY.EMath
 					//System.Diagnostics.Debug.Assert((Q * R - input).IsZero);
 				}
 
+				//Console.WriteLine("R:");
+				//Console.WriteLine(R.ToString("0.00"));
+				//Console.WriteLine("Q:");
+				//Console.WriteLine(Q.ToString("0.00"));
+				//Console.WriteLine();
+				
 				input = R * Q;
 				transform = transform * Q;
 
@@ -1317,10 +1325,10 @@ namespace ERY.EMath
 				//Console.WriteLine("Transform:");
 				//Console.WriteLine(transform.ToString("0.000"));
 				//Console.WriteLine();
-				System.Diagnostics.Debug.Assert((transform * transform.HermitianConjugate()).IsIdentity);
+				//System.Diagnostics.Debug.Assert((transform * transform.HermitianConjugate()).IsIdentity);
 
-				double val = 0;
-				const double tolerance = 1e-24;
+				lastMatrixNorm = matrixNorm;
+				matrixNorm = 0;
 
 				// check to see if we've diagonalized the matrix
 				for (int i = 0; i < Rows; i++)
@@ -1330,21 +1338,38 @@ namespace ERY.EMath
 						if (i == j)
 							continue;
 
-						val += input[i, j].MagnitudeSquared;
+						matrixNorm += input[i, j].MagnitudeSquared;
 					}
 				}
-				if (val < tolerance)
+				if (matrixNorm < matrixNormTolerance)
 					break;
 
-				if (doshift && val > shiftValTolerance)
+				if (doshift && matrixNorm > shiftValTolerance)
 				{
 					shiftValTolerance /= 2;
 				}
 
-				doshift = val < shiftValTolerance;
+				doshift = matrixNorm < shiftValTolerance;
+				if (matrixNorm > lastMatrixNorm * 2 && lastMatrixNorm > 0)
+				{
+					doshift = false;
+					shiftValTolerance /= 2;
+				}
 			}
 
-			//Console.WriteLine("Niter: {0}", iter);
+			Console.WriteLine("Niter: {0}", iter);
+
+			if (matrixNorm > matrixNormTolerance * 10)
+			{
+				Console.WriteLine("**************************************************");
+				Console.WriteLine("Failed to diagonalize matrix.");
+				Console.WriteLine(this.ToString());
+				Console.WriteLine("**************************************************");
+
+				throw new Exception("Failed to diagonalize matrix.");
+			}
+
+			
 			eigenvals = transform.HermitianConjugate() * this * transform;
 			eigenvecs = transform;
 			OrderEigenvectors(ref eigenvals, ref eigenvecs);
@@ -1398,13 +1423,13 @@ namespace ERY.EMath
 			double ev1 = 0.5 * (sum - Math.Sqrt(diff * diff + offdiag));
 			double ev2 = 0.5 * (sum + Math.Sqrt(diff * diff + offdiag));
 
-			double diff_1 = ev1 - input[a, a].RealPart;
-			double diff_2 = ev2 - input[a, a].RealPart;
+			double diff_1 = ev1 - input[b,b].Magnitude;
+			double diff_2 = ev2 - input[b,b].Magnitude;
 
 			if (diff_1 * diff_1 < diff_2 * diff_2)
-				return ev2;
-			else
 				return ev1;
+			else
+				return ev2;
 
 		}
 

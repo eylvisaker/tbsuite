@@ -22,4 +22,17 @@ namespace ERY.EMath
 
 		}
 	}
+	public class Triplet<T1, T2, T3>
+	{
+		public Triplet(T1 a, T2 b, T3 c)
+		{
+			First = a;
+			Second = b;
+			Third = c;
+		}
+
+		public T1 First { get; set; }
+		public T2 Second { get; set; }
+		public T3 Third { get; set; }
+	}
 }
