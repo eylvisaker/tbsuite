@@ -1312,11 +1312,11 @@ namespace ERY.EMath
 						input[i, i] += shift;
 				}
 
-				Console.WriteLine("Input:");
-				Console.WriteLine(input.ToString("0.000"));
-				Console.WriteLine("Transform:");
-				Console.WriteLine(transform.ToString("0.000"));
-				Console.WriteLine();
+				//Console.WriteLine("Input:");
+				//Console.WriteLine(input.ToString("0.000"));
+				//Console.WriteLine("Transform:");
+				//Console.WriteLine(transform.ToString("0.000"));
+				//Console.WriteLine();
 				System.Diagnostics.Debug.Assert((transform * transform.HermitianConjugate()).IsIdentity);
 
 				double val = 0;
