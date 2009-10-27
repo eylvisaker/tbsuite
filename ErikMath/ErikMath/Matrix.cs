@@ -1250,7 +1250,7 @@ namespace ERY.EMath
 			int shiftStart = Rows - 2;
 			int iter;
 			Matrix R;
-
+			double shiftValTolerance = 0.1;
 			bool doshift = false;
 
 			// construct an upper triangular matrix by doing a generalized Givens rotation
@@ -1336,7 +1336,12 @@ namespace ERY.EMath
 				if (val < tolerance)
 					break;
 
-				doshift = iter > 10 && val < 0.1;
+				if (doshift && val > shiftValTolerance)
+				{
+					shiftValTolerance /= 2;
+				}
+
+				doshift = val < shiftValTolerance;
 			}
 
 			//Console.WriteLine("Niter: {0}", iter);
