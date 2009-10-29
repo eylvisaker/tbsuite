@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using ERY.EMath;
 
@@ -42,6 +43,11 @@ namespace TightBindingSuite
 
 		string outputfile;
 
+		public TightBinding() { }
+		public TightBinding(string filename)
+		{
+			LoadTB(filename);
+		}
 		public void LoadTB(string filename)
 		{
 			string outputPrefix = Path.GetFileNameWithoutExtension(filename);
@@ -52,8 +58,10 @@ namespace TightBindingSuite
 
 			Output.WriteLine("Successfully parsed input file.");
 
+			CalcWavefunctions();
 			CalcNelec();
 		}
+
 		public void RunTB()
 		{
 			DoBandStructure();
@@ -61,6 +69,27 @@ namespace TightBindingSuite
 		}
 
 
+		private void CalcWavefunctions()
+		{
+			for (int i = 0; i < KMesh.Kpts.Count; i++)
+			{
+				Matrix m = CalcHamiltonian(KMesh.Kpts[i]);
+				Matrix vals, vecs;
+				m.EigenValsVecs(out vals, out vecs);
+
+				kmesh.Kpts[i].SetWavefunctions(vals, vecs);
+			}
+
+			for (int i = 0; i < kmesh.AllKpts.Count; i++)
+			{
+				KPoint kpt = kmesh.AllKpts[i];
+				List<int> orbitalMap;
+
+				int index = kmesh.IrreducibleIndex(kpt, lattice, symmetries, out orbitalMap);
+
+				kpt.SetWavefunctions(kmesh.Kpts[index], symmetries, orbitalMap);
+			}
+		}
 		double FermiFunction(double omega, double mu, double beta)
 		{
 			return 1.0 / (Math.Exp(beta * (omega - mu)) + 1);
@@ -71,11 +100,14 @@ namespace TightBindingSuite
 			KptList ks = KMesh;
 			Matrix[] eigenvals = new Matrix[ks.Kpts.Count];
 
-			for (int i = 0; i < ks.Kpts.Count; i++)
+			for (int i = 0; i < KMesh.Kpts.Count; i++)
 			{
-				Matrix m = CalcHamiltonian(ks.Kpts[i]);
-				Matrix vals, vecs;
-				m.EigenValsVecs(out vals, out vecs);
+				Matrix vals = new Matrix(Orbitals.Count, Orbitals.Count);
+
+				for (int j = 0; j < Orbitals.Count; j++)
+				{
+					vals[j, 0] = ks.Kpts[i].Wavefunctions[j].Energy;
+				}
 
 				eigenvals[i] = vals;
 			}
@@ -202,7 +234,6 @@ namespace TightBindingSuite
 
 			return mu;
 		}
-
 		private double FindNelec(KptList ks, Matrix[] eigenvals, double mu, double beta)
 		{
 			double N = 0;
@@ -221,6 +252,7 @@ namespace TightBindingSuite
 			}
 			return N;
 		}
+
 		void DoDensityOfStates()
 		{
 			KptList ks = KMesh;
@@ -234,23 +266,17 @@ namespace TightBindingSuite
 
 				for (int i = 0; i < ks.Kpts.Count; i++)
 				{
-					Matrix m = CalcHamiltonian(ks.Kpts[i]);
-					Matrix vals, vecs;
-					m.EigenValsVecs(out vals, out vecs);
+					KPoint kpt = ks.Kpts[i];
 
-					//ks.Kpts[i].SetStates(vals, vecs);
-
-					for (int j = 0; j < vals.Rows; j++)
-					{
-						double ev = vals[j, 0].RealPart - MuMesh[0];
-
-						if (emin > ev) emin = ev;
-						if (emax < ev) emax = ev;
-					}
+					emin = Math.Min(emin, kpt.Wavefunctions.Min(x => x.Energy));
+					emax = Math.Max(emax, kpt.Wavefunctions.Max(x => x.Energy));
 				}
 
 				emin -= smearing * 10;
 				emax += smearing * 10;
+
+				emin -= MuMesh[0];
+				emax -= MuMesh[0];
 
 				int epts = 3000;
 
@@ -274,13 +300,13 @@ namespace TightBindingSuite
 				
 				for (int i = 0; i < ks.Kpts.Count; i++)
 				{
-					Matrix m = CalcHamiltonian(ks.Kpts[i]);
-					Matrix vals, vecs;
-					m.EigenValsVecs(out vals, out vecs);
+					KPoint kpt = ks.Kpts[i];
 
-					for (int j = 0; j < vals.Rows; j++)
+					for (int j = 0; j < kpt.Wavefunctions.Count; j++)
 					{
-						double energy = vals[j, 0].RealPart - MuMesh[0];
+						Wavefunction wfk = kpt.Wavefunctions[j];
+
+						double energy = wfk.Energy - MuMesh[0];
 
 						int startIndex = FindIndex(energyGrid, energy - smearing * 10);
 						int endIndex = FindIndex(energyGrid, energy + smearing * 10);
@@ -292,25 +318,26 @@ namespace TightBindingSuite
 							smearWeight *= ks.Kpts[i].Weight;
 
 							double weight = 0;
-							for (int l = 0; l < vecs.Rows; l++)
+							for (int l = 0; l < wfk.Coeffs.Length; l++)
 							{
 								if (PoleStates.Contains(l))
 									continue;
 
-								double stateval = vecs[l, j].MagnitudeSquared;
+								double stateval = wfk.Coeffs[l].MagnitudeSquared;
 								weight += stateval;
 							}
+
 							if (PoleStates.Count == 0 && Math.Abs(weight - 1) > 1e-8)
 								throw new Exception("Eigenvector not normalized!");
 
 							dos[k, 0] += smearWeight * weight;
-
-							for (int state = 0; state < vecs.Rows; state++)
+							
+							for (int state = 0; state < wfk.Coeffs.Length ; state++)
 							{
 								if (PoleStates.Contains(state))
 									continue;
 
-								double wtk = vecs[state, j].MagnitudeSquared;//GetWeight(ks.Kpts[i], vecs, j, l);
+								double wtk = wfk.Coeffs[state].MagnitudeSquared;
 
 								dos[k, state + 1] += smearWeight * wtk;
 							}
@@ -342,22 +369,29 @@ namespace TightBindingSuite
 					}
 				}
 
-				double slope = (dos[zeroIndex, 0] - dos[zeroIndex + 1, 0]) / (energyGrid[zeroIndex] - energyGrid[zeroIndex + 1]);
-				double dosEF = slope * (-energyGrid[zeroIndex]) + dos[zeroIndex, 0];
-
-				Output.WriteLine("Density of states at chemical potential: {0}", dosEF);
-
-				for (int i = 0; i < epts; i++)
+				if (emin < 0 && emax > 0)
 				{
-					outf.Write("{0}     ", energyGrid[i]);
+					if (zeroIndex + 1 >= energyGrid.Length)
+						zeroIndex = energyGrid.Length - 2;
 
-					for (int j = 0; j < Orbitals.Count + 1; j++)
+					double slope = (dos[zeroIndex, 0] - dos[zeroIndex + 1, 0]) / (energyGrid[zeroIndex] - energyGrid[zeroIndex + 1]);
+					double dosEF = slope * (-energyGrid[zeroIndex]) + dos[zeroIndex, 0];
+
+					Output.WriteLine("Density of states at chemical potential: {0}", dosEF);
+
+					for (int i = 0; i < epts; i++)
 					{
-						outf.Write("{0}  ", dos[i, j]);
-					}
+						outf.Write("{0}     ", energyGrid[i]);
 
-					outf.WriteLine();
+						for (int j = 0; j < Orbitals.Count + 1; j++)
+						{
+							outf.Write("{0}  ", dos[i, j]);
+						}
+
+						outf.WriteLine();
+					}
 				}
+
 			}
 		}
 

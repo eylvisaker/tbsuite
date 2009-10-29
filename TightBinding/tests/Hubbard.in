@@ -70,7 +70,7 @@ G        0       0       0
 
 # Gives a k-mesh for calculating the density of states and doing RPA.
 [KMesh]
-80 80 1 1 1 1
+40 40 1 1 1 1
 
 # Gives data for a plane of q-points in the BZ to plot.  There must be
 # four sets of three numbers here.
@@ -80,8 +80,8 @@ G        0       0       0
 [QPlane]
 10 10 1 
 0   0   0  
-0.5 0   0
-0   0.5 0
+1   0   0
+0   1   0
 
 # Frequency mesh for RPA calculation
 # You may enter just a single number to calculate a single frequency,

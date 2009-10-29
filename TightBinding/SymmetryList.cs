@@ -17,5 +17,13 @@ namespace TightBindingSuite
 
 			Add(s);
 		}
+
+		public  int TransformOrbital(List<int> orbitalMap, int orbitalIndex)
+		{
+			if (orbitalMap.Count > 0)
+				return orbitalMap[orbitalIndex];
+			else
+				return orbitalIndex;
+		}
 	}
 }

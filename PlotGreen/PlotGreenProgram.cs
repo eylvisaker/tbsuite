@@ -171,7 +171,7 @@ namespace TightBindingSuite
 
 							plane.GetPlaneST(plane.AllKpts[k], out s, out t);
 
-							int kindex = kmesh.GetKindex(tb.Lattice, kpt, out orbitalMap, tb.Symmetries);
+							int kindex = kmesh.IrreducibleIndex(kpt, tb.Lattice, tb.Symmetries, out orbitalMap);
 
 							if (Math.Abs(t - lastt) > 1e-6)
 							{

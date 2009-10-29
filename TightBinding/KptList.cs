@@ -15,6 +15,7 @@ namespace TightBindingSuite
 		int[] shift;
 		bool gammaCentered;
 		Dictionary<int, int> Nvalues = new Dictionary<int, int>();
+		Dictionary<int, int> AllNvalues = new Dictionary<int, int>();
 
 		Vector3 sdir, tdir, origin;
 
@@ -429,6 +430,7 @@ namespace TightBindingSuite
 							}
 						}
 
+						retval.AllNvalues.Add(N, retval.allKpts.Count);
 						retval.allKpts.Add(new KPoint(kptValue));
 						
 						if (foundSym == false)
@@ -453,6 +455,9 @@ namespace TightBindingSuite
 			for (int i = 0; i < retval.kpts.Count; i++)
 			{
 				retval.kpts[i].Weight /= count;
+			}
+			for (int i = 0; i < retval.allKpts.Count; i++)
+			{
 				retval.allKpts[i].Weight /= count;
 			}
 
@@ -789,10 +794,9 @@ namespace TightBindingSuite
 			return retval;
 		}
 
-		
 
 
-		public int GetKindex(Lattice lattice, Vector3 kpt, out List<int> orbitalMap, SymmetryList symmetries)
+		public int IrreducibleIndex(Vector3 kpt, Lattice lattice, SymmetryList symmetries, out List<int> orbitalMap)
 		{
 			for (int s = 0; s < symmetries.Count; s++)
 			{
@@ -815,10 +819,45 @@ namespace TightBindingSuite
 			throw new Exception(string.Format("Could not find k-point {0}", kpt));
 		}
 
+		public int AllKindex(Vector3 kpt, Lattice lattice)
+		{
+			int newi, newj, newk;
+				
+			ReduceKpt(lattice, kpt, out newi, out newj, out newk);
+			
+			int N = KptToInteger(newi, newj, newk);
+
+			return AllNvalues[N];
+		}
 
 		public override string ToString()
 		{
 			return string.Format("K-points: {0}   Irreducible: {1}", allKpts.Count, kpts.Count);
+		}
+
+		public void SetTemperature(double temperature, double mu)
+		{
+			double beta = 1 / temperature;
+
+			SetTemperature(Kpts, beta, mu);
+			SetTemperature(AllKpts, beta, mu);
+		}
+
+		private void SetTemperature(List<KPoint> kpts, double beta, double mu)
+		{
+			foreach (var k in kpts)
+			{
+				foreach (Wavefunction wfk in k.Wavefunctions)
+				{
+					wfk.FermiFunction = FermiFunction(wfk.Energy - mu, beta);
+				}
+			}
+		}
+
+
+		private double FermiFunction(double energy, double beta)
+		{
+			return 1.0 / (Math.Exp(beta * energy) + 1);
 		}
 	}
 }

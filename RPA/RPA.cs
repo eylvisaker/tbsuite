@@ -6,7 +6,7 @@ using ERY.EMath;
 
 namespace TightBindingSuite
 {
-	class RPA
+	public class RPA
 	{
 		static void Main(string[] args)
 		{
@@ -18,6 +18,9 @@ namespace TightBindingSuite
 				inst.Run(inputfile);
 			}
 		}
+
+		double Beta;
+
 
 		void Run(string inputfile)
 		{
@@ -40,9 +43,19 @@ namespace TightBindingSuite
 
 		public void RunRpa(TightBinding tb, KptList qpts)
 		{
-			CalculateBands(tb);
-
 			List<KPoint> QMesh = qpts.Kpts;
+			List<RpaParams> rpa = CreateRpaParameterList(tb, QMesh);
+
+			CalcSusceptibility(tb, qpts, rpa);
+
+			SaveMatricesQPlane(tb, QMesh, rpa, x => x.X0, "chi_0");
+			SaveMatricesQPlane(tb, QMesh, rpa, x => x.Xs, "chi_s");
+			SaveMatricesQPlane(tb, QMesh, rpa, x => x.Xc, "chi_c");
+
+		}
+
+		public List<RpaParams> CreateRpaParameterList(TightBinding tb, List<KPoint> QMesh)
+		{
 			double[] FrequencyMesh = tb.FrequencyMesh;
 			double[] TemperatureMesh = tb.TemperatureMesh;
 
@@ -66,117 +79,22 @@ namespace TightBindingSuite
 					}
 				}
 			}
-
-			CalcSusceptibility(tb, qpts, rpa);
-
-			SaveMatricesQPlane(tb, QMesh, rpa, x => x.X0, "chi_0");
-			SaveMatricesQPlane(tb, QMesh, rpa, x => x.Xs, "chi_s");
-			SaveMatricesQPlane(tb, QMesh, rpa, x => x.Xc, "chi_c");
-
+			return rpa;
 		}
 
-		Wavefunction[][] bands;
-		Wavefunction[][] kqbands;
-
-		double Beta;
-
-		public Wavefunction Bands(int kpt, int band)
+		public Wavefunction Bands(TightBinding tb, int kpt, int band)
 		{
-			return bands[kpt][band];
+			return tb.KMesh.AllKpts[kpt].Wavefunctions[band];
 		}
-		public Wavefunction BandsKQ(int kqpt, int band)
-		{
-			return kqbands[kqpt][band];
-		}
-		private void CalculateBands(TightBinding tb)
-		{
-			bands = new Wavefunction[tb.KMesh.Kpts.Count][];
-			kqbands = new Wavefunction[tb.KMesh.Kpts.Count][];
-			for (int i = 0; i < bands.Length; i++)
-			{
-				bands[i] = new Wavefunction[tb.Orbitals.Count];
-				kqbands[i] = new Wavefunction[tb.Orbitals.Count];
-			}
-
-			for (int k = 0; k < tb.KMesh.Kpts.Count; k++)
-			{
-				Matrix m = tb.CalcHamiltonian(tb.KMesh.Kpts[k]);
-				Matrix vals, vecs;
-
-				m.EigenValsVecs(out vals, out vecs);
-
-				StreamWriter w = new StreamWriter("matrix");
-
-				for (int i = 0; i < m.Rows; i++)
-				{
-					for (int j = 0; j < m.Columns; j++)
-					{
-						w.Write("{0}  {1}   ", m[i, j].RealPart, m[i, j].ImagPart);
-					}
-					w.WriteLine();
-				}
-				for (int i = 0; i < m.Rows; i++)
-				{
-					for (int j = 0; j < m.Columns; j++)
-					{
-						w.Write("{0}  {1}  ", vecs[i, j].RealPart, vecs[i, j].ImagPart);
-					}
-					w.WriteLine();
-				}
-
-				w.Close();
-
-				for (int n = 0; n < vals.Rows; n++)
-				{
-					var wfk = new Wavefunction(tb.Orbitals.Count);
-
-					wfk.Energy = vals[n, 0].RealPart;
-
-					for (int c = 0; c < vecs.Rows; c++)
-					{
-						wfk.Coeffs[c] = vecs[c, n];
-					}
-
-					bands[k][n] = wfk;
-				}
-			}
-		}
-		void SetTemperature(double temperature, double mu)
+		void SetTemperature(TightBinding tb, double temperature, double mu)
 		{
 			//currentTemperature = value;
 			Beta = 1 / temperature;
 
-			foreach (var k in bands)
-			{
-				foreach (Wavefunction wfk in k)
-				{
-					wfk.FermiFunction = FermiFunction(wfk.Energy - mu);
-				}
-			}
-		}
-		public double FermiFunction(double energy)
-		{
-			return 1.0 / (Math.Exp(Beta * energy) + 1);
+			tb.KMesh.SetTemperature(temperature, mu);
+
 		}
 
-		internal void CreateKQbands(TightBinding tb, Vector3 q)
-		{
-			for (int i = 0; i < tb.KMesh.Kpts.Count; i++)
-			{
-				Vector3 kq = tb.KMesh.Kpts[i].Value + q;
-				List<int> orbitalMap;
-
-				int index = tb.KMesh.GetKindex(
-					tb.Lattice, kq, out orbitalMap, tb.Symmetries);
-
-				for (int n = 0; n < bands[i].Length; n++)
-				{
-					kqbands[index][n] = bands[i][n].Clone(orbitalMap);
-				}
-			}
-		}
-		
-		
 		private void CalcSusceptibility(TightBinding tb, KptList qpts, List<RpaParams> rpa)
 		{
 			Matrix ident = Matrix.Identity(tb.Orbitals.Count * tb.Orbitals.Count);
@@ -190,7 +108,7 @@ namespace TightBindingSuite
 			watch.Start();
 			for (int i = 0; i < rpa.Count; i++)
 			{
-				SetTemperature(rpa[i].Temperature, rpa[i].ChemicalPotential);
+				SetTemperature(tb, rpa[i].Temperature, rpa[i].ChemicalPotential);
 
 				rpa[i].X0 = CalcX0(tb, rpa[i].Frequency, qpts.Kpts[rpa[i].Qindex]);
 
@@ -241,8 +159,8 @@ namespace TightBindingSuite
 				Matrix s_inv = s_denom.Invert();
 				Matrix c_inv = c_denom.Invert();
 
-				rpa[i].Xs = 2 * rpa[i].X0 * s_inv;
-				rpa[i].Xc = 2 * rpa[i].X0 * c_inv;
+				rpa[i].Xs = rpa[i].X0 * s_inv;
+				rpa[i].Xc = rpa[i].X0 * c_inv;
 
 				for (int l1 = 0; l1 < tb.Orbitals.Count; l1++)
 				{
@@ -480,17 +398,17 @@ namespace TightBindingSuite
 												}
 
 												int kindex =
-													tb.QPlane.GetKindex(tb.Lattice, qpt, out orbitalMap, tb.Symmetries);
+													tb.QPlane.IrreducibleIndex(qpt, tb.Lattice, tb.Symmetries, out orbitalMap);
 
 												int index = GetRpaIndex(rpa, kindex, 
 													tb.TemperatureMesh[ti], 
 													tb.FrequencyMesh[wi], 
 													tb.MuMesh[ui]);
 
-												int newL1 = TransformOrbital(orbitalMap, l1);
-												int newL2 = TransformOrbital(orbitalMap, l2);
-												int newL3 = TransformOrbital(orbitalMap, l3);
-												int newL4 = TransformOrbital(orbitalMap, l4);
+												int newL1 = tb.Symmetries.TransformOrbital(orbitalMap, l1);
+												int newL2 = tb.Symmetries.TransformOrbital(orbitalMap, l2);
+												int newL3 = tb.Symmetries.TransformOrbital(orbitalMap, l3);
+												int newL4 = tb.Symmetries.TransformOrbital(orbitalMap, l4);
 
 												int newii = GetIndex(tb, newL1, newL2);
 												int newjj = GetIndex(tb, newL3, newL4);
@@ -722,31 +640,11 @@ namespace TightBindingSuite
 			int size = orbitalCount * orbitalCount;
 			Matrix x = new Matrix(size, size);
 
-			double en_min = -10;
-			double en_max = 10;
-
 			Complex denom_factor = new Complex(0, 1e-4);
 
-			//using (StreamWriter ww = new StreamWriter("hamilt"))
-			//{
-			//    for (int i = 0; i < tb.KMesh.Kpts.Count; i++)
-			//    {
+			//StreamWriter w = new StreamWriter(string.Format("qcont.{0}", q.ToString("0.000")));
+			//bool writeThis = false;
 
-			//        for (int n = 0; n < orbitalCount; n++)
-			//        {
-			//            var wfk = Bands(i, n);
-
-			//            ww.Write("{0}   {1}   {2}          ", i, n, wfk.Energy);
-
-			//            for (int c = 0; c < orbitalCount; c++)
-			//            {
-			//                ww.Write("     {0}", wfk.Coeffs[c]);
-			//            }
-
-			//            ww.WriteLine();
-			//        }
-			//    }
-			//}
 			for (int l1 = 0; l1 < orbitalCount; l1++)
 			{
 				for (int l4 = 0; l4 < orbitalCount; l4++)
@@ -759,12 +657,18 @@ namespace TightBindingSuite
 							int j = GetIndex(tb, l3, l4);
 							bool foundSymmetry = false;
 
-							
+							//if (l1 == 0 && l2 == 0 && l3 == 0 && l4 == 0)
+							//    writeThis = true;
+							//else
+								//writeThis = false;
+
+							//if (writeThis)
+							//    w.WriteLine("{0}{1}{2}{3}", l1, l2, l3, l4);
 
 							for (int s = 0; s < tb.Symmetries.Count; s++)
 							{
 								Symmetry sym = tb.Symmetries[s];
-								
+
 								if (sym.OrbitalTransform == null || sym.OrbitalTransform.Count == 0)
 									continue;
 
@@ -798,10 +702,6 @@ namespace TightBindingSuite
 							if (foundSymmetry)
 								continue;
 
-							//string filename = string.Format("vars.{0}{1}{2}{3}", l1, l2, l3, l4);
-							//StreamWriter w = new StreamWriter(File.Open(filename, FileMode.Append));
-							//w.WriteLine("total for q = {0}", q);
-
 							Complex total = 0;
 
 							for (int allkindex = 0; allkindex < tb.KMesh.AllKpts.Count; allkindex++)
@@ -810,42 +710,36 @@ namespace TightBindingSuite
 								Vector3 k = tb.KMesh.AllKpts[allkindex];
 								Vector3 kq = k + q;
 
-								List<int> kOrbitalMap;
-								List<int> kqOrbitalMap;
+								//List<int> kOrbitalMap;
+								//List<int> kqOrbitalMap;
 
-								int kindex = tb.KMesh.GetKindex(
-									tb.Lattice, k, out kOrbitalMap, tb.Symmetries);
-								int kqindex = tb.KMesh.GetKindex(
-									tb.Lattice, kq, out kqOrbitalMap, tb.Symmetries);
+								//int kindex = tb.KMesh.IrreducibleIndex(k, tb.Lattice, tb.Symmetries, out kOrbitalMap);
+								//int kqindex = tb.KMesh.IrreducibleIndex(kq, tb.Lattice, tb.Symmetries, out kqOrbitalMap);
+								int kindex = tb.KMesh.AllKindex(k, tb.Lattice);
+								int kqindex = tb.KMesh.AllKindex(kq, tb.Lattice);
 
-								int newL1 = TransformOrbital(kqOrbitalMap, l1);
-								int newL2 = TransformOrbital(kOrbitalMap, l2);
-								int newL3 = TransformOrbital(kqOrbitalMap, l3);
-								int newL4 = TransformOrbital(kOrbitalMap, l4);
+								System.Diagnostics.Debug.Assert(kindex == allkindex);
+
+								//int newL1 = TransformOrbital(kqOrbitalMap, l1);
+								//int newL2 = TransformOrbital(kOrbitalMap, l2);
+								//int newL3 = TransformOrbital(kqOrbitalMap, l3);
+								//int newL4 = TransformOrbital(kOrbitalMap, l4);
 
 								for (int n1 = 0; n1 < orbitalCount; n1++)
 								{
-									Wavefunction wfk = Bands(kindex, n1);
+									Wavefunction wfk = Bands(tb, kindex, n1);
 									double e1 = wfk.Energy;
 									double f1 = wfk.FermiFunction;
 
-									if (e1 < en_min) continue;
-									if (e1 > en_max) break;
-
 									for (int n2 = 0; n2 < orbitalCount; n2++)
 									{
-										Wavefunction wfq = Bands(kqindex, n2);//BandsKQ(kindex, n2);
+										Wavefunction wfq = Bands(tb, kqindex, n2);
 										double e2 = wfq.Energy;
 										double f2 = wfq.FermiFunction;
 
-										if (e2 < en_min) continue;
-										if (e2 > en_max) break;
-
 										Complex coeff =
-											wfq.Coeffs[newL1] * wfq.Coeffs[newL4].Conjugate() *
-											wfk.Coeffs[newL3] * wfk.Coeffs[newL2].Conjugate();
-
-										//coeff = 1;
+											wfq.Coeffs[l1] * wfq.Coeffs[l4].Conjugate() *
+											wfk.Coeffs[l3] * wfk.Coeffs[l2].Conjugate();
 
 										if (coeff == 0) continue;
 										if (f1 < 1e-15 && f2 < 1e-15) continue;
@@ -879,31 +773,29 @@ namespace TightBindingSuite
 								//Output.WriteLine(tb.KMesh.AllKpts[kindex].Weight.ToString());
 								val *= tb.KMesh.AllKpts[kindex].Weight;
 								total += val;
-							}
 
-							// get rid of small imaginary parts
-							total.ImagPart = Math.Round(total.ImagPart, 7);
+								//if (writeThis)
+								//    w.WriteLine("{0}        {1}              {2}", allkindex, total, val);
+							}
 
 							x[i, j] = total;
 							x[j, i] = total.Conjugate();
 
-							//w.WriteLine("total is : {0}", total);
-							//w.Close();
+							//if (writeThis)
+							//{
+							//    w.WriteLine("total for {0}{1}{2}{3}: {4}", l1, l2, l3, l4, total);
+							//    w.WriteLine("---------------------");
+							//}
 						}
 					}
 				}
 			}
 
+			//w.Close();
+
 			return x;
 		}
 
-		private int TransformOrbital(List<int> kqOrbitalMap, int l1)
-		{
-			if (kqOrbitalMap.Count > 0)
-				return kqOrbitalMap[l1];
-			else
-				return l1;
-		}
 
 
 		int GetIndex(TightBinding tb, int l1, int l2)

@@ -52,7 +52,7 @@ namespace TightBindingSuite
 			mOrbitalTransform.Add(orbitals);
 		}
 
-		//public List<Wavefunction> Wavefunctions { get { return wfk; } }
+		public List<Wavefunction> Wavefunctions { get { return wfk; } }
 		public IEnumerable<List<int>> OrbitalTransform { get { return mOrbitalTransform; } }
 
 		public override string ToString()
@@ -60,21 +60,47 @@ namespace TightBindingSuite
 			return base.ToString() + Value.ToString();
 		}
 
-		//internal void SetStates(Matrix eigenvals, Matrix eigenvecs)
-		//{
-		//    for (int n = 0; n < eigenvals.Rows; n++)
-		//    {
-		//        var wfk = new Wavefunction(eigenvecs.Rows);
+		internal void SetWavefunctions(Matrix eigenvals, Matrix eigenvecs)
+		{
+			for (int n = 0; n < eigenvals.Rows; n++)
+			{
+				var wfk = new Wavefunction(eigenvecs.Rows);
 
-		//        wfk.Energy = eigenvals[n, 0].RealPart;
+				wfk.Energy = eigenvals[n, 0].RealPart;
 
-		//        for (int c = 0; c < eigenvecs.Rows; c++)
-		//        {
-		//            wfk.Coeffs[c] = eigenvecs[c, n];
-		//        }
+				for (int c = 0; c < eigenvecs.Rows; c++)
+				{
+					wfk.Coeffs[c] = eigenvecs[c, n];
+				}
 
-		//        bands[k][n] = wfk;
-		//    }
-		//}
+				this.wfk.Add(wfk);
+			}
+		}
+
+		internal void SetWavefunctions(KPoint otherPt, SymmetryList symmetries, List<int> orbitalMap)
+		{
+			if (this.wfk.Count != 0) throw new InvalidOperationException();
+
+			for (int n = 0; n < otherPt.Wavefunctions.Count; n++)
+			{
+				var otherWfk = otherPt.Wavefunctions[n];
+				var wfk = new Wavefunction(otherWfk.Coeffs.Length);
+
+				wfk.Energy = otherWfk.Energy;
+				wfk.FermiFunction = otherWfk.FermiFunction;
+
+				for (int k = 0; k < otherWfk.Coeffs.Length; k++)
+				{
+					int newOrb = symmetries.TransformOrbital(orbitalMap, k);
+
+					System.Diagnostics.Debug.Assert(wfk.Coeffs[newOrb] == 0);
+					wfk.Coeffs[newOrb] = otherWfk.Coeffs[k];
+
+				}
+
+				this.wfk.Add(wfk);
+			}
+		}
+
 	}
 }
