@@ -1450,29 +1450,21 @@ namespace ERY.EMath
 			
 			int a = shiftStart;
 			int b = a + 1;
-			bool bad = false;
-			if ((input[a, b] - input[b,a].Conjugate()).Magnitude > 1e-7)				bad = true;
-			if (Math.Abs(input[a, a].RealPart) > 1e-12 && Math.Abs(input[a,a].ImagPart / input[a,a].RealPart) > 1e-10)				bad = true;
-			if (Math.Abs(input[b, b].RealPart) > 1e-12 && Math.Abs(input[b, b].ImagPart / input[b, b].RealPart) > 1e-10) bad = true;
-			if (input[a, a].RealPart == 0 && Math.Abs(input[a, a].ImagPart) > 1e-10) bad = true;
-			if (input[b, b].RealPart == 0 && Math.Abs(input[b, b].ImagPart) > 1e-10) bad = true;
-			if (bad)
-				throw new Exception("Cannot diagonalize non-Hermitian matrix.");
 
-			double sum = input[a,a].RealPart + input[b,b].RealPart;
-			double diff = input[a,a].RealPart - input[b,b].RealPart;
-			double offdiag = input[b,a].MagnitudeSquared;
+			Complex sum = input[a, a] + input[b, b];
+			Complex diff = input[a, a] - input[b, b];
+			Complex offdiag = input[b, a] * input[a, b];
 
-			double ev1 = 0.5 * (sum - Math.Sqrt(diff * diff + offdiag));
-			double ev2 = 0.5 * (sum + Math.Sqrt(diff * diff + offdiag));
+			Complex ev1 = 0.5 * (sum - Complex.Sqrt(diff * diff + 4 * offdiag));
+			Complex ev2 = 0.5 * (sum + Complex.Sqrt(diff * diff + 4 * offdiag));
 
 			Complex diff_1 = ev1 - input[b,b];
 			Complex diff_2 = ev2 - input[b, b];
 
 			if (diff_1.MagnitudeSquared < diff_2.MagnitudeSquared)
-				return ev1;
+				return ev1.Magnitude;
 			else
-				return ev2;
+				return ev2.Magnitude;
 
 		}
 
