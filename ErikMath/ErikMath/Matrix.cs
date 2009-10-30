@@ -1323,7 +1323,7 @@ namespace ERY.EMath
 				//Console.WriteLine("Input:");
 				//Console.WriteLine(input.ToString("0.000"));
 				//Console.WriteLine();
-				//System.Diagnostics.Debug.Assert((transform * transform.HermitianConjugate()).IsIdentity);
+				System.Diagnostics.Debug.Assert((transform * transform.HermitianConjugate()).IsIdentity);
 
 				//smallestMatrixNorm = Math.Min(smallestMatrixNorm, matrixNorm);
 				matrixNorm = CalculateOffDiagonalNorm(input);
@@ -1462,9 +1462,9 @@ namespace ERY.EMath
 			Complex diff_2 = ev2 - input[b, b];
 
 			if (diff_1.MagnitudeSquared < diff_2.MagnitudeSquared)
-				return ev1.Magnitude;
+				return ev1.RealPart;
 			else
-				return ev2.Magnitude;
+				return ev2.RealPart;
 
 		}
 
