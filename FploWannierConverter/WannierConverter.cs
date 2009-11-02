@@ -222,7 +222,10 @@ namespace FploWannierConverter
 			}
 
 			retval.Grid = new Grid();
-			
+			retval.Grid.GridSize[0] = xgrid;
+			retval.Grid.GridSize[1] = ygrid;
+			retval.Grid.GridSize[2] = zgrid;
+
 			string[] text = SplitLine(ReadNextLine(reader));
 			retval.Grid.Origin = Vector3.Parse(text[1], text[2], text[3]);
 			
@@ -314,9 +317,74 @@ namespace FploWannierConverter
 			return list;
 		}
 
+		const double bohrToAng = 0.52918;
+
 		private void WriteData(WannierData data)
 		{
-			throw new NotImplementedException();
+			foreach (var wan in data.WannierFunctions)
+			{
+				string filename = string.Format("wan{0}.xsf", wan.Name);
+				Grid grid = data.Grid;
+
+				Console.WriteLine("Writing data to {0}", filename);
+
+				using (StreamWriter wr = new StreamWriter(filename))
+				{
+					wr.WriteLine("CRYSTAL");
+					wr.WriteLine("PRIMVEC");
+
+					for (int i = 0; i < 3; i++)
+					{
+						Vector3 span = grid.SpanVectors[i] * bohrToAng;
+
+						wr.WriteLine("{0}   {1}   {2}", span.X, span.Y, span.Z);
+					}
+
+					wr.WriteLine("PRIMCOORD");
+					wr.WriteLine("{0}   1", data.Atoms.Count);
+					foreach (var atom in data.Atoms)
+					{
+						Vector3 pos = atom.Position * bohrToAng;
+
+						wr.WriteLine("{0}   {1}   {2}   {3}", atom.AtomicNumber, pos.X, pos.Y, pos.Z);
+					}
+
+					wr.WriteLine("BEGIN_BLOCK_DATAGRID3D");
+					wr.WriteLine("Wannier");
+					wr.WriteLine("BEGIN_DATAGRID_3D_Wannier");
+					wr.WriteLine("{0}  {1}  {2}", grid.GridSize[0], grid.GridSize[1], grid.GridSize[2]);
+					wr.WriteLine("{0}    {1}    {2}", grid.Origin.X, grid.Origin.Y, grid.Origin.Z);
+					for (int i = 0; i < 3; i++)
+					{
+						Vector3 span = grid.SpanVectors[i] * bohrToAng;
+
+						wr.WriteLine("{0}   {1}   {2}", span.X, span.Y, span.Z);
+					}
+
+					int count = 0;
+					for (int k = 0; k < wan.Data.Depth; k++)
+					{
+						for (int j = 0; j < wan.Data.Height; j++)
+						{
+							for (int i = 0; i < wan.Data.Width; i++)
+							{
+								wr.Write("{0}   ", wan.Data[i, j, k]);
+
+								count++;
+
+								if (count == 3)
+								{
+									wr.WriteLine();
+									count = 0;
+								}
+							}
+						}
+					}
+
+					wr.WriteLine("END_DATAGRID_3D");
+					wr.WriteLine("END_BLOCK_DATAGRID3D");
+				}
+			}
 		}
 	}
 }

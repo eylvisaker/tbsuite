@@ -14,8 +14,52 @@ namespace FploWannierConverter
 
 		List<Atom> sites = new List<Atom>();
 
+		public void FindAtoms(WannierData retval)
+		{
+			const int size = 4;
 
-		internal void FindAtoms(WannierData retval)
+			Vector3 origin = retval.Grid.Origin;
+			Vector3[] span = retval.Grid.SpanVectors;
+
+			retval.Atoms.Clear();
+
+			foreach (Atom atom in sites)
+			{
+				for (int k = -size; k <= size; k++)
+				{
+					for (int j = -size; j <= size; j++)
+					{
+						for (int i = -size; i <= size; i++)
+						{
+							Vector3 v = i * lattice[0] + j * lattice[1] + k * lattice[2];
+							Vector3 loc = atom.Position + v;
+
+							Vector3 diffLoc = loc - origin;
+							bool bad = false;
+
+							for (int l = 0; l < 3; l++)
+							{
+								double dot = span[l].DotProduct(diffLoc);
+								double dist = dot / span[l].Magnitude;
+
+								if (dot < 0) bad = true;
+								if (dist > span[l].Magnitude) bad = true;
+							}
+
+							if (bad)
+								continue;
+
+							Atom a = new Atom();
+							a.Element = atom.Element;
+							a.Position = loc;
+
+							retval.Atoms.Add(a);
+						}
+					}
+				}
+			}
+		}
+		internal void oldFindAtoms(WannierData retval)
 		{
 			for (int i = 0; i < 3; i++)
 			{
