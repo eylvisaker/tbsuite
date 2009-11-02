@@ -12,8 +12,16 @@ namespace FploWannierConverter
 
 		static Atom()
 		{
-			elements.Add("O", 8);
-			elements.Add("Rb", 37);
+			string at = Resources.Atoms;
+			string[] lines = at.Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
+
+			char[] splitters = new char[] {' ', '\r', '\t', '\n'};
+			foreach (var line in lines)
+			{
+				string[] vals = line.Split(splitters, StringSplitOptions.RemoveEmptyEntries);
+
+				elements.Add(vals[1], int.Parse(vals[0]));
+			}
 		}
 
 		/// <summary>
