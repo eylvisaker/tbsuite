@@ -59,7 +59,15 @@ namespace TightBindingSuite
 
 	public class InteractionList : List<InteractionPair>
 	{
+		public InteractionList()
+		{
+			MaxEigenvalue = 0.999;
+		}
 		public bool AdjustInteractions { get; set; }
+		/// <summary>
+		/// Maximum eigenvalue for the denominator in the RPA formula x/(1 - S*x)
+		/// </summary>
+		public double MaxEigenvalue { get; set; }
 	}
 
 

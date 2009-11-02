@@ -104,7 +104,7 @@ G        0       0       0
 # entered.
 # For long range interactions, only enter two values, which are U prime and J.
 [Interaction]
-adjust
+adjust 0.1
 :a a:
 4 
 

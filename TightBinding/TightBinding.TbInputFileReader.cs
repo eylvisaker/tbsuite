@@ -456,9 +456,25 @@ namespace TightBindingSuite
 
 				if (LineType != LineType.NewSubSection && LineType != LineType.NewSection)
 				{
-					if (Line.ToLowerInvariant() == "adjust")
+					if (Line.ToLowerInvariant().StartsWith( "adjust"))
 					{
 						tb.Interactions.AdjustInteractions = true;
+
+						string ltext = Line.ToLowerInvariant().Substring(6);
+						double val;
+
+						if (double.TryParse(ltext, out val) == false)
+						{
+							val = 0.001;
+							
+						}
+
+						if (val <= 0 || val >= 1)
+						{
+							ThrowEx("Interaction adjustment should be between 0 and 1.");
+						}
+
+						tb.Interactions.MaxEigenvalue = 1 - val;
 					}
 
 					ReadNextLine();
