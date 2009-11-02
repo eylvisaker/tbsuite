@@ -224,5 +224,13 @@ namespace ERY.EMath
 			return valid;
 		}
 
+
+		public static Vector3 Parse(string x, string y, string z)
+		{
+			return new Vector3(
+				double.Parse(x),
+				double.Parse(y),
+				double.Parse(z));
+		}
 	}
 }
