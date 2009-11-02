@@ -127,7 +127,7 @@ namespace TightBindingSuite
 			}
 			Output.WriteLine();
 
-			double factor = InteractionAdjustment(rpa, S, C);
+			double factor = InteractionAdjustment(rpa, S, C, tb);
 
 			if (tb.Interactions.AdjustInteractions)
 			{
@@ -208,7 +208,7 @@ namespace TightBindingSuite
 
 		}
 
-		double InteractionAdjustment(List<RpaParams> rpa, Matrix[] S, Matrix[] C)
+		double InteractionAdjustment(List<RpaParams> rpa, Matrix[] S, Matrix[] C, TightBinding tb)
 		{
 			double largest = double.MinValue;
 			RpaParams largestParams = null;
@@ -249,7 +249,7 @@ namespace TightBindingSuite
 			Output.WriteLine("    w = {0}", largestParams.Frequency);
 			Output.WriteLine("    {0} susceptibility", Cdiv ? "Charge" : "Spin");
 
-			largest *= 1.001;
+			largest /= tb.Interactions.MaxEigenvalue;
 
 			Output.WriteLine();
 			return 1 / largest;
