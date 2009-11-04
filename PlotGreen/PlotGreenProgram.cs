@@ -21,16 +21,12 @@ namespace TightBindingSuite
 		}
 		void Run(string inputfile)
 		{
-
 			using (StreamWriter w = new StreamWriter("gplot.out"))
 			{
 				Output.SetFile(w);
 
 				TightBindingSuite.TightBinding tb = new TightBindingSuite.TightBinding();
 				tb.LoadTB(inputfile);
-
-				//if (File.Exists("green.dat") == false)
-				//    throw new FileNotFoundException("The file green.dat is not present.", "green.dat");
 
 				RpaParams p = new RpaParams(0, Vector3.Zero, tb.TemperatureMesh[0], tb.FrequencyMesh[0], tb.MuMesh[0]);
 				KptList kmesh = KptList.GenerateMesh(
@@ -147,6 +143,38 @@ namespace TightBindingSuite
 			KptList plane = KptList.GeneratePlane(
 				tb.Lattice, new Vector3[] { orig, sdir, tdir }, tb.Symmetries, kmesh);
 
+			string tr_filename = string.Format("green.tr.pln");
+			StreamWriter tr = new StreamWriter(tr_filename);
+
+			double lastt = double.MinValue;
+
+			for (int k = 0; k < plane.AllKpts.Count; k++)
+			{
+				Complex trValue = new Complex();
+
+				for (int i = 0; i < green[k].Rows; i++)
+				{
+					trValue += green[k][i, i];
+				}
+				Vector3 kpt = plane.AllKpts[k].Value;
+				List<int> orbitalMap;
+				double s, t;
+
+				plane.GetPlaneST(plane.AllKpts[k], out s, out t);
+
+				int kindex = kmesh.IrreducibleIndex(kpt, tb.Lattice, tb.Symmetries, out orbitalMap);
+
+				if (Math.Abs(t - lastt) > 1e-6)
+				{
+					tr.WriteLine();
+					lastt = t;
+				}
+
+				tr.WriteLine("{0}\t{1}\t{2}", s, t, -trValue.ImagPart);
+			}
+			tr.Close();
+
+
 			for (int i = 0; i < green[0].Rows; i++)
 			{
 				for (int j = 0; j < green[0].Columns; j++)
@@ -161,7 +189,7 @@ namespace TightBindingSuite
 
 					try
 					{
-						double lastt = double.MinValue;
+						lastt = double.MaxValue;
 
 						for (int k = 0; k < plane.AllKpts.Count; k++)
 						{
