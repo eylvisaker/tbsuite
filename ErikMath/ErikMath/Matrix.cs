@@ -385,11 +385,11 @@ namespace ERY.EMath
 				eigenvecs = Matrix.Identity(1);
 				return;
 			}
-			if (AllElementsReal)
-			{
-				UseGeneralMatrix(out eigenvals, out eigenvecs);
-				return;
-			}
+			//if (AllElementsReal)
+			//{
+			//    UseGeneralMatrix(out eigenvals, out eigenvecs);
+			//    return;
+			//}
 			//else
 			//{
 			//	UseAPmethods(out eigenvals, out eigenvecs);
@@ -1252,6 +1252,8 @@ namespace ERY.EMath
 			return retval;
 		}
 
+		internal static int lastDiagonalIter = 0;
+
 		public void EigenValsVecsQR(out Matrix eigenvals, out Matrix eigenvecs)
 		{
 			if (IsHermitian == false)
@@ -1273,11 +1275,13 @@ namespace ERY.EMath
 			double shiftValTolerance = 1;
 			bool doshift = false;
 			double matrixNorm = double.MaxValue, smallestMatrixNorm = double.MaxValue;
-			double matrixNormTolerance = 1e-23 * Rows * Rows;
+			double matrixNormTolerance = 1e-21 * Rows * Rows;
+			int maxIter = Rows * Columns * 100;
+			int rotationStart = 0;
 
 			// construct an upper triangular matrix by doing a generalized Givens rotation
 			// on the tridiagonal form of this matrix
-			for (iter = 0; iter < 500; iter++)
+			for (iter = 0; iter < maxIter; iter++)
 			{
 				if (doshift)
 				{
@@ -1289,17 +1293,29 @@ namespace ERY.EMath
 				R = input;
 				Q = Identity(this.Rows);
 
-				for (int i = 0; i < Rows - 1; i++)
+				for (int i = rotationStart; i < Rows - 1; i++)
 				{
 					Complex Gii, Gij, Gji, Gjj;
 					int j = i + 1;
 					bool nontrivial = GivensRotation(R, i, j, out Gii, out Gij, out Gji, out Gjj);
 
+					//Matrix sampleInput = R * Q;
+
+					//Console.WriteLine("Q:");
+					//Console.WriteLine(Q.ToString("0.0"));
+					//Console.WriteLine("R:");
+					//Console.WriteLine(R.ToString("0.0"));
+
+					//Console.WriteLine("SampleInput {0}:", i);
+					//Console.WriteLine(sampleInput.ToString("0.00"));
+
+				
 					if (nontrivial == false)
 						continue;
 
 					PerformGivensRotation(Q, R, i, j, ref Gii, ref Gij, ref Gji, ref Gjj);
 
+				
 					//System.Diagnostics.Debug.Assert((Q * Q.HermitianConjugate()).IsIdentity);
 					//System.Diagnostics.Debug.Assert((Q * R - input).IsZero);
 				}
@@ -1318,10 +1334,11 @@ namespace ERY.EMath
 					ShiftDiagonal(input, -shift);
 				}
 
+
 				//Console.WriteLine("Transform:");
 				//Console.WriteLine(transform.ToString("0.000"));
-				//Console.WriteLine("Input:");
-				//Console.WriteLine(input.ToString("0.000"));
+				Console.WriteLine("Input:");
+				Console.WriteLine(input.ToString("0.00"));
 				//Console.WriteLine();
 				System.Diagnostics.Debug.Assert((transform * transform.HermitianConjugate()).IsIdentity);
 
@@ -1344,15 +1361,17 @@ namespace ERY.EMath
 				//    smallestMatrixNorm = matrixNorm;
 				//}
 
-				doshift = iter % 3 > 0;
+				doshift = true;// iter % 3 > 0;
 			}
 
+			lastDiagonalIter = iter;
 			//Console.WriteLine("Niter: {0}", iter);
 
 			if (matrixNorm > matrixNormTolerance * 10)
 			{
 				Console.WriteLine("**************************************************");
 				Console.WriteLine("Failed to diagonalize matrix.");
+				Console.WriteLine("Norm: {0}", matrixNorm);
 				Console.WriteLine(this.ToString());
 				Console.WriteLine("**************************************************");
 
@@ -1371,6 +1390,23 @@ namespace ERY.EMath
 			eigenvals = new Matrix(Rows, 1);
 			for (int i = 0; i < Rows; i++)
 				eigenvals[i, 0] = temp[i, i].RealPart;  // take real part here because matrix was hermitian to begin with!
+		}
+
+		private Matrix SwapTransform(int a, int b)
+		{
+			Matrix retval = Matrix.Identity(Rows);
+
+			retval[a, a] = 0;
+			retval[b, b] = 0;
+			retval[a, b] = 1;
+			retval[b, a] = 1;
+
+			return retval;
+		}
+
+		private void ApplySwapTransform(Matrix input, Matrix transform, int i, int first)
+		{
+			throw new NotImplementedException();
 		}
 
 		private void ShiftDiagonal(Matrix input, double shift)
@@ -1428,7 +1464,10 @@ namespace ERY.EMath
 
 			shiftIter++;
 
-			if (foundNonzero == false || shiftIter > 3)
+			if (foundNonzero == false)
+				shiftIter += 5;
+
+			if (shiftIter > 10)
 			{
 				shiftIter = 0;
 
@@ -1473,7 +1512,7 @@ namespace ERY.EMath
 			bool foundNonzero = false;
 			for (int i = col + 1; i < input.Rows; i++)
 			{
-				if (input[i, col].MagnitudeSquared > 1e-12)
+				if (input[i, col].MagnitudeSquared > 1e-28)
 				{
 					foundNonzero = true;
 					break;
@@ -1499,13 +1538,7 @@ namespace ERY.EMath
 				newTransform[vals[i].Key, i] = 1;
 			}
 
-			//Console.WriteLine(newTransform.ToString("0.00"));
-			//Console.WriteLine(eigenvals.ToString("0.00"));
-			//Console.WriteLine(eigenvecs.ToString("0.00"));
-			
 			eigenvecs = eigenvecs * newTransform;
-			//Console.WriteLine(eigenvecs.ToString("0.00"));
-			
 		}
 
 		private bool GivensRotation(Matrix matrix, int rowa, int rowb, out Complex Gaa, out Complex Gab, out Complex Gba, out Complex Gbb)
@@ -1516,7 +1549,7 @@ namespace ERY.EMath
 			Complex a = matrix[rowa, rowa];
 			Complex b = matrix[rowb, rowa];
 
-			if (b.MagnitudeSquared < 1e-26)
+			if (a.MagnitudeSquared == 0 && b.MagnitudeSquared == 0)
 			{
 				Gaa = 1;
 				Gab = 0;
@@ -1533,26 +1566,6 @@ namespace ERY.EMath
 			Gab = s;
 			Gba = -s.Conjugate();
 			Gbb = c.Conjugate();
-			//Complex ratio = a / b;
-			//double rotationAngle = Math.Atan2(b.Magnitude, a.Magnitude);
-			//if (a.ImagPart != 0 || b.ImagPart != 0)
-			//{
-			//    double theta = a.Argument - b.Argument;
-
-			//    Gaa = Math.Cos(rotationAngle);
-			//    Gab = Math.Sin(rotationAngle) * Complex.Exp(new Complex(0, theta));
-			//    Gba = Math.Sin(rotationAngle);
-			//    Gbb = -Math.Cos(rotationAngle) * Complex.Exp(new Complex(0, theta));
-			//}
-			//else
-			//{
-			//    double sign = Math.Sign(a.RealPart * b.RealPart);
-
-			//    Gaa = Math.Cos(rotationAngle);
-			//    Gab = Math.Sin(rotationAngle) * sign;
-			//    Gba = Math.Sin(rotationAngle);
-			//    Gbb = -Math.Cos(rotationAngle) * sign;
-			//}
 
 			return true;
 		}

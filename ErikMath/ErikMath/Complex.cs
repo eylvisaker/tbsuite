@@ -317,12 +317,18 @@ namespace ERY.EMath
 		public static Complex Parse(string val)
 		{
 			val = val.Trim();
-
-			Regex number = new Regex(@"[+-]? *[0-9]+(\.[0-9]+)?([dDeE][+-][0-9]*)?[^i]");
-			Regex cplxr = new Regex(@"[+-]?[0-9]+(\.[0-9]+)?([dDeE][+-][0-9]*)? *[+-] *[0-9]+(\.[0-9]+)?([dDeE][+-][0-9]*)?i");
-			Regex imaginary = new Regex(@"[+-]? *[0-9]+(\.[0-9]+)?([dDeE][+-][0-9]*)?i");
+			if (val.StartsWith("(") && val.EndsWith(")") && val.Length > 2)
+			{
+				val = val.Substring(1, val.Length - 2).Trim();
+				if (val.Length == 0)
+					throw new FormatException("Could not understand value.");
+			}
+			Regex number = new Regex(@"[+-]? *[0-9]+(\.[0-9]+)?([dDeE][+-][0-9]+)?[^i]");
+			Regex cplxr = new Regex(@"[+-]?[0-9]+(\.[0-9]+)?([dDeE][+-][0-9]+)? *[+-] *[0-9]+(\.[0-9]+)?([dDeE][+-][0-9]+)?i");
+			Regex imaginary = new Regex(@"[+-]? *[0-9]+(\.[0-9]+)?([dDeE][+-][0-9]+)?i");
 
 			var m = cplxr.Matches(val, 0);
+			var n = number.Matches(val, 0);
 			var im = imaginary.Matches(val, 0);
 
 			if (m.Count == 0 && im.Count == 0)
@@ -334,16 +340,21 @@ namespace ERY.EMath
 				Complex retval = new Complex(0, double.Parse(imag));
 				return retval;
 			}
-			else
+			else if (m.Count == 1 && n.Count > 0 && im.Count == 1)
 			{
 				m = number.Matches(val, 0);
 
-				string real = m[0].ToString().Trim();
-				string imag = m[1].ToString().Replace(" ", "");
+				string real = n[0].ToString().Trim();
+
+				string imag_text = im[0].ToString();
+				string imag =imag_text.Remove(imag_text.IndexOf('i')).Replace(" ", "");
 
 				Complex retval = new Complex(double.Parse(real), double.Parse(imag));
 				return retval;
 			}
+			else
+				throw new FormatException("Could not understand value.");
+
 		}
 		public static Complex Parse(string real, string imag)
 		{
