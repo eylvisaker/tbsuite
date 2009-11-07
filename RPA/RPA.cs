@@ -257,18 +257,37 @@ namespace TightBindingSuite
 
 		private static double LargestPositiveEigenvalue(Matrix x)
 		{
-			Matrix As = x * x.HermitianConjugate();
 			Matrix eigenvals, eigenvecs;
+			double shift = 5;
+			double lastValue = 0;
+			double thisValue = 0;
+			int iter = 0;
 
-			As.EigenValsVecs(out eigenvals, out eigenvecs);
-			double lv = Math.Sqrt(eigenvals[eigenvals.Rows - 1, 0].RealPart);
+			if (x.IsHermitian)
+			{
+				x.EigenValsVecs(out eigenvals, out eigenvecs);
 
-			Matrix x1 = x + Matrix.Identity(x.Rows) * lv;
-			As = x1 * x1.HermitianConjugate();
-			As.EigenValsVecs(out eigenvals, out eigenvecs);
-			double lv2 = Math.Sqrt(eigenvals[eigenvals.Rows - 1, 0].RealPart);
+				return eigenvals[eigenvals.Rows - 1, 0].Magnitude;
+			}	
 
-			return lv2 - lv;
+			do
+			{
+				lastValue = thisValue;
+
+				Matrix x1 = x + Matrix.Identity(x.Rows) * shift;
+				Matrix As = x1 * x1.HermitianConjugate();
+				As.EigenValsVecs(out eigenvals, out eigenvecs);
+
+				thisValue = Math.Sqrt(eigenvals[eigenvals.Rows - 1, 0].RealPart);
+				thisValue -= shift;
+
+				shift += (thisValue - lastValue);
+				iter++;
+
+			} while (Math.Abs(thisValue - lastValue) > 1e-8 || iter < 2);
+
+			return thisValue;
+
 		}
 
 		delegate Matrix MatrixGetter(RpaParams p);
