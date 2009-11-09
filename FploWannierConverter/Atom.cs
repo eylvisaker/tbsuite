@@ -34,8 +34,16 @@ namespace FploWannierConverter
 		{
 			get
 			{
+				if (string.IsNullOrEmpty(Element))
+					return 0;
+
 				return elements[Element];
 			}
+		}
+
+		public override string ToString()
+		{
+			return string.Format("{0}: {1}", Element, Position.ToString("0.000"));
 		}
 	}
 }

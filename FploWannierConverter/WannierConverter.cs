@@ -248,12 +248,15 @@ namespace FploWannierConverter
 		private void ReadWFdata(StreamReader reader, WannierData retval, int count, int number)
 		{
 			List<double> data = new List<double>();
+			int lineCount = 0;
 
 			while (data.Count < count)
 			{
 				string line = ReadNextLine(reader);
-				var thisdata = SplitLine(line).Select(x => double.Parse(x));
+				string[] text = SplitLine(line);
+				double[] thisdata = ParseStringArray(text);
 				data.AddRange(thisdata);
+				lineCount++;
 			}
 
 			ReadToComment(reader);
@@ -274,6 +277,14 @@ namespace FploWannierConverter
 					}
 				}
 			}
+		}
+
+		private double[] ParseStringArray(string[] text)
+		{
+			double[] retval = new double[text.Length];
+			for (int i = 0; i < retval.Length; i++)
+				retval[i] = double.Parse(text[i]);
+			return retval;
 		}
 
 		private void ReadJunkObject(StreamReader reader, WannierData retval, int count)
@@ -353,7 +364,8 @@ namespace FploWannierConverter
 					wr.WriteLine("Wannier");
 					wr.WriteLine("BEGIN_DATAGRID_3D_Wannier");
 					wr.WriteLine("{0}  {1}  {2}", grid.GridSize[0], grid.GridSize[1], grid.GridSize[2]);
-					wr.WriteLine("{0}    {1}    {2}", grid.Origin.X, grid.Origin.Y, grid.Origin.Z);
+					//wr.WriteLine("{0}    {1}    {2}", grid.Origin.X * bohrToAng, grid.Origin.Y * bohrToAng, grid.Origin.Z * bohrToAng);
+					wr.WriteLine("{0}    {1}    {2}", 0, 0, 0);
 					for (int i = 0; i < 3; i++)
 					{
 						Vector3 span = grid.SpanVectors[i] * bohrToAng;

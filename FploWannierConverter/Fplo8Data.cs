@@ -21,7 +21,9 @@ namespace FploWannierConverter
 			Vector3 origin = retval.Grid.Origin;
 			Vector3[] span = retval.Grid.SpanVectors;
 
-			retval.Atoms.Clear();
+			oldFindAtoms(retval);
+
+			List<Atom> atoms = new List<Atom>();
 
 			foreach (Atom atom in sites)
 			{
@@ -33,13 +35,12 @@ namespace FploWannierConverter
 						{
 							Vector3 v = i * lattice[0] + j * lattice[1] + k * lattice[2];
 							Vector3 loc = atom.Position + v;
-
-							Vector3 diffLoc = loc - origin;
+							loc -= origin;
 							bool bad = false;
 
 							for (int l = 0; l < 3; l++)
 							{
-								double dot = span[l].DotProduct(diffLoc);
+								double dot = span[l].DotProduct(loc);
 								double dist = dot / span[l].Magnitude;
 
 								if (dot < 0) bad = true;
@@ -53,11 +54,26 @@ namespace FploWannierConverter
 							a.Element = atom.Element;
 							a.Position = loc;
 
-							retval.Atoms.Add(a);
+							atoms.Add(a);
 						}
 					}
 				}
 			}
+
+			retval.Atoms.Clear();
+			retval.Atoms.AddRange(atoms);
+		}
+		int AtomSorter(Atom a, Atom b)
+		{
+			if (a.Element != b.Element)
+				return a.Element.CompareTo(b.Element);
+
+			int val = a.Position.Z.CompareTo(b.Position.Z);
+
+			val = (val == 0) ? a.Position.Y.CompareTo(b.Position.Y) : val;
+			val = (val == 0) ? a.Position.X.CompareTo(b.Position.X) : val;
+
+			return val;
 		}
 		internal void oldFindAtoms(WannierData retval)
 		{
@@ -82,6 +98,12 @@ namespace FploWannierConverter
 					Vector3 site_red = ReduceRealSpace(sites[j].Position);
 
 					Vector3 diff = red - site_red;
+
+					for (int k = 0; k < 3; k++)
+					{
+						if (Math.Abs(diff[k] - 1) < 1e-5)
+							diff[k] = 0;
+					}
 
 					if (diff.Magnitude < minDist)
 					{
