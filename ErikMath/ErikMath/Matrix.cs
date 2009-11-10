@@ -1276,7 +1276,7 @@ namespace ERY.EMath
 			bool doshift = false;
 			double matrixNorm = double.MaxValue, smallestMatrixNorm = double.MaxValue;
 			double matrixNormTolerance = 1e-21 * Rows * Rows;
-			int maxIter = Rows * Columns * 100;
+			int maxIter = Rows * Columns * 500;
 			int rotationStart = 0;
 
 			// construct an upper triangular matrix by doing a generalized Givens rotation
@@ -1337,8 +1337,8 @@ namespace ERY.EMath
 
 				//Console.WriteLine("Transform:");
 				//Console.WriteLine(transform.ToString("0.000"));
-				Console.WriteLine("Input:");
-				Console.WriteLine(input.ToString("0.00"));
+				//Console.WriteLine("Input:");
+				//Console.WriteLine(input.ToString("0.00"));
 				//Console.WriteLine();
 				System.Diagnostics.Debug.Assert((transform * transform.HermitianConjugate()).IsIdentity);
 
