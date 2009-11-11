@@ -16,18 +16,21 @@ namespace TightBindingSuite
 							programName;
 			text += new string(' ', 51 - text.Length);
 
-			Console.WriteLine("-----------------------------------------------------");
-			Console.WriteLine("|{0}|", text);
-			Console.WriteLine("|             By Dr. Erik R. Ylvisaker              |");
-			Console.WriteLine("-----------------------------------------------------");
-			Console.WriteLine();
-
 			string filename;
 
 			if (args.Length == 0)
 				filename = AskForFilename();
 			else
 				filename = args[0];
+
+			if (File.Exists(filename) == false)
+			{
+				string altfilename = filename + ".in";
+				if (File.Exists(altfilename))
+					filename = altfilename;
+				else
+					Console.WriteLine("The file " + filename + " does not exist.");
+			}
 
 			if (filename.EndsWith(".out"))
 				throw new Exception("Invalid filename.  It must not have the extension '.out'");
@@ -79,7 +82,11 @@ namespace TightBindingSuite
 					name += ".in";
 					done = true;
 				}
-				else
+				else if (name == "")
+				{
+					System.Environment.Exit(1);
+				}
+				else 
 				{
 					Console.WriteLine("The file '{0}' does not exist.", name);
 				}

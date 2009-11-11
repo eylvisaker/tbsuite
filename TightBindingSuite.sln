@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RPA_Analyze", "RPAAnalyze\R
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FploWannierConverter", "FploWannierConverter\FploWannierConverter.csproj", "{C2269DB4-6591-448B-96C0-3679A230724F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Install", "Install\Install.csproj", "{BA1CA50F-CCFE-46FE-8726-6F41B72202EE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,6 +45,10 @@ Global
 		{C2269DB4-6591-448B-96C0-3679A230724F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C2269DB4-6591-448B-96C0-3679A230724F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C2269DB4-6591-448B-96C0-3679A230724F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BA1CA50F-CCFE-46FE-8726-6F41B72202EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BA1CA50F-CCFE-46FE-8726-6F41B72202EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BA1CA50F-CCFE-46FE-8726-6F41B72202EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BA1CA50F-CCFE-46FE-8726-6F41B72202EE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

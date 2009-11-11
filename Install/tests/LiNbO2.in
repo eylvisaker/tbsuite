@@ -1,0 +1,212 @@
+
+# Lattice section
+# Enter direct lattice vectors in cartesian coordinates.
+# This section must be first.
+[Lattice]
+ 4.74600   -2.74010   0
+ 0.00000    5.48021   0
+ 0          0         19.7665352674
+ 
+# Locations of orbitals and their names / symmetry designations, etc.
+# Positions are in cartesian coordinates
+# First three parameters are numbers indicating the location of the orbital.
+# Fourth parameter is the name of the orbital.
+# Fifth parameter is the symmetry designation (Wyckoff position)
+# Sixth parameter is the orbital symmetry (eg. dxy)
+# Seventh parameter is the interaction group.
+[Orbitals]
+  1.581999136091590     -2.740102881240705      4.941633816858237   Nb1  2c  dz2   a
+ -1.581999136091590      2.740102881240705     -4.941633816858237   Nb2  2c  dz2   b
+
+# Symmetries in the crystal.
+# The numbers following the symmetry name indicate how the orbitals transform 
+# under the symmetry.  If you specify the symmetry operation, you must specify
+# one number for each orbital.  The orbital transforms are optional if the 
+# orbitals transform into themselves.
+[Symmetry]
+E
+#C2(90) 2 1
+#C2(0)  2 1
+C2(z)
+#C5/6(z)
+#C2/3(z)
+#C1/3(z)
+#C1/6(z)
+C2(xy[30])  2 1
+#C2(xy[60])  2 1
+#C2(xy[-60]) 2 1
+#C2(xy[-30]) 2 1
+I 2 1
+#s(90)
+#s(0)
+s(z) 2 1
+#S1/3(z)
+#S1/6(z)
+#S5/6(z)
+#S5/3(z)
+#s(xy[30])
+#s(xy[60])
+#s(xy[-60])
+#s(xy[-30])
+
+# Each hopping is followed by a list of Bravais lattice vectors.
+# Those vectors must be composed of integer values.
+[Hoppings]
+:1 1:
+T=      4.74600      2.74010      0.00000  hop=             0.060512355209722
+T=     -4.74600     -2.74010      0.00000  hop=             0.060512355209722
+T=      0.00000      5.48021      0.00000  hop=             0.060512355209722
+T=     -4.74600      2.74010      0.00000  hop=             0.060512355209722
+T=      4.74600     -2.74010      0.00000  hop=             0.060512355209722
+T=      0.00000     -5.48021      0.00000  hop=             0.060512355209722
+T=     -4.74600      8.22031      0.00000  hop=             0.093048561967512
+T=      9.49199      0.00000      0.00000  hop=             0.093048561967512
+T=      4.74600     -8.22031      0.00000  hop=             0.093048561967512
+T=     -4.74600     -8.22031      0.00000  hop=             0.093048561967512
+T=     -9.49199      0.00000      0.00000  hop=             0.093048561967512
+T=      4.74600      8.22031      0.00000  hop=             0.093048561967512
+T=     -9.49199      5.48021      0.00000  hop=             0.040677263754090
+T=      9.49199      5.48021      0.00000  hop=             0.040677263754090
+T=      9.49199     -5.48021      0.00000  hop=             0.040677263754090
+T=      0.00000    -10.96041      0.00000  hop=             0.040677263754090
+T=      0.00000     10.96041      0.00000  hop=             0.040677263754090
+T=     -9.49199     -5.48021      0.00000  hop=             0.040677263754090
+T=     14.23799     -2.74010      0.00000  hop=            -0.013726580999816
+T=     -4.74600     13.70051      0.00000  hop=            -0.013726580999816
+T=     14.23799      2.74010      0.00000  hop=            -0.013726580999816
+T=     -9.49199    -10.96041      0.00000  hop=            -0.013726580999816
+T=    -14.23799     -2.74010      0.00000  hop=            -0.013726580999816
+T=     -4.74600    -13.70051      0.00000  hop=            -0.013726580999816
+T=     -9.49199     10.96041      0.00000  hop=            -0.013726580999816
+T=    -14.23799      2.74010      0.00000  hop=            -0.013726580999816
+T=      4.74600    -13.70051      0.00000  hop=            -0.013726580999816
+T=      4.74600     13.70051      0.00000  hop=            -0.013726580999816
+T=      9.49199    -10.96041      0.00000  hop=            -0.013726580999816
+T=      9.49199     10.96041      0.00000  hop=            -0.013726580999816
+
+:1 2:
+T=      1.58200      2.74010      9.88327  hop=             0.015914623720138
+T=      1.58200     -2.74010     -9.88327  hop=             0.015914623720138
+T=      1.58200      2.74010     -9.88327  hop=             0.015914623720138
+T=     -3.16400      0.00000      9.88327  hop=             0.015914623720138
+T=      1.58200     -2.74010      9.88327  hop=             0.015914623720138
+T=     -3.16400      0.00000     -9.88327  hop=             0.015914623720138
+T=     -3.16400      5.48021      9.88327  hop=            -0.021012087147136
+T=     -3.16400     -5.48021     -9.88327  hop=            -0.021012087147136
+T=      6.32800      0.00000      9.88327  hop=            -0.021012087147136
+T=      6.32800      0.00000     -9.88327  hop=            -0.021012087147136
+T=     -3.16400     -5.48021      9.88327  hop=            -0.021012087147136
+T=     -3.16400      5.48021     -9.88327  hop=            -0.021012087147136
+T=     11.07399     -2.74010     -9.88327  hop=            -0.006338950404084
+T=     11.07399     -2.74010      9.88327  hop=            -0.006338950404084
+T=     11.07399      2.74010      9.88327  hop=            -0.006338950404084
+T=     11.07399      2.74010     -9.88327  hop=            -0.006338950404084
+T=     -7.91000      8.22031     -9.88327  hop=            -0.006338950404084
+T=     -3.16400     10.96041      9.88327  hop=            -0.006338950404084
+T=     -7.91000      8.22031      9.88327  hop=            -0.006338950404084
+T=     -3.16400    -10.96041      9.88327  hop=            -0.006338950404084
+T=     -7.91000     -8.22031     -9.88327  hop=            -0.006338950404084
+T=     -3.16400     10.96041     -9.88327  hop=            -0.006338950404084
+T=     -7.91000     -8.22031      9.88327  hop=            -0.006338950404084
+T=     -3.16400    -10.96041     -9.88327  hop=            -0.006338950404084
+T=    -12.65599      0.00000     -9.88327  hop=            -0.008286437132624
+T=    -12.65599      0.00000      9.88327  hop=            -0.008286437132624
+T=      6.32800     10.96041     -9.88327  hop=            -0.008286437132624
+T=      6.32800    -10.96041      9.88327  hop=            -0.008286437132624
+T=      6.32800     10.96041      9.88327  hop=            -0.008286437132624
+T=      6.32800    -10.96041     -9.88327  hop=            -0.008286437132624
+
+:2 2:
+T=      4.74600      2.74010      0.00000  hop=             0.060512355209722
+T=     -4.74600     -2.74010      0.00000  hop=             0.060512355209722
+T=      0.00000      5.48021      0.00000  hop=             0.060512355209722
+T=     -4.74600      2.74010      0.00000  hop=             0.060512355209722
+T=      4.74600     -2.74010      0.00000  hop=             0.060512355209722
+T=      0.00000     -5.48021      0.00000  hop=             0.060512355209722
+T=     -4.74600      8.22031      0.00000  hop=             0.093048561967512
+T=      9.49199      0.00000      0.00000  hop=             0.093048561967512
+T=      4.74600     -8.22031      0.00000  hop=             0.093048561967512
+T=     -4.74600     -8.22031      0.00000  hop=             0.093048561967512
+T=     -9.49199      0.00000      0.00000  hop=             0.093048561967512
+T=      4.74600      8.22031      0.00000  hop=             0.093048561967512
+T=     -9.49199      5.48021      0.00000  hop=             0.040677263754090
+T=      9.49199      5.48021      0.00000  hop=             0.040677263754090
+T=      9.49199     -5.48021      0.00000  hop=             0.040677263754090
+T=      0.00000    -10.96041      0.00000  hop=             0.040677263754090
+T=      0.00000     10.96041      0.00000  hop=             0.040677263754090
+T=     -9.49199     -5.48021      0.00000  hop=             0.040677263754090
+T=     14.23799     -2.74010      0.00000  hop=            -0.013726580999816
+T=     -4.74600     13.70051      0.00000  hop=            -0.013726580999816
+T=     14.23799      2.74010      0.00000  hop=            -0.013726580999816
+T=     -9.49199    -10.96041      0.00000  hop=            -0.013726580999816
+T=    -14.23799     -2.74010      0.00000  hop=            -0.013726580999816
+T=     -4.74600    -13.70051      0.00000  hop=            -0.013726580999816
+T=     -9.49199     10.96041      0.00000  hop=            -0.013726580999816
+T=    -14.23799      2.74010      0.00000  hop=            -0.013726580999816
+T=      4.74600    -13.70051      0.00000  hop=            -0.013726580999816
+T=      4.74600     13.70051      0.00000  hop=            -0.013726580999816
+T=      9.49199    -10.96041      0.00000  hop=            -0.013726580999816
+T=      9.49199     10.96041      0.00000  hop=            -0.013726580999816
+
+  
+# Optional section
+# The path through K-space for integration is given as a series of points
+# in Cartesian coordinates.  These values will be multiplied by 2*pi
+# internally.
+[KPath]
+G        0              0             0      
+M        0.105351928    0             0
+K        0.105351928    0.060824964   0
+G        0              0             0
+A        0              0             0.025295276665
+L        0.105351928    0             0.025295276665
+H        0.105351928    0.060824964   0.025295276665
+A        0              0             0.025295276665
+
+# Chemical potential for both tightbinding and RPA calculation.
+[Mu]
+0
+
+# Gives a k-mesh for calculating the density of states and doing RPA.
+[KMesh]
+50 50 10 1 1 1
+
+# Gives data for a plane of q-points in the BZ to plot.  There must be
+# four sets of three numbers here.
+# The first three numbers are the q-point mesh from which points are taken.
+# The next three groups of three numbers are q-points which are constrained to be
+# on the plane.
+[QPlane]
+10 10 1
+0   0   0  
+0.5 0   0
+0   0.5 0
+
+# Frequency mesh for RPA calculation
+# You may enter just a single number to calculate a single frequency,
+# or something of the form:
+#    lower_bound  upper_bound  num_points
+[Frequency]
+0.0
+
+# Temperature mesh for RPA calculation
+# You may enter just a single number to calculate a single frequency,
+# or something of the form:
+#    lower_bound  upper_bound  num_points
+[Temperature]
+0.005
+
+# Hubbard model parameters for RPA calculation
+# If the word "adjust" is the first word, then the interaction will 
+# be scaled to avoid the divergence in the RPA geometric series (recommended).
+# Each section is followed by U, U prime, J, J prime. (don't enter commas).
+# After the interaction parameters, vectors for long range interactions can be
+# entered.
+# For long range interactions, only enter two values, which are U prime and J.
+[Interaction]
+adjust
+:a a:
+2
+:b b:
+2
+

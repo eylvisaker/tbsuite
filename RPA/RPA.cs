@@ -263,12 +263,27 @@ namespace TightBindingSuite
 			double thisValue = 0;
 			int iter = 0;
 
+			
 			if (x.IsHermitian)
 			{
 				x.EigenValsVecs(out eigenvals, out eigenvecs);
 
 				return eigenvals[eigenvals.Rows - 1, 0].Magnitude;
-			}	
+			}
+			else if (Matrix.CanDiagonalizeNonHermitian)
+			{
+				x.EigenValsVecs(out eigenvals, out eigenvecs);
+
+				double largest = double.MinValue;
+
+				for (int i = 0; i < eigenvals.Rows; i++)
+				{
+					if (eigenvals[i, 0].RealPart > largest)
+						largest = eigenvals[i, 0].RealPart;
+				}
+
+				return largest;
+			}
 
 			do
 			{

@@ -1,0 +1,9 @@
+﻿#!/bin/bash
+
+mono --version > /dev/null
+
+if [ "$?" -ne "0" ]; then
+	echo "You must have mono installed."
+	exit 1
+fi
+mono exe/Install.exe
