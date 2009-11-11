@@ -22,6 +22,8 @@ namespace TestMath
 			bool done = false;
 			Console.WriteLine("Math tester");
 			Console.WriteLine();
+			Console.WriteLine("Using {0} diagonalizer.", ERY.EMath.MatrixDiagonalizers.DiagonalizerFactory.PrimaryDiagonalizer);
+			Console.WriteLine();
 
 			while (!done)
 			{
@@ -100,8 +102,8 @@ namespace TestMath
 
 		private  void RunRandomMatrices()
 		{
-			const int maxSize = 60;
-			const int maxCount = 50;
+			const int maxSize = 200;
+			const int maxCount = 5;
 
 			int failcount = 0;
 
@@ -132,7 +134,7 @@ namespace TestMath
 								try
 								{
 									RunMatrixTestCase(test, false);
-									totalIter += Matrix.lastDiagonalIter;
+									totalIter += ERY.EMath.MatrixDiagonalizers.BuiltInDiagonalizer.lastDiagonalIter;
 								}
 								catch
 								{
@@ -339,15 +341,15 @@ namespace TestMath
 			CheckEigenvectorDifference(eigenvals, eigenvecs, m.Eigenvalues, m.Eigenvectors);
 		}
 
-		private  void CheckEigenvectorDifference(Matrix eigenvals_a, Matrix eigenvecs_a, Matrix eigenvals_b, Matrix eigenvecs_b)
+		private  void CheckEigenvectorDifference(Matrix vals_test, Matrix vecs_test, Matrix vals_ref, Matrix vecs_ref)
 		{
-			Matrix dot = eigenvecs_a.HermitianConjugate() * eigenvecs_b;
-			Matrix evDiff = new Matrix(eigenvecs_a.Rows, 1);
+			Matrix dot = vecs_ref.HermitianConjugate() * vecs_test;
+			Matrix evDiff = new Matrix(vecs_test.Rows, 1);
 			bool badVector = false;
 			bool badValue = false;
 
-			AssertEigenvectorsOrthoNormal(eigenvecs_a);
-			AssertEigenvectorsOrthoNormal(eigenvecs_b);
+			AssertEigenvectorsOrthoNormal(vecs_test);
+			AssertEigenvectorsOrthoNormal(vecs_ref);
 
 			for (int i = 0; i < dot.Rows; i++)
 			{
@@ -361,14 +363,14 @@ namespace TestMath
 					if (mag > 1e-4 && mag_one < 1e-4)
 					{
 						found = true;
-						evDiff[i, 0] = eigenvals_a[i, 0] - eigenvals_b[j, 0];
+						evDiff[i, 0] = vals_test[j, 0] - vals_ref[i, 0];
 
 						if (evDiff[i, 0].Magnitude > 1e-4)
 							badValue = true;
 					}
 					else if (mag > 1e-4 && mag_one > 1e-4)
 					{
-						evDiff[i, 0] = eigenvals_a[i, 0] - eigenvals_b[j, 0];
+						evDiff[i, 0] = vals_test[j, 0] - vals_ref[i, 0];
 
 						if (evDiff[i, 0].Magnitude > 1e-4)
 							badValue = true;
@@ -386,12 +388,12 @@ namespace TestMath
 				Console.WriteLine("Eigenvectors differ:");
 				Console.WriteLine();
 				Console.WriteLine("Eigenvalues:");
-				Console.WriteLine(eigenvals_a.ToString());
+				Console.WriteLine(vals_test.ToString());
 				Console.WriteLine("Eigenvectors:");
-				Console.WriteLine(eigenvecs_a.ToString("0.0000"));
+				Console.WriteLine(vecs_test.ToString("0.0000"));
 				Console.WriteLine();
 				Console.WriteLine("Reference:");
-				Console.WriteLine(eigenvecs_b.ToString("0.0000"));
+				Console.WriteLine(vecs_ref.ToString("0.0000"));
 				Console.WriteLine();
 				Console.WriteLine("Dot products:");
 				Console.WriteLine(dot.ToString("0.0000"));
@@ -401,9 +403,9 @@ namespace TestMath
 			{
 				Console.WriteLine("Eigenvalues differ:");
 				Console.WriteLine("Eigenvalues:");
-				Console.WriteLine(eigenvals_a.ToString());
+				Console.WriteLine(vals_test.ToString());
 				Console.WriteLine("Reference:");
-				Console.WriteLine(eigenvals_b.ToString());
+				Console.WriteLine(vals_ref.ToString());
 				Console.WriteLine("Difference:");
 				Console.WriteLine(evDiff.ToString());
 				throw new Exception();

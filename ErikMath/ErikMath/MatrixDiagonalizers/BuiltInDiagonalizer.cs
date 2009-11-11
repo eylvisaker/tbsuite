@@ -309,5 +309,11 @@ namespace ERY.EMath.MatrixDiagonalizers
 				eigenvals[i, 0] = temp[i, i].RealPart;  // take real part here because matrix was hermitian to begin with!
 		}
 
+
+		public string Name
+		{
+			get { return "built-in"; }
+		}
+
 	}
 }
