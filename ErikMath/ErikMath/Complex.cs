@@ -93,11 +93,24 @@ namespace ERY.EMath
 				return x * x + y * y;
 			}
 		}
+		/// <summary>
+		/// Returns the argument of the complex number: Atan y/x)
+		/// </summary>
 		public double Argument
 		{
 			get
 			{
 				return Math.Atan2(y, x);
+			}
+		}
+		/// <summary>
+		/// Returns the phase of the complex number: this / Magnitude.
+		/// </summary>
+		public Complex Phase
+		{
+			get
+			{
+				return this / Magnitude;
 			}
 		}
 
