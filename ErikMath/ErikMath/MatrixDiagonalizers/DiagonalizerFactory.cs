@@ -22,6 +22,7 @@ namespace ERY.EMath.MatrixDiagonalizers
 			initialized = true;
 		}
 
+
 		private static void AddDiagonalizer(IMatrixDiagonalizer diag)
 		{
 			Matrix x = Matrix.Identity(3);
@@ -68,6 +69,17 @@ namespace ERY.EMath.MatrixDiagonalizers
 					Initialize();
 
 				return Diagonalizers[0].Name;
+			}
+		}
+
+
+		public static bool CanDiagonalizeNonHermitian
+		{
+			get
+			{
+				Initialize();
+
+				return Diagonalizers[0].CanDiagonalizeNonHermitian;
 			}
 		}
 	}

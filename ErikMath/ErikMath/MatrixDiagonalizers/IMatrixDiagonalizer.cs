@@ -8,5 +8,6 @@ namespace ERY.EMath.MatrixDiagonalizers
 	{
 		string Name { get; }
 		void EigenValsVecs(Matrix matrix, out Matrix eigenvals, out Matrix eigenvecs);
+		bool CanDiagonalizeNonHermitian { get; }
 	}
 }

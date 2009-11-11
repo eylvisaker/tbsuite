@@ -19,6 +19,11 @@ namespace ERY.EMath
 		private bool mValidDeterminant = false;
 		private Complex mDeterminant;
 
+		public static bool CanDiagonalizeNonHermitian
+		{
+			get { return MatrixDiagonalizers.DiagonalizerFactory.CanDiagonalizeNonHermitian; }
+		}
+
 		public Matrix()
 		{		}
 

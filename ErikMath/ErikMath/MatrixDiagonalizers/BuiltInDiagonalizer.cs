@@ -315,5 +315,12 @@ namespace ERY.EMath.MatrixDiagonalizers
 			get { return "built-in"; }
 		}
 
+
+
+		public bool CanDiagonalizeNonHermitian
+		{
+			get { return false; }
+		}
+
 	}
 }
