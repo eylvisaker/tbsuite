@@ -1,0 +1,17 @@
+#!/bin/bash
+
+rm -vrf tbsuite  
+mkdir tbsuite  
+mkdir tbsuite/tests
+
+cp -v install tbsuite
+cp -v tests/*.in tbsuite/tests
+cp -vr script tbsuite
+cp -vr exe tbsuite
+
+rm -vf tbsuite/exe/*.vshost.exe
+rm -vf tbsuite/exe/*.pdb
+
+tar zcvf tbsuite.tar.gz tbsuite
+
+

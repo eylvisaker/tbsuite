@@ -195,6 +195,7 @@ T   0          0.100523353 0.0183083
 # entered.
 # For long range interactions, only enter two values, which are U prime and J.
 [Interaction]
+adjust
 :a a:
 1.2 1.0 0.2 0.2
 :b b:
