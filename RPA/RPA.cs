@@ -2,12 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using ERY.EMath;
 
 namespace TightBindingSuite
 {
 	public class RPA
 	{
+		int threads;
+
 		static void Main(string[] args)
 		{
 			using (BootStrap b = new BootStrap())
@@ -30,6 +33,8 @@ namespace TightBindingSuite
 
 			bool ranRPA = false;
 
+			SetCpus();
+
 			if (tb.QPlane != null && tb.QPlane.Kpts.Count > 0)
 			{
 				RunRpa(tb, tb.QPlane);
@@ -39,6 +44,29 @@ namespace TightBindingSuite
 			if (!ranRPA)
 				Output.WriteLine("No q-points defined, so we will not run the RPA.");
 
+		}
+
+		private void SetCpus()
+		{
+			const string threadsFile = "rpa_threads";
+
+			if (File.Exists(threadsFile))
+			{
+				string text = File.ReadAllText(threadsFile);
+
+				if (int.TryParse(text, out threads))
+					return;
+			}
+
+			threads = Environment.ProcessorCount - 1;
+
+			if (threads < 1)
+				threads = 1;
+
+			using (var w = new StreamWriter(threadsFile))
+			{
+				w.WriteLine(threads.ToString());
+			}
 		}
 
 		public void RunRpa(TightBinding tb, KptList qpts)
@@ -104,28 +132,37 @@ namespace TightBindingSuite
 
 			Output.WriteLine("Calculating X0...");
 
-			System.Diagnostics.Stopwatch watch = new System.Diagnostics.Stopwatch();
-			watch.Start();
-			for (int i = 0; i < rpa.Count; i++)
-			{
-				SetTemperature(tb, rpa[i].Temperature, rpa[i].ChemicalPotential);
+			
+			RpaThreadInfo[] threadInfos = CreateThreadInfos(tb, rpa, qpts);
 
-				rpa[i].X0 = CalcX0(tb, rpa[i].Frequency, qpts.Kpts[rpa[i].Qindex]);
+			Output.WriteLine("Using {0} threads.", threads);
+
+			for (int i = 0; i < threadInfos.Length; i++)
+			{
+				RunRpaThread(threadInfos[i]);
 
 				if (i == 0)
-				{
-					long time = watch.ElapsedTicks * rpa.Count;
-					TimeSpan s = new TimeSpan(time);
-
-					Output.WriteLine("Estimated total time {0:+hh.mm.ss}", s);
-				}
-				Complex val = rpa[i].X0.Trace();
-
-				Output.Write("q = {0}, T = {1:0.000}, mu = {2:0.000}, omega = {3:0.0000}",
-					rpa[i].Qindex+1, rpa[i].Temperature, rpa[i].ChemicalPotential, rpa[i].Frequency);
-				Output.WriteLine(", Tr(X_0) = {0}", val.ToString("0.0000"));
+					Thread.Sleep(20);
 			}
+			
+			bool threadsRunning;
+
+			do
+			{
+				threadsRunning = false;
+
+				for (int i = 0; i < threadInfos.Length; i++)
+				{
+					if (threadInfos[i].Thread.ThreadState == ThreadState.Running)
+						threadsRunning = true;
+				}
+
+				Thread.Sleep(10);
+
+			} while (threadsRunning);
+
 			Output.WriteLine();
+			Output.WriteLine("Bare susceptibility calculation completed.");
 
 			double factor = InteractionAdjustment(rpa, S, C, tb);
 
@@ -207,7 +244,65 @@ namespace TightBindingSuite
 			Output.WriteLine("    Frequency: {0}", largestParams.Frequency);
 			Output.WriteLine("    Chemical Potential: {0}", largestParams.ChemicalPotential);
 			Output.WriteLine("    Q: {0}", largestParams.QptValue);
+		}
 
+		private void RunRpaThread(RpaThreadInfo info)
+		{
+			Thread t = new Thread(RpaChi0Thread);
+			info.Thread = t;
+			info.Thread.Start(info);
+		}
+
+		private void RpaChi0Thread(object obj)
+		{
+			RpaThreadInfo info = (RpaThreadInfo)obj;
+
+			System.Diagnostics.Stopwatch watch = new System.Diagnostics.Stopwatch();
+			watch.Start();
+			TightBinding tb = info.tb;
+			List<RpaParams> rpa = info.RpaParams;
+			KptList qpts = info.qpts;
+
+			for (int i = 0; i < rpa.Count; i++)
+			{
+				SetTemperature(tb, rpa[i].Temperature, rpa[i].ChemicalPotential);
+
+				rpa[i].X0 = CalcX0(tb, rpa[i].Frequency, qpts.Kpts[rpa[i].Qindex]);
+
+				if (i == 0 && info.PrimaryThread)
+				{
+					long time = watch.ElapsedTicks * rpa.Count;
+					TimeSpan s = new TimeSpan(time);
+
+					Output.WriteLine("Estimated total time {0:+hh.mm.ss}", s);
+				}
+				Complex val = rpa[i].X0.Trace();
+
+				Output.Write("q = {0}, T = {1:0.000}, mu = {2:0.000}, omega = {3:0.0000}",
+					rpa[i].Qindex + 1, rpa[i].Temperature, rpa[i].ChemicalPotential, rpa[i].Frequency);
+				Output.WriteLine(", Tr(X_0) = {0}", val.ToString("0.0000"));
+			}
+		}
+
+		private RpaThreadInfo[] CreateThreadInfos(TightBinding tb, List<RpaParams> rpa, KptList qpts)
+		{
+			RpaThreadInfo[] infos = new RpaThreadInfo[threads];
+
+			for (int i = 0; i < infos.Length; i++)
+			{
+				infos[i] = new RpaThreadInfo();
+				infos[i].tb = tb.Clone();
+				infos[i].qpts = qpts;
+			}
+
+			infos[0].PrimaryThread = true;
+
+			for (int i = 0; i < rpa.Count; i++)
+			{
+				infos[i % threads].RpaParams.Add(rpa[i]);
+			}
+
+			return infos;
 		}
 
 		double InteractionAdjustment(List<RpaParams> rpa, Matrix[] S, Matrix[] C, TightBinding tb)
@@ -666,6 +761,9 @@ namespace TightBindingSuite
 								_S[i, j] -= 0.25 * interaction.Exchange * structureFactor;
 								_C[i, j] += (2 * interaction.InterorbitalU - 0.5 * interaction.Exchange) * structureFactor;
 							}
+
+							_S[j, i] = _S[i, j];
+							_C[j, i] = _C[j, i];
 						}
 					}
 				}
