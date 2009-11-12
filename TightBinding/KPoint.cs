@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using ERY.EMath;
 
 namespace TightBindingSuite
@@ -16,6 +17,27 @@ namespace TightBindingSuite
 		{
 			Value = v;	
 		}
+
+
+		public KPoint Clone()
+		{
+			KPoint retval = new KPoint(Value);
+
+			retval.Weight = Weight;
+			retval.Name = Name;
+
+			foreach (var transform in mOrbitalTransform)
+			{
+				List<int> newxform = new List<int>();
+				newxform.AddRange(transform);
+				retval.mOrbitalTransform.Add(newxform);
+			}
+
+			retval.wfk.AddRange(wfk.Select(x => x.Clone()));
+
+			return retval;
+		}
+
 		public static implicit  operator Vector3(KPoint p)
 		{
 			return p.Value;	
@@ -101,6 +123,7 @@ namespace TightBindingSuite
 				this.wfk.Add(wfk);
 			}
 		}
+
 
 	}
 }

@@ -31,6 +31,11 @@ namespace TightBindingSuite
 			set { fermiFunction = value; }
 		}
 
+		public Wavefunction Clone()
+		{
+			return Clone(null);
+		}
+
 		public Wavefunction Clone(List<int> orbitalMap)
 		{
 			Wavefunction retval = new Wavefunction(coeffs.Length);
@@ -50,6 +55,7 @@ namespace TightBindingSuite
 
 			return retval;
 		}
+
 
 	}
 }

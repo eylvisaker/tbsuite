@@ -28,5 +28,13 @@ namespace TightBindingSuite
 				return mInverse;
 			}
 		}
+
+		public Symmetry Clone()
+		{
+			Symmetry x = new Symmetry(Value.Clone());
+			x.OrbitalTransform.AddRange(OrbitalTransform);
+
+			return x;
+		}
 	}
 }

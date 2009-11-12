@@ -19,7 +19,13 @@ namespace TightBindingSuite
 			
 			CalculateReciprocalVectors();
 		}
-		
+
+		internal Lattice Clone()
+		{
+			Lattice retval = new Lattice(a1, a2, a3);
+			return retval;
+		}
+
 		void CalculateReciprocalVectors()
 		{
 			Matrix m = new Matrix(3, 3);
@@ -31,14 +37,6 @@ namespace TightBindingSuite
 			g1 = m.GetColumnAsVector3(0);
 			g2 = m.GetColumnAsVector3(1);
 			g3 = m.GetColumnAsVector3(2);
-
-			Output.WriteLine("a1: {0}", a1);
-			Output.WriteLine("a2: {0}", a2);
-			Output.WriteLine("a3: {0}", a3);
-			Output.WriteLine("g1: {0}", g1);
-			Output.WriteLine("g2: {0}", g2);
-			Output.WriteLine("g3: {0}", g3);
-			
 		}
 		
 		public Vector3 A1 { get { return a1; }}
@@ -75,5 +73,6 @@ namespace TightBindingSuite
 
 			return retval;
 		}
+
 	}
 }

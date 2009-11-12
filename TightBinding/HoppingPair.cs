@@ -21,7 +21,15 @@ namespace TightBindingSuite
 		public int Right { get { return right; } }
 		
 		public List<HoppingValue> Hoppings { get { return hoppings; } }
-		
+
+
+		public HoppingPair Clone()
+		{
+			HoppingPair p = new HoppingPair(left, right);
+			p.hoppings.AddRange(hoppings.Select(x => x.Clone()));
+			return p;
+		}
+
 		public double GetHopping(Vector3 R)
 		{
 			foreach(var hop in hoppings)
@@ -88,10 +96,21 @@ namespace TightBindingSuite
 			
 			return false;
 		}
+
 	}
 	
 	public class HoppingPairList : List<HoppingPair>
 	{
+
+		public HoppingPairList Clone()
+		{
+			HoppingPairList hops = new HoppingPairList();
+
+			hops.AddRange(this.Select(x => x.Clone()));
+
+			return hops;
+		}
+
 		public override bool Equals (object obj)
 		{
 			if (obj is HoppingPairList)
@@ -202,6 +221,7 @@ namespace TightBindingSuite
 			min = emin - tsum;
 			max = emax + tsum;
 		}
+
 	}
 	
 	public class HoppingValue

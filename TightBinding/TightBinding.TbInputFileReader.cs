@@ -382,6 +382,18 @@ namespace TightBindingSuite
 
 				tb.lattice = new Lattice(a[0], a[1], a[2]);
 
+				Output.WriteLine("Direct lattice vectors:");
+				Output.WriteLine("    a1: {0}", tb.lattice.A1);
+				Output.WriteLine("    a2: {0}", tb.lattice.A2);
+				Output.WriteLine("    a3: {0}", tb.lattice.A3);
+				Output.WriteLine();
+
+				Output.WriteLine("Reciprocal lattice vectors:");
+				Output.WriteLine("    g1: {0}", tb.lattice.G1);
+				Output.WriteLine("    g2: {0}", tb.lattice.G2);
+				Output.WriteLine("    g3: {0}", tb.lattice.G3);
+				Output.WriteLine();
+
 			}
 			void ReadOrbitalsSection()
 			{

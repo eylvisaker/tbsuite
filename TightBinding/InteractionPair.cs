@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using ERY.EMath;
 
@@ -15,6 +16,7 @@ namespace TightBindingSuite
 
 		public double HubbardU, InterorbitalU, Exchange, PairHopping;
 
+		InteractionPair() { }
 		public InteractionPair(OrbitalList orbitals, string leftGroup, string rightGroup)
 		{
 			mLeftGroup = leftGroup;
@@ -23,17 +25,35 @@ namespace TightBindingSuite
 			mOrbitalsLeft.AddRange(orbitals.OrbitalsInInteractionGroup(leftGroup));
 			mOrbitalsRight.AddRange(orbitals.OrbitalsInInteractionGroup(rightGroup));
 		}
+		internal InteractionPair Clone()
+		{
+			InteractionPair p = new InteractionPair();
+
+			p.mOrbitalsLeft.AddRange(mOrbitalsLeft);
+			p.mOrbitalsRight.AddRange(mOrbitalsRight);
+			p.mVectors.AddRange(mVectors);
+
+			p.mLeftGroup = mLeftGroup;
+			p.mRightGroup = mRightGroup;
+
+			p.HubbardU = HubbardU;
+			p.InterorbitalU = InterorbitalU;
+			p.Exchange = Exchange;
+			p.PairHopping = PairHopping;
+
+			return p;
+		}
 
 		public List<int> OrbitalsLeft { get { return mOrbitalsLeft;} }
 		public List<int> OrbitalsRight { get { return mOrbitalsRight; } }
+		public List<Vector3> Vectors { get { return mVectors; } }
 
 		public bool OnSite
 		{
 			get { return mVectors.Count == 0; }
 		}
 
-		public List<Vector3> Vectors { get { return mVectors; } }
-
+		
 		public double StructureFactor(Vector3 q)
 		{
 			if (OnSite)
@@ -55,6 +75,7 @@ namespace TightBindingSuite
 				mLeftGroup, mOrbitalsLeft.Count, mRightGroup, mOrbitalsRight.Count,
 				HubbardU, InterorbitalU, Exchange, PairHopping);
 		}
+
 	}
 
 	public class InteractionList : List<InteractionPair>
@@ -68,6 +89,15 @@ namespace TightBindingSuite
 		/// Maximum eigenvalue for the denominator in the RPA formula x/(1 - S*x)
 		/// </summary>
 		public double MaxEigenvalue { get; set; }
+
+		internal InteractionList Clone()
+		{
+			InteractionList L = new InteractionList();
+
+			L.AddRange(this.Select(x => x.Clone()));
+
+			return L;
+		}
 	}
 
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using ERY.EMath;
 
@@ -24,6 +25,13 @@ namespace TightBindingSuite
 				return orbitalMap[orbitalIndex];
 			else
 				return orbitalIndex;
+		}
+
+		internal SymmetryList Clone()
+		{
+			SymmetryList p = new SymmetryList();
+			p.AddRange(this.Select(x => x.Clone()));
+			return p;
 		}
 	}
 }

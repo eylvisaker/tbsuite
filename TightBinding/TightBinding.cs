@@ -43,6 +43,37 @@ namespace TightBindingSuite
 
 		string outputfile;
 
+
+		public TightBinding Clone()
+		{
+			TightBinding retval = new TightBinding();
+
+			retval.lattice = lattice.Clone();
+			retval.sites = sites.Clone();
+			retval.hoppings = hoppings.Clone();
+			retval.kpath = kpath.Clone();
+			retval.kmesh = kmesh.Clone();
+			retval.qplane = qplane.Clone();
+			retval.poles.AddRange(poles);
+			retval.FrequencyMesh = (double[])FrequencyMesh.Clone();
+			retval.TemperatureMesh = (double[])TemperatureMesh.Clone();
+			retval.MuMesh = (double[])MuMesh.Clone();
+			retval.Nelec = (double[])Nelec.Clone();
+
+			retval.Interactions = Interactions.Clone();
+			retval.kgrid = (int[])kgrid.Clone();
+			retval.shift = (int[])shift.Clone();
+			retval.symmetries = symmetries.Clone();
+			retval.qgrid = (int[])qgrid.Clone();
+			retval.qplaneDef = (Vector3[])qplaneDef.Clone();
+			retval.setQplane = setQplane;
+			retval.specifiedNelec = specifiedNelec;
+
+			retval.outputfile = outputfile;
+
+			return retval;
+		}
+
 		public TightBinding() { }
 		public TightBinding(string filename)
 		{
@@ -715,6 +746,7 @@ namespace TightBindingSuite
 			}
 
 		}
+
 
 	}
 }

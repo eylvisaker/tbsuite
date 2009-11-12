@@ -23,6 +23,32 @@ namespace TightBindingSuite
 		{
 		}
 
+		public KptList Clone()
+		{
+			KptList retval = new KptList();
+
+			retval.allKpts.AddRange(allKpts.Select(x => x.Clone()));
+			retval.kpts.AddRange(kpts.Select(x => x.Clone()));
+
+			if (mesh != null)
+				retval.mesh = (int[])mesh.Clone();
+			if (shift != null)
+				retval.shift = (int[])shift.Clone();
+
+			retval.gammaCentered = gammaCentered;
+
+			foreach (KeyValuePair<int, int> var in Nvalues)
+				retval.Nvalues.Add(var.Key, var.Value);
+			foreach (KeyValuePair<int, int> var in AllNvalues)
+				retval.AllNvalues.Add(var.Key, var.Value);
+
+			retval.sdir = sdir;
+			retval.tdir = tdir;
+			retval.origin = origin;
+
+			return retval;
+		}
+
 		public static KptList DefaultPath(Lattice l)
 		{
 			const int pts = 40;
@@ -227,6 +253,8 @@ namespace TightBindingSuite
 			};
 
 			retval.allKpts.Sort(sorter);
+
+			// now reduce points by symmetry.
 			for (int i = 0; i < retval.allKpts.Count; i++)
 			{
 				var qpt = retval.AllKpts[i];
@@ -430,6 +458,15 @@ namespace TightBindingSuite
 							}
 						}
 
+						if (includeEnds)
+						{
+							if (retval.AllNvalues.ContainsKey(N))
+							{
+								retval.allKpts.Add(new KPoint(kptValue));
+								continue;
+							}
+						}
+
 						retval.AllNvalues.Add(N, retval.allKpts.Count);
 						retval.allKpts.Add(new KPoint(kptValue));
 						
@@ -507,6 +544,10 @@ namespace TightBindingSuite
 			i += mesh[0];
 			j += mesh[1];
 			k += mesh[2];
+
+			while (i >= mesh[0] * 2) i -= mesh[0] * 2;
+			while (j >= mesh[1] * 2) j -= mesh[1] * 2;
+			while (k >= mesh[2] * 2) k -= mesh[2] * 2;
 
 			return i + j * 1000 + k * 1000000;
 		}

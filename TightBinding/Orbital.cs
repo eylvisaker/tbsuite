@@ -10,7 +10,18 @@ namespace TightBindingSuite
 		public OrbitalList()
 		{
 		}
-		
+
+		internal OrbitalList Clone()
+		{
+			OrbitalList retval = new OrbitalList();
+
+			for (int i = 0; i < Count; i++)
+			{
+				retval.Add(this[i].Clone());
+			}
+
+			return retval;
+		}
 		public int FindIndex(Lattice latt, Vector3 pos)
 		{
 			Vector3 reduced = latt.ReducedCoords(pos, true);
@@ -34,6 +45,7 @@ namespace TightBindingSuite
 					yield return i;
 			}
 		}
+
 	}
 
 	public class Orbital
@@ -54,6 +66,11 @@ namespace TightBindingSuite
 			this.InteractionGroup = interactionGroup;
 		}
 
+		public Orbital Clone()
+		{
+			return new Orbital(vec, Name, SymmetryPosition, LocalSymmetry, InteractionGroup);
+		}
+
 		public string Name { get; private set; }
 		public string SymmetryPosition { get; private set; }
 		public string LocalSymmetry { get; private set; }
@@ -64,6 +81,7 @@ namespace TightBindingSuite
 		public double X { get { return vec.X; } set { vec.X = value; } }
 		public double Y { get { return vec.Y; } set { vec.Y = value; } }
 		public double Z { get { return vec.Z; } set { vec.Z = value; } }
+
 
 	}
 }
