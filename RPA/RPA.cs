@@ -163,6 +163,7 @@ namespace TightBindingSuite
 
 			Output.WriteLine();
 			Output.WriteLine("Bare susceptibility calculation completed.");
+			Output.WriteLine();
 
 			double factor = InteractionAdjustment(rpa, S, C, tb);
 
@@ -182,6 +183,7 @@ namespace TightBindingSuite
 				Output.WriteLine("          Interpret results with care!");
 			}
 
+			Output.WriteLine();
 			Output.WriteLine("Calculating dressed susceptibilities.");
 			Output.WriteLine();
 
@@ -548,9 +550,9 @@ namespace TightBindingSuite
 
 												Complex val = g(rpa[index])[newii, newjj];
 
-												w_re.WriteLine(" {0}       {1}       {2}", s, t, val.RealPart);
-												w_im.WriteLine(" {0}       {1}       {2}", s, t, val.ImagPart);
-												w_mag.WriteLine(" {0}       {1}       {2}", s, t, val.Magnitude);
+												w_re.WriteLine(" {0}       {1}       {2:0.0000000}", s, t, val.RealPart);
+												w_im.WriteLine(" {0}       {1}       {2:0.0000000}", s, t, val.ImagPart);
+												w_mag.WriteLine(" {0}       {1}       {2:0.0000000}", s, t, val.Magnitude);
 
 												if (val.RealPart > maxvalue.RealPart) maxvalue.RealPart = val.RealPart;
 												if (val.ImagPart > maxvalue.ImagPart) maxvalue.ImagPart = val.ImagPart;
@@ -695,6 +697,9 @@ namespace TightBindingSuite
 						CalcOffSiteInteraction(tb, _S, _C, interaction, structureFactor);
 				}
 
+				System.Diagnostics.Debug.Assert(_S.IsSymmetric);
+				System.Diagnostics.Debug.Assert(_C.IsSymmetric);
+
 				S[rpa_index] = _S;
 				C[rpa_index] = _C;
 			}
@@ -750,20 +755,24 @@ namespace TightBindingSuite
 						{
 							int i = GetIndex(tb, l1, l2);
 							int j = GetIndex(tb, l3, l4);
+							double Sval = 0, Cval = 0;
 
 							if (l1 == l2 && l2 == l3 && l3 == l4)
 							{
-								_S[i, j] -= 0.5 * interaction.Exchange * structureFactor;
-								_C[i, j] += (2 * interaction.InterorbitalU - 0.5 * interaction.Exchange) * structureFactor;
+								Sval = -0.5 * interaction.Exchange * structureFactor;
+								Cval = (2 * interaction.InterorbitalU - 0.5 * interaction.Exchange) * structureFactor;
 							}
 							else if (l1 == l2 && l2 != l3 && l3 == l4)
 							{
-								_S[i, j] -= 0.25 * interaction.Exchange * structureFactor;
-								_C[i, j] += (2 * interaction.InterorbitalU - 0.5 * interaction.Exchange) * structureFactor;
+								Sval = -0.25 * interaction.Exchange * structureFactor;
+								Cval = (2 * interaction.InterorbitalU - 0.5 * interaction.Exchange) * structureFactor;
 							}
 
-							_S[j, i] = _S[i, j];
-							_C[j, i] = _C[j, i];
+							_S[i, j] += Sval;
+							_S[j, i] += Sval;
+
+							_C[i, j] += Cval;
+							_C[j, i] += Cval;
 						}
 					}
 				}
