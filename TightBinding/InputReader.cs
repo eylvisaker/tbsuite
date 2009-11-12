@@ -158,7 +158,7 @@ namespace TightBindingSuite
 			string pair = Line.Substring(1, Line.Length - 2);
 			string[] values = pair.Split(' ');
 
-			Output.WriteLine(Line);
+			//Output.WriteLine(Line);
 
 			if (values.Length != 2)
 				ThrowEx("Subsection does not contain a pair of values.");

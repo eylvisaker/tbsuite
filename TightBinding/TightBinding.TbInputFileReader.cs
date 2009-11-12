@@ -64,11 +64,26 @@ namespace TightBindingSuite
 
 				foreach (HoppingPair h in tb.hoppings)
 				{
-					if (h.Left > tb.sites.Count || h.Right > tb.sites.Count)
+					if (h.Left >= tb.sites.Count || h.Right >= tb.sites.Count)
 						ThrowEx(string.Format(@"The hopping {0} to {1} was specified, but there are only {2} sites.",
-											  h.Left, h.Right, tb.sites.Count));
+											  h.Left+1, h.Right+1, tb.sites.Count));
 				}
 
+				foreach (Orbital orb in tb.Orbitals)
+				{
+					var interactionOrbs = tb.Orbitals.Where((x,y) => x.InteractionGroup == orb.InteractionGroup);
+
+					foreach (Orbital otherOrb in interactionOrbs)
+					{
+						Vector3 delta = otherOrb.Location - orb.Location;
+
+						if (delta.Magnitude > 1e-8)
+						{
+							ThrowEx(string.Format("In the interaction group {0}, orbitals {1} and {2} are present, but they are in different positions.",
+								orb.InteractionGroup, orb.Name, otherOrb.Name));
+						}
+					}
+				}
 			}
 			protected override void PostProcess()
 			{
@@ -417,7 +432,7 @@ namespace TightBindingSuite
 					HoppingPair p = new HoppingPair(left, right);
 					tb.hoppings.Add(p);
 
-					Output.WriteLine("Reading hoppings for {0}-{1}", left + 1, right + 1);
+					//Output.WriteLine("Reading hoppings for {0}-{1}", left + 1, right + 1);
 
 					ReadNextLine();
 
@@ -442,7 +457,7 @@ namespace TightBindingSuite
 						ReadNextLine();
 					}
 
-					Output.WriteLine("Count: {0}", p.Hoppings.Count);
+					//Output.WriteLine("Count: {0}", p.Hoppings.Count);
 
 				}
 			}
@@ -506,6 +521,17 @@ namespace TightBindingSuite
 						inter.Vectors.Add(vec);
 
 						ReadNextLine();
+					}
+
+					Orbital left = tb.Orbitals[inter.OrbitalsLeft[0]];
+					Orbital right = tb.Orbitals[inter.OrbitalsRight[0]];
+
+					Vector3 delta = left.Location - right.Location;
+					if (delta.Magnitude > 1e-8 && inter.Vectors.Count == 0)
+					{
+						ThrowEx(string.Format(
+							"Interaction is specified between groups {0} and {1}, but they are at different locations and no vectors were given!",
+							values[0], values[1]));
 					}
 
 					if (inter.OnSite)
