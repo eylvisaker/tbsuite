@@ -131,6 +131,8 @@ namespace TightBindingSuite
 
 			if (tb.Interactions.AdjustInteractions)
 			{
+				Output.WriteLine("Multiplying interactions by {0}.", factor);
+
 				for (int i = 0; i < rpa.Count; i++)
 				{
 					S[i] *= factor;
@@ -240,14 +242,16 @@ namespace TightBindingSuite
 
 			if (largest >= 1)
 			{
-				Output.WriteLine("Interaction should be divided by {0} to avoid divergence.", largest);
+				Output.WriteLine("Interaction should be reduced to avoid divergence.", largest);
 			}
-			Output.WriteLine("Largest eigenvalue found at:");
-			Output.WriteLine("    q = {0}", largestParams.QptValue);
-			Output.WriteLine("    T = {0}", largestParams.Temperature);
-			Output.WriteLine("    u = {0}", largestParams.ChemicalPotential);
-			Output.WriteLine("    w = {0}", largestParams.Frequency);
+
+			Output.WriteLine("Largest eigenvalue of denominator found at:");
+			Output.WriteLine("    Eigenvalue: {0}", largest);
 			Output.WriteLine("    {0} susceptibility", Cdiv ? "Charge" : "Spin");
+			Output.WriteLine("    q = {0}", largestParams.QptValue);
+			Output.WriteLine("    Temperature = {0}", largestParams.Temperature);
+			Output.WriteLine("    Chemical Potential = {0}", largestParams.ChemicalPotential);
+			Output.WriteLine("    Frequency = {0}", largestParams.Frequency);
 
 			largest /= tb.Interactions.MaxEigenvalue;
 
@@ -278,7 +282,7 @@ namespace TightBindingSuite
 
 				for (int i = 0; i < eigenvals.Rows; i++)
 				{
-					if (eigenvals[i, 0].RealPart > largest)
+					if (largest < eigenvals[i, 0].RealPart)
 						largest = eigenvals[i, 0].RealPart;
 				}
 
