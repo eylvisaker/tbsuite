@@ -130,6 +130,15 @@ namespace TightBindingSuite
 			Matrix[] S, C;
 			CalcSpinChargeMatrices(tb, rpa, out S, out C);
 
+
+#if DEBUG
+			for (int i = 0; i < S.Length; i++)
+			{
+				VerifySymmetry(tb, S[i], 0, 1);
+				VerifySymmetry(tb, C[i], 0, 1);
+			}
+#endif
+
 			Output.WriteLine("Calculating X0...");
 
 			
@@ -197,11 +206,20 @@ namespace TightBindingSuite
 				Matrix s_denom = (ident - S[i] * rpa[i].X0);
 				Matrix c_denom = (ident + C[i] * rpa[i].X0);
 
+				VerifySymmetry(tb, s_denom, 0, 1);
+				VerifySymmetry(tb, c_denom, 0, 1);
+
 				Matrix s_inv = s_denom.Invert();
 				Matrix c_inv = c_denom.Invert();
 
+				VerifySymmetry(tb, s_inv, 0, 1);
+				VerifySymmetry(tb, c_inv, 0, 1);
+
 				rpa[i].Xs = rpa[i].X0 * s_inv;
 				rpa[i].Xc = rpa[i].X0 * c_inv;
+
+				VerifySymmetry(tb, rpa[i].Xs, 0, 1);
+				VerifySymmetry(tb, rpa[i].Xc, 0, 1);
 
 				for (int l1 = 0; l1 < tb.Orbitals.Count; l1++)
 				{
@@ -248,6 +266,50 @@ namespace TightBindingSuite
 			Output.WriteLine("    Q: {0}", largestParams.QptValue);
 		}
 
+		private void VerifySymmetry(TightBinding tb, Matrix S, int a, int b)
+		{
+			for (int m1 = 0; m1 < 2; m1++)
+			{
+				for (int m2 = 0; m2 < 2; m2++)
+				{
+					for (int m3 = 0; m3 < 2; m3++)
+					{
+						for (int m4 = 0; m4 < 2; m4++)
+						{
+							int l1 = Select(m1, a, b);
+							int l2 = Select(m2, a, b);
+							int l3 = Select(m3, a, b);
+							int l4 = Select(m4, a, b);
+
+							int a1 = Select(m1, b, a);
+							int a2 = Select(m2, b, a);
+							int a3 = Select(m3, b, a);
+							int a4 = Select(m4, b, a);
+
+							int i = GetIndex(tb, l1, l2);
+							int j = GetIndex(tb, l3, l4);
+
+							int ii = GetIndex(tb, a1, a2);
+							int jj = GetIndex(tb, a3, a4);
+
+							var diff = S[i, j] - S[ii, jj];
+
+							if (diff.Magnitude > 1e-8)
+								throw new Exception("blah");
+						}
+					}
+				}
+			}
+		}
+
+		private int Select(int m1, int a, int b)
+		{
+			if (m1 == 0)
+				return a;
+			else
+				return b;
+		}
+
 		private void RunRpaThread(RpaThreadInfo info)
 		{
 			Thread t = new Thread(RpaChi0Thread);
@@ -280,6 +342,8 @@ namespace TightBindingSuite
 				}
 				Complex val = rpa[i].X0.Trace();
 
+				VerifySymmetry(tb, rpa[i].X0, 0, 1);
+				
 				Output.Write("q = {0}, T = {1:0.000}, mu = {2:0.000}, omega = {3:0.0000}",
 					rpa[i].Qindex + 1, rpa[i].Temperature, rpa[i].ChemicalPotential, rpa[i].Frequency);
 				Output.WriteLine(", Tr(X_0) = {0}", val.ToString("0.0000"));
