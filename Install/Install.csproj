@@ -101,7 +101,9 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <None Include="prepare_dist" />
+    <None Include="prepare_dist">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="script\fplowannierconverter">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

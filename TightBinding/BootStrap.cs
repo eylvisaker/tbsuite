@@ -45,6 +45,8 @@ namespace TightBindingSuite
 			Output.WriteLine("|             By Dr. Erik R. Ylvisaker              |");
 			Output.WriteLine("-----------------------------------------------------");
 			Output.WriteLine();
+			Output.WriteLine("Reading from input file " + filename);
+			Output.WriteLine();
 
 			return filename;
 		}
