@@ -112,7 +112,7 @@ namespace TightBindingSuite
 
 		public Wavefunction Bands(TightBinding tb, int kpt, int band)
 		{
-			return tb.KMesh.AllKpts[kpt].Wavefunctions[band];
+			return tb.AllKMesh.Kpts[kpt].Wavefunctions[band];
 		}
 		void SetTemperature(TightBinding tb, double temperature, double mu)
 		{
@@ -403,11 +403,6 @@ namespace TightBindingSuite
 				}
 			}
 
-			if (largest >= 1)
-			{
-				Output.WriteLine("Interaction should be reduced to avoid divergence.", largest);
-			}
-
 			Output.WriteLine("Largest eigenvalue of denominator found at:");
 			Output.WriteLine("    Eigenvalue: {0}", largest);
 			Output.WriteLine("    {0} susceptibility", Cdiv ? "Charge" : "Spin");
@@ -418,8 +413,16 @@ namespace TightBindingSuite
 
 			largest /= tb.Interactions.MaxEigenvalue;
 
+
+
+			double retval = 1 / largest;
+
 			Output.WriteLine();
-			return 1 / largest;
+			Output.WriteLine("The largest eigenvalue can be set to {0} by choosing", tb.Interactions.MaxEigenvalue);
+			Output.WriteLine("Scaling factor of {0}, which will be just below divergence.", largest);
+			Output.WriteLine();
+
+			return retval;
 		}
 
 		private static double LargestPositiveEigenvalue(Matrix x)
@@ -544,6 +547,27 @@ namespace TightBindingSuite
 			double[] chimag = new double[rpa.Count];
 			double[] chimagsqr = new double[rpa.Count];
 
+
+			string gpfilename = "gnuplot.colors";
+
+			//minvalue.RealPart = Math.Floor(minvalue.RealPart);
+			//maxvalue.RealPart = Math.Ceiling(maxvalue.RealPart);
+
+			using (StreamWriter w = new StreamWriter(gpfilename))
+			{
+				w.WriteLine("#!/usr/bin/gnuplot");
+				//w.WriteLine("set pm3d at bs flush center ftriangles scansbackward interpolate 1,1");
+				w.WriteLine("set pm3d flush center ftriangles scansbackward interpolate 5,5");
+				w.WriteLine("set palette rgbformula 23,9,-36");
+				//w.WriteLine("set border 895");
+				w.WriteLine("set key off");
+				//w.WriteLine("set zrange [{0}:{1}]", minvalue.RealPart, maxvalue.RealPart);
+				// label z = minvalue - 0.5 * (maxvalue - minvalue)
+				//  set label 1 "G" at 0,0,1 font "Symbol" center front
+			}
+
+			KptPlane qplane = tb.AllQPlane;
+
 			for (int l1 = 0; l1 < tb.Orbitals.Count; l1++)
 			{
 				for (int l2 = 0; l2 < tb.Orbitals.Count; l2++)
@@ -581,15 +605,15 @@ namespace TightBindingSuite
 											double last_t;
 											double last_s;
 
-											tb.QPlane.GetPlaneST(tb.QPlane.AllKpts[0], out last_s, out last_t);
+											tb.QPlane.GetPlaneST(qplane.Kpts[0], out last_s, out last_t);
 
-											for (int qi = 0; qi < tb.QPlane.AllKpts.Count; qi++)
+											for (int qi = 0; qi < tb.QPlane.Kpts.Count; qi++)
 											{
-												Vector3 qpt = tb.QPlane.AllKpts[qi];
+												Vector3 qpt = qplane.Kpts[qi];
 												List<int> orbitalMap;
 
 												double s, t;
-												tb.QPlane.GetPlaneST(tb.QPlane.AllKpts[qi], out s, out t);
+												qplane.GetPlaneST(qplane.Kpts[qi], out s, out t);
 
 												if (Math.Abs(t - last_t) > 1e-6)
 												{
@@ -599,7 +623,7 @@ namespace TightBindingSuite
 												}
 
 												int kindex =
-													tb.QPlane.IrreducibleIndex(qpt, tb.Lattice, tb.Symmetries, out orbitalMap);
+													qplane.IrreducibleIndex(qpt, tb.Lattice, tb.Symmetries, out orbitalMap);
 
 												int index = GetRpaIndex(rpa, kindex, 
 													tb.TemperatureMesh[ti], 
@@ -630,37 +654,6 @@ namespace TightBindingSuite
 											}
 										}
 
-										for (int i = 0; i < 3; i++)
-										{
-											string filename;
-											switch (i)
-											{
-												case 0: filename = filename_re; break;
-												case 1: filename = filename_im; break;
-												case 2: filename = filename_mag; break;
-												default:
-													continue;
-											}
-
-											string gpfilename = "gnuplot." + filename;
-
-											//minvalue.RealPart = Math.Floor(minvalue.RealPart);
-											//maxvalue.RealPart = Math.Ceiling(maxvalue.RealPart);
-
-											using (StreamWriter w = new StreamWriter(gpfilename))
-											{
-												w.WriteLine("#!/usr/bin/gnuplot");
-												//w.WriteLine("set pm3d at bs flush center ftriangles scansbackward interpolate 1,1");
-												w.WriteLine("set pm3d map flush center ftriangles scansbackward interpolate 5,5");
-												w.WriteLine("set palette rgbformula 23,9,-36");
-												//w.WriteLine("set border 895");
-												w.WriteLine("set key off");
-												//w.WriteLine("set zrange [{0}:{1}]", minvalue.RealPart, maxvalue.RealPart);
-												// label z = minvalue - 0.5 * (maxvalue - minvalue)
-												//  set label 1 "G" at 0,0,1 font "Symbol" center front
-												w.WriteLine("splot '{0}' with pm3d", filename);
-											}
-										}
 									}
 
 									baseIndex += QMesh.Count;
@@ -858,6 +851,7 @@ namespace TightBindingSuite
 
 			//StreamWriter w = new StreamWriter(string.Format("qcont.{0}", q.ToString("0.000")));
 			//bool writeThis = false;
+			KptList kpts = tb.AllKMesh;
 
 			for (int l1 = 0; l1 < orbitalCount; l1++)
 			{
@@ -918,10 +912,10 @@ namespace TightBindingSuite
 
 							Complex total = 0;
 
-							for (int allkindex = 0; allkindex < tb.KMesh.AllKpts.Count; allkindex++)
+							for (int allkindex = 0; allkindex < kpts.Kpts.Count; allkindex++)
 							{
 								Complex val = 0;
-								Vector3 k = tb.KMesh.AllKpts[allkindex];
+								Vector3 k = kpts.Kpts[allkindex];
 								Vector3 kq = k + q;
 
 								//List<int> kOrbitalMap;
@@ -929,8 +923,8 @@ namespace TightBindingSuite
 
 								//int kindex = tb.KMesh.IrreducibleIndex(k, tb.Lattice, tb.Symmetries, out kOrbitalMap);
 								//int kqindex = tb.KMesh.IrreducibleIndex(kq, tb.Lattice, tb.Symmetries, out kqOrbitalMap);
-								int kindex = tb.KMesh.AllKindex(k, tb.Lattice);
-								int kqindex = tb.KMesh.AllKindex(kq, tb.Lattice);
+								int kindex = kpts.AllKindex(k);
+								int kqindex = kpts.AllKindex(kq);
 
 								System.Diagnostics.Debug.Assert(kindex == allkindex);
 
@@ -985,7 +979,7 @@ namespace TightBindingSuite
 								//    Math.Round(val.RealPart, 4), Math.Round(val.ImagPart, 4));
 
 								//Output.WriteLine(tb.KMesh.AllKpts[kindex].Weight.ToString());
-								val *= tb.KMesh.AllKpts[kindex].Weight;
+								val *= kpts.Kpts[kindex].Weight;
 								total += val;
 
 								//if (writeThis)
