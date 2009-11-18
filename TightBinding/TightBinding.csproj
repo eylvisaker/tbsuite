@@ -60,6 +60,7 @@
     <Compile Include="AgrWriter.cs" />
     <Compile Include="BootStrap.cs" />
     <Compile Include="InteractionPair.cs" />
+    <Compile Include="KptPlane.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="InputReader.cs" />
@@ -112,6 +113,9 @@
   <ItemGroup>
     <Content Include="tightbinding.txt" />
     <Content Include="TODO.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Properties\" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>

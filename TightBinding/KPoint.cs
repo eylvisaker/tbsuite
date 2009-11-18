@@ -12,12 +12,12 @@ namespace TightBindingSuite
 		public string Name;
 		List<List<int>> mOrbitalTransform = new List<List<int>>();
 		List<Wavefunction> wfk = new List<Wavefunction>();
+		public int Nvalue { get; set; }
 
 		public KPoint(Vector3 v)
 		{
 			Value = v;	
 		}
-
 
 		public KPoint Clone()
 		{

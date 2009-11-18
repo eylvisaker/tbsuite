@@ -1,5 +1,5 @@
-
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace TightBindingSuite
@@ -9,6 +9,12 @@ namespace TightBindingSuite
 		StreamReader reader;
 		string line;
 		int lineIndex;
+		SectionOptions options;
+
+		public class SectionOptions : Dictionary<string,double?>
+		{
+
+		}
 
 		public InputReader(string filename)
 		{
@@ -149,7 +155,37 @@ namespace TightBindingSuite
 				return LineType.Unknown;
 			}
 		}
+		protected SectionOptions Options { get { return options; } }
 
+		protected void ReadSectionOptions()
+		{
+			string[] vals = LineWords;
+
+			options = new SectionOptions();
+			double number;
+
+			if (double.TryParse(vals[0], out number))
+				return;
+
+			for (int i = 0; i < vals.Length; i++)
+			{
+				string key = vals[i];
+
+				if (i < vals.Length - 1)
+				{
+					if (double.TryParse(vals[i + 1], out number))
+						options.Add(key, number);
+					else
+						options.Add(key, null);
+				}
+				else
+				{
+					options.Add(key, null);
+				}
+			}
+
+			ReadNextLine();
+		}
 		protected string[] ReadSubSectionParameters()
 		{
 			if (LineType != LineType.NewSubSection)

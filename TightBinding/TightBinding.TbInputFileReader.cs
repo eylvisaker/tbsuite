@@ -23,16 +23,16 @@ namespace TightBindingSuite
 			{
 				if (tb.lattice == null)
 					ThrowEx(@"""Lattice"" section missing.");
-				if (tb.sites == null)
+				if (tb.orbitals == null)
 					ThrowEx(@"""Sites"" section missing.");
 				if (tb.hoppings == null)
 					ThrowEx(@"""Hoppings"" section missing.");
 				if (tb.kpath == null)
-					tb.kpath = KptList.DefaultPath(tb.lattice);
+					tb.kpath = KptList.DefaultPath();
 				if (tb.kgrid == null || tb.kgrid[0] == 0 || tb.kgrid[1] == 0 || tb.kgrid[2] == 0)
 					ThrowEx(@"KMesh was not defined properly.");
 
-				if (tb.sites.Count == 0)
+				if (tb.orbitals.Count == 0)
 					ThrowEx(@"There are no sites.");
 				if (tb.hoppings.Count == 0)
 					ThrowEx(@"There are no hoppings.");
@@ -64,9 +64,23 @@ namespace TightBindingSuite
 
 				foreach (HoppingPair h in tb.hoppings)
 				{
-					if (h.Left >= tb.sites.Count || h.Right >= tb.sites.Count)
+					if (h.Left >= tb.orbitals.Count || h.Right >= tb.orbitals.Count)
 						ThrowEx(string.Format(@"The hopping {0} to {1} was specified, but there are only {2} sites.",
-											  h.Left+1, h.Right+1, tb.sites.Count));
+											  h.Left+1, h.Right+1, tb.orbitals.Count));
+
+					Vector3 localDiff = tb.Orbitals[h.Right].Location - tb.Orbitals[h.Left].Location;
+
+					foreach (var hop in h.Hoppings)
+					{
+						Vector3 test = hop.R - localDiff;
+
+						test = MoveNearGamma(test);
+						if (test.Magnitude > 1e-4)
+						{
+							ThrowEx(string.Format("The hopping between orbitals {0} and {1} along vector {2} does not seem to match the position of the orbitals.",
+								h.Left + 1, h.Right + 1, hop.R.ToString("0.0000")));
+						}
+					}
 				}
 
 				foreach (Orbital orb in tb.Orbitals)
@@ -84,7 +98,45 @@ namespace TightBindingSuite
 						}
 					}
 				}
+
+				ValidateSymmetries(tb.kgrid, tb.symmetries);
+
 			}
+
+			private void ValidateSymmetries(int[] kgrid, SymmetryList syms)
+			{
+				Vector3 gridVector = new Vector3(kgrid[0], kgrid[1], kgrid[2]);
+
+				foreach (var symmetry in syms)
+				{
+					Vector3 grid2 = symmetry.Value * gridVector;
+					for (int gi = 0; gi < 3; gi++)
+						grid2[gi] = Math.Abs(grid2[gi]);
+
+					if (grid2 != gridVector)
+					{
+						ThrowEx("The kmesh specified is not compatible with the symmetry of the system.");
+					}
+				}
+			}
+
+			private Vector3 MoveNearGamma(Vector3 v)
+			{
+				for (int i = 0; i < 3; i++)
+				{
+					while (Math.Abs(v[i] - 1) < Math.Abs(v[i]))
+					{
+						v[i] -= 1;
+					}
+					while (Math.Abs(v[i] + 1) < Math.Abs(v[i]))
+					{
+						v[i] += 1;
+					}
+				}
+
+				return v;
+			}
+
 			protected override void PostProcess()
 			{
 				GenerateKmesh();
@@ -93,38 +145,41 @@ namespace TightBindingSuite
 
 			private void GenerateKmesh()
 			{
-				tb.kmesh = KptList.GenerateMesh(tb.lattice, tb.kgrid, tb.shift, tb.symmetries, false);
+				tb.mAllKmesh = KptList.GenerateMesh(tb.kgrid, tb.shift, false);
+				tb.mKmesh = tb.mAllKmesh.CreateIrreducibleMesh(tb.Symmetries);
 
 				Output.WriteLine("Applied {0} symmetries to get {1} irreducible kpoints from {2}.",
-					tb.symmetries.Count, tb.kmesh.Kpts.Count, tb.kmesh.AllKpts.Count);
+					tb.symmetries.Count, tb.mKmesh.Kpts.Count, tb.mAllKmesh.Kpts.Count);
 
 				using (StreamWriter writer = new StreamWriter("kpts"))
 				{
-					for (int i = 0; i < tb.kmesh.Kpts.Count; i++)
+					for (int i = 0; i < tb.mAllKmesh.Kpts.Count; i++)
 					{
-						Vector3 red = tb.lattice.ReducedCoords(tb.kmesh.Kpts[i].Value);
+						Vector3 red = tb.lattice.ReciprocalReduce(tb.mAllKmesh.Kpts[i].Value);
 
 						writer.WriteLine("{0}     {1}", i, red);
 					}
 				}
 
-				if (tb.setQplane)
-				{
-					tb.qplane = KptList.GeneratePlane(tb.lattice, tb.qplaneDef, tb.symmetries, tb.qgrid, null);
-					Output.WriteLine("Found {0} irreducible qpoints in the plane of {1} qpoints.",
-						tb.qplane.Kpts.Count, tb.qplane.AllKpts.Count);
+				return;
+
+				//if (tb.setQplane)
+				//{
+				//    tb.mQplane = KptPlane.GeneratePlane(tb.lattice, tb.qplaneDef, tb.qgrid);
+				//    Output.WriteLine("Found {0} irreducible qpoints in the plane of {1} qpoints.",
+				//        tb.mQplane.Kpts.Count, tb.mQplane.AllKpts.Count);
 
 
-					using (StreamWriter writer = new StreamWriter("qpts"))
-					{
-						for (int i = 0; i < tb.qplane.Kpts.Count; i++)
-						{
-							Vector3 red = tb.lattice.ReducedCoords(tb.qplane.Kpts[i].Value);
+				//    using (StreamWriter writer = new StreamWriter("qpts"))
+				//    {
+				//        for (int i = 0; i < tb.mQplane.Kpts.Count; i++)
+				//        {
+				//            Vector3 red = tb.lattice.ReciprocalReduce(tb.mQplane.Kpts[i].Value);
 
-							writer.WriteLine("{0}     {1}", i, red);
-						}
-					}
-				}
+				//            writer.WriteLine("{0}     {1}", i, red);
+				//        }
+				//    }
+				//}
 			}
 
 			protected override void ReadSection(string sectionName)
@@ -303,6 +358,15 @@ namespace TightBindingSuite
 				const double ptScale = 400;
 				int ptCount = 0;
 
+				bool reduced = false;
+
+				if (Line[1] != ' ' && Line[1] != '\t')
+				{
+					ReadSectionOptions();
+					reduced = Options.ContainsKey("reduced");
+				}
+
+
 				path = new KptList();
 				while (EOF == false && LineType != LineType.NewSection)
 				{
@@ -321,9 +385,14 @@ namespace TightBindingSuite
 						name = vals[0];
 					}
 
-					Vector3 vecval = Vector3.Parse(text);
-					Vector3 kpt = vecval;
-					double length = (kpt - lastKpt).Magnitude;
+					Vector3 kpt =Vector3.Parse(text);
+					
+					if (reduced == false)
+					{
+						kpt = tb.Lattice.ReciprocalReduce(kpt);
+					}
+
+					double length = (tb.Lattice.ReciprocalExpand(kpt) - tb.Lattice.ReciprocalExpand(lastKpt)).Magnitude;
 
 					if (ptCount == 0)
 					{
@@ -397,10 +466,18 @@ namespace TightBindingSuite
 			}
 			void ReadOrbitalsSection()
 			{
-				if (tb.sites != null)
+				if (tb.orbitals != null)
 					ThrowEx("Multiple sites sections found.");
 
-				tb.sites = new OrbitalList();
+				tb.orbitals = new OrbitalList();
+				bool reduced = false;
+
+				if (LineType != LineType.NewSection)
+				{
+					ReadSectionOptions();
+					reduced = Options.ContainsKey("reduced");
+				}
+
 
 				while (EOF == false && LineType != LineType.NewSection)
 				{
@@ -414,15 +491,49 @@ namespace TightBindingSuite
 						ThrowEx("Insufficient information about site.");
 
 					Vector3 loc = new Vector3(double.Parse(vals[0]), double.Parse(vals[1]), double.Parse(vals[2]));
+
+					if (!reduced)
+						loc = tb.Lattice.DirectReduce(loc);
+
 					string name = vals[3];
 					string sitename = vals[4];
 					string localsym = vals[5];
 					string interactionGroup = vals[6];
 
-					tb.sites.Add(new Orbital(loc, name, sitename, localsym, interactionGroup));
+					tb.orbitals.Add(new Orbital(loc, name, sitename, localsym, interactionGroup));
 
 					ReadNextLine();
 				}
+			}
+
+			[Obsolete("",true)]
+			private bool ReducedVectors()
+			{
+				bool reduced = false;
+
+				if (LineType == LineType.Unknown)
+				{
+					switch (Line.ToLowerInvariant())
+					{
+						case "red":
+						case "reduced":
+						case "crystal":
+							reduced = true;
+							break;
+
+						case "cart":
+						case "cartesian":
+							reduced = false;
+							break;
+
+						default:
+							ThrowEx("Could not understand input " + Line + ".");
+							break;
+					}
+
+					ReadNextLine();
+				}
+				return reduced;
 			}
 			void ReadHoppingsSection()
 			{
@@ -431,6 +542,14 @@ namespace TightBindingSuite
 
 				if (LineType != LineType.NewSubSection)
 					ThrowEx("Hoppings section must start with :..: delimited section.");
+
+				bool reduced = false;
+
+				if (LineType != LineType.NewSection && LineType !=  LineType.NewSubSection)
+				{
+					ReadSectionOptions();
+					reduced = Options.ContainsKey("reduced");
+				}
 
 				tb.hoppings = new HoppingPairList();
 
@@ -443,8 +562,6 @@ namespace TightBindingSuite
 
 					HoppingPair p = new HoppingPair(left, right);
 					tb.hoppings.Add(p);
-
-					//Output.WriteLine("Reading hoppings for {0}-{1}", left + 1, right + 1);
 
 					ReadNextLine();
 
@@ -459,6 +576,8 @@ namespace TightBindingSuite
 						double value = double.Parse(vals[vals.Count - 1]);
 
 						Vector3 loc = new Vector3(double.Parse(vals[0]), double.Parse(vals[1]), double.Parse(vals[2]));
+						if (reduced == false)
+							loc = tb.lattice.DirectReduce(loc);
 
 						HoppingValue v = new HoppingValue();
 						v.Value = value;
@@ -468,8 +587,6 @@ namespace TightBindingSuite
 
 						ReadNextLine();
 					}
-
-					//Output.WriteLine("Count: {0}", p.Hoppings.Count);
 
 				}
 			}
@@ -483,30 +600,24 @@ namespace TightBindingSuite
 
 				if (LineType != LineType.NewSubSection && LineType != LineType.NewSection)
 				{
-					if (Line.ToLowerInvariant().StartsWith( "adjust"))
-					{
-						tb.Interactions.AdjustInteractions = true;
+					ReadSectionOptions();
 
-						string ltext = Line.ToLowerInvariant().Substring(6);
+					if (Options.ContainsKey("adjust"))
+					{
 						double val;
 
-						if (double.TryParse(ltext, out val) == false)
-						{
-							val = 0.001;
-							
-						}
+						val = Options["adjust"] ?? 0.001;
 
 						if (val <= 0 || val >= 1)
 						{
-							ThrowEx("Interaction adjustment should be between 0 and 1.");
+							ThrowEx("Interaction adjustment must be between 0 and 1, and should be close to zero.");
 						}
 
 						tb.Interactions.MaxEigenvalue = 1 - val;
 					}
-
-					ReadNextLine();
 				}
 
+				bool reduced = Options.ContainsKey("reduced");
 
 				while (!EOF && LineType != LineType.NewSection)
 				{
@@ -515,7 +626,7 @@ namespace TightBindingSuite
 
 					string[] values = ReadSubSectionParameters();
 
-					InteractionPair inter = new InteractionPair(tb.sites, values[0], values[1]);
+					InteractionPair inter = new InteractionPair(tb.orbitals, values[0], values[1]);
 
 					if (inter.OrbitalsLeft.Count == 0) ThrowEx("Could not identify interaction group \"" + values[0] + "\".");
 					if (inter.OrbitalsRight.Count == 0) ThrowEx("Could not identify interaction group \"" + values[1] + "\".");
@@ -529,6 +640,8 @@ namespace TightBindingSuite
 					while (!EOF && LineType != LineType.NewSection && LineType != LineType.NewSubSection)
 					{
 						Vector3 vec = Vector3.Parse(Line);
+						if (reduced == false)
+							vec = tb.lattice.DirectReduce(vec);
 
 						inter.Vectors.Add(vec);
 
@@ -778,10 +891,10 @@ namespace TightBindingSuite
 					if (orbitals[i] == i)
 						continue;
 
-					if (tb.sites[i].Equivalent.Contains(orbitals[i]) == false)
-						tb.sites[i].Equivalent.Add(orbitals[i]);
-					if (tb.sites[orbitals[i]].Equivalent.Contains(i) == false)
-						tb.sites[orbitals[i]].Equivalent.Add(i);
+					if (tb.orbitals[i].Equivalent.Contains(orbitals[i]) == false)
+						tb.orbitals[i].Equivalent.Add(orbitals[i]);
+					if (tb.orbitals[orbitals[i]].Equivalent.Contains(i) == false)
+						tb.orbitals[orbitals[i]].Equivalent.Add(i);
 				}
 			}
 
@@ -903,9 +1016,9 @@ namespace TightBindingSuite
 
 						s.WriteLine("Generating site map...");
 
-						for (int i = 0; i < tb.sites.Count; i++)
+						for (int i = 0; i < tb.orbitals.Count; i++)
 						{
-							var site = tb.sites[i];
+							var site = tb.orbitals[i];
 							Vector3 loc = sym * site.Location;
 
 							int index = tb.Orbitals.FindIndex(tb.lattice, loc);
@@ -957,16 +1070,16 @@ namespace TightBindingSuite
 					}
 
 					// now apply symmetries to reduce k-points in kmesh
-					int initialKptCount = tb.kmesh.Kpts.Count;
+					int initialKptCount = tb.mAllKmesh.Kpts.Count;
 
 					System.Diagnostics.Stopwatch watch = new System.Diagnostics.Stopwatch();
 					watch.Start();
 
 					foreach (var sym in validSyms)
 					{
-						for (int i = 0; i < tb.kmesh.Kpts.Count; i++)
+						for (int i = 0; i < tb.mAllKmesh.Kpts.Count; i++)
 						{
-							KPoint kpt = tb.kmesh.Kpts[i];
+							KPoint kpt = tb.mAllKmesh.Kpts[i];
 							Vector3 trans = kpt.Value;
 							/*
 							for (int j = 0; j < 3; j++)
@@ -988,7 +1101,7 @@ namespace TightBindingSuite
 					watch.Stop();
 
 					string fmt = string.Format("{0} total kpts, {1} irreducible kpts.  Applying symmetries took {2} seconds.",
-											   initialKptCount, tb.kmesh.Kpts.Count, watch.ElapsedMilliseconds / 1000);
+											   initialKptCount, tb.mAllKmesh.Kpts.Count, watch.ElapsedMilliseconds / 1000);
 
 					Output.WriteLine(fmt);
 					s.WriteLine(fmt);

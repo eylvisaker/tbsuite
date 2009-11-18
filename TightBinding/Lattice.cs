@@ -45,12 +45,24 @@ namespace TightBindingSuite
 		public Vector3 G1 { get { return g1; }}
 		public Vector3 G2 { get { return g2; }}
 		public Vector3 G3 { get { return g3; }}
-		
-		public Vector3 ReducedCoords(Vector3 a)
+
+		public Vector3 DirectReduce(Vector3 a)
 		{
-			return ReducedCoords(a, false);	
+			Matrix m = new Matrix(3, 3);
+
+			m.SetRow(0, g1);
+			m.SetRow(1, g2);
+			m.SetRow(2, g3);
+
+			Vector3 retval = m * a;
+
+			return retval;
 		}
-		public Vector3 ReducedCoords(Vector3 a, bool translate)
+		public Vector3 ReciprocalReduce(Vector3 k)
+		{
+			return ReciprocalReduce(k, false);	
+		}
+		public Vector3 ReciprocalReduce(Vector3 k, bool translate)
 		{
 			Matrix m = new Matrix(3,3);
 			
@@ -58,7 +70,7 @@ namespace TightBindingSuite
 			m.SetRow(1, a2);
 			m.SetRow(2, a3);
 			
-			Vector3 retval = m * a;
+			Vector3 retval = m * k;
 
 			if (translate)
 			{
@@ -74,5 +86,10 @@ namespace TightBindingSuite
 			return retval;
 		}
 
+
+		public Vector3 ReciprocalExpand(Vector3 kpt)
+		{
+			return G1 * kpt[0] + G2 * kpt[1] + G3 * kpt[2];
+		}
 	}
 }

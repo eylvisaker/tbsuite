@@ -10,18 +10,22 @@ namespace TightBindingSuite
 	public partial class TightBinding
 	{
 		Lattice lattice;
-		OrbitalList sites;
+		OrbitalList orbitals;
 		HoppingPairList hoppings;
-		KptList kpath, kmesh;
-		KptList qplane;
+		KptList kpath, mAllKmesh;
+		KptList mKmesh;
+		KptPlane mAllQplane;
+		KptPlane mQplane;
 		List<int> poles = new List<int>();
 
 		public Lattice Lattice { get { return lattice; } }
-		public OrbitalList Orbitals { get { return sites; } }
+		public OrbitalList Orbitals { get { return orbitals; } }
 		public HoppingPairList Hoppings { get { return hoppings; } }
 		public KptList KPath { get { return kpath; } }
-		public KptList KMesh { get { return kmesh; } }
-		public KptList QPlane { get { return qplane; } }
+		public KptList AllKMesh { get { return mAllKmesh; } }
+		public KptList KMesh { get { return mKmesh; } }
+		public KptPlane AllQPlane { get { return mAllQplane; } }
+		public KptPlane QPlane { get { return mQplane; } }
 		public double[] FrequencyMesh { get; private set; }
 		public double[] TemperatureMesh { get; private set; }
 		public double[] MuMesh { get; private set; }
@@ -49,11 +53,11 @@ namespace TightBindingSuite
 			TightBinding retval = new TightBinding();
 
 			retval.lattice = lattice.Clone();
-			retval.sites = sites.Clone();
+			retval.orbitals = orbitals.Clone();
 			retval.hoppings = hoppings.Clone();
 			retval.kpath = kpath.Clone();
-			retval.kmesh = kmesh.Clone();
-			retval.qplane = qplane.Clone();
+			retval.mAllKmesh = mAllKmesh.Clone();
+			retval.mQplane = mQplane.Clone();
 			retval.poles.AddRange(poles);
 			retval.FrequencyMesh = (double[])FrequencyMesh.Clone();
 			retval.TemperatureMesh = (double[])TemperatureMesh.Clone();
@@ -108,18 +112,18 @@ namespace TightBindingSuite
 				Matrix vals, vecs;
 				m.EigenValsVecs(out vals, out vecs);
 
-				kmesh.Kpts[i].SetWavefunctions(vals, vecs);
+				mAllKmesh.Kpts[i].SetWavefunctions(vals, vecs);
 			}
 
-			for (int i = 0; i < kmesh.AllKpts.Count; i++)
-			{
-				KPoint kpt = kmesh.AllKpts[i];
-				List<int> orbitalMap;
+			//for (int i = 0; i < kmesh.AllKpts.Count; i++)
+			//{
+			//    KPoint kpt = kmesh.AllKpts[i];
+			//    List<int> orbitalMap;
 
-				int index = kmesh.IrreducibleIndex(kpt, lattice, symmetries, out orbitalMap);
+			//    int index = kmesh.IrreducibleIndex(kpt, lattice, symmetries, out orbitalMap);
 
-				kpt.SetWavefunctions(kmesh.Kpts[index], symmetries, orbitalMap);
-			}
+			//    kpt.SetWavefunctions(kmesh.Kpts[index], symmetries, orbitalMap);
+			//}
 		}
 		double FermiFunction(double omega, double mu, double beta)
 		{
@@ -571,7 +575,7 @@ namespace TightBindingSuite
 			w.Write(index);
 			w.Write("    ");
 				
-			for (int i = 0 ;i < eigenvals.Rows; i++)
+			for (int i = 0 ; i < eigenvals.Rows; i++)
 			{
 				w.Write(eigenvals[i,0].RealPart);	
 				w.Write("  ");
@@ -613,138 +617,6 @@ namespace TightBindingSuite
 				throw new Exception("Hamiltonian at k = " + kpt.ToString() + " is not Hermitian.");
 			
 			return m;
-		}
-
-		/// <summary>
-		/// This function does not work with symmetries, so it is unused.
-		/// </summary>
-		/// <param name="inp"></param>
-		/// <param name="outputfile"></param>
-		void tet_DoDensityOfStates(TightBinding.TbInputFileReader inp)
-		{
-			KptList ks = KMesh;
-			StreamWriter outf = new StreamWriter(outputfile + ".dos");
-
-			double smearing = TemperatureMesh[0];
-			double smearNorm = 1 / smearing * Math.Pow(Math.PI, -0.5);
-			double oneOverSmearSquared = Math.Pow(smearing, -2);
-
-			double emin, emax;
-			Hoppings.EnergyScale(out emin, out emax);
-
-			emin -= smearing * 5;
-			emax += smearing * 5;
-
-
-			int epts = 2000;
-
-			double[] energyGrid = new double[epts];
-			double[,] dos = new double[epts, Orbitals.Count + 1];
-
-			smearNorm /= ks.Kpts.Count;
-
-			for (int i = 0; i < epts; i++)
-			{
-				energyGrid[i] = emin + (emax - emin) * i / (double)(epts - 1);
-			}
-
-			Output.WriteLine("Calculating DOS from {0} to {1} with tetrahedron method.",
-							  emin, emax, smearing);
-
-			Output.WriteLine("Using {0} tetrahedrons.", ks.Tetrahedrons.Count);
-
-			for (int tetindex = 0; tetindex < ks.Tetrahedrons.Count; tetindex++)
-			{
-				Tetrahedron tet = ks.Tetrahedrons[tetindex];
-				if (tetindex % (ks.Tetrahedrons.Count / 10) == 0 && tetindex > 0)
-					Output.WriteLine("At {0}...", tetindex);
-
-				Matrix[] eigenvals = new Matrix[4];
-
-				for (int i = 0; i < 4; i++)
-				{
-					Matrix m = CalcHamiltonian(tet.Corners[i]);
-					Matrix vals, vecs;
-					m.EigenValsVecs(out vals, out vecs);
-
-					eigenvals[i] = vals;
-				}
-
-				for (int nband = 0; nband < eigenvals[0].Rows; nband++)
-				{
-					for (int i = 0; i < 4; i++)
-					{
-						tet.Values[i] = eigenvals[i][nband, 0].RealPart;
-					}
-
-					tet.SortCorners();
-
-					int estart = FindIndex(energyGrid, tet.Values[0]);
-					int eend = FindIndex(energyGrid, tet.Values[3]);
-
-					for (int ei = estart; ei < eend; ei++)
-					{
-						dos[ei, 0] += tet.IntegrateArea(energyGrid[ei]);
-					}
-				}
-			}
-
-			for (int i = 0; i < epts; i++)
-			{
-				dos[i, 0] /= ks.Tetrahedrons.Count;
-			}
-
-			for (int i = 0; i < epts; i++)
-			{
-				outf.Write("{0}     ", energyGrid[i]);
-
-				for (int j = 0; j < Orbitals.Count + 1; j++)
-				{
-					outf.Write("{0}  ", dos[i, j]);
-				}
-
-				outf.WriteLine();
-			}
-
-			outf.Close();
-
-			Output.WriteLine("Creating +coeff file.");
-			outf = new StreamWriter(Path.Combine(Path.GetDirectoryName(outputfile), "+coeff"));
-
-			outf.WriteLine("#\t1\t0\t" + ks.Kpts.Count.ToString());
-			outf.Write("# band index\te(k,n)\t");
-
-			for (int i = 0; i < Orbitals.Count; i++)
-			{
-				if (string.IsNullOrEmpty(Orbitals[i].Name))
-				{
-					outf.Write("TB{0}\t", i);
-				}
-				else
-					outf.Write("{0}\t", Orbitals[i].Name);
-			}
-			outf.WriteLine();
-
-			for (int kindex = 0; kindex < ks.Kpts.Count; kindex++)
-			{
-				Matrix m = CalcHamiltonian( ks.Kpts[kindex]);
-				Matrix vals, vecs;
-				m.EigenValsVecs(out vals, out vecs);
-
-				outf.WriteLine("# spin=    1 k={0}", ks.Kpts[kindex].Value);
-
-				for (int i = 0; i < vals.Rows; i++)
-				{
-					outf.Write("{0}     {1}    ", i + 1, vals[i, 0].RealPart);
-
-					for (int j = 0; j < vecs.Columns; j++)
-					{
-						outf.Write("{0}    {1}    ", vecs[i, j].RealPart, vecs[i, j].ImagPart);
-					}
-					outf.WriteLine();
-				}
-			}
-
 		}
 
 

@@ -8,16 +8,10 @@ namespace TightBindingSuite
 {
 	public class KptList
 	{
-		List<KPoint> allKpts = new List<KPoint>();
 		List<KPoint> kpts = new List<KPoint>();
-		List<Tetrahedron> tets = new List<Tetrahedron>();
-		int[] mesh;
-		int[] shift;
-		bool gammaCentered;
-		Dictionary<int, int> Nvalues = new Dictionary<int, int>();
-		Dictionary<int, int> AllNvalues = new Dictionary<int, int>();
-
-		Vector3 sdir, tdir, origin;
+		protected int[] mesh;
+		protected int[] shift;
+		Dictionary<int, int> mNvalues = new Dictionary<int, int>();
 
 		public KptList()
 		{
@@ -25,47 +19,63 @@ namespace TightBindingSuite
 
 		public KptList Clone()
 		{
-			KptList retval = new KptList();
+			return CloneImpl();
+		}
 
-			retval.allKpts.AddRange(allKpts.Select(x => x.Clone()));
-			retval.kpts.AddRange(kpts.Select(x => x.Clone()));
+		protected bool ContainsKindex(int N)
+		{
+			return mNvalues.ContainsKey(N);
+		}
+		public int Kindex(int N)
+		{
+			return mNvalues[N];
+		}
 
-			if (mesh != null)
-				retval.mesh = (int[])mesh.Clone();
-			if (shift != null)
-				retval.shift = (int[])shift.Clone();
+		protected virtual KptList CloneImpl()
+		{
+			KptList retval = (KptList)Activator.CreateInstance(this.GetType());
 
-			retval.gammaCentered = gammaCentered;
-
-			foreach (KeyValuePair<int, int> var in Nvalues)
-				retval.Nvalues.Add(var.Key, var.Value);
-			foreach (KeyValuePair<int, int> var in AllNvalues)
-				retval.AllNvalues.Add(var.Key, var.Value);
-
-			retval.sdir = sdir;
-			retval.tdir = tdir;
-			retval.origin = origin;
+			CloneBaseImpl(retval);
 
 			return retval;
 		}
+		protected void CloneBaseImpl(KptList retval)
+		{
+			retval.kpts.AddRange(kpts.Select(x => x.Clone()));
 
-		public static KptList DefaultPath(Lattice l)
+			if (mesh != null)				retval.mesh = (int[])mesh.Clone();
+			if (shift != null)				retval.shift = (int[])shift.Clone();
+		}
+		/// <summary>
+		/// Override to implement Clone correctly.
+		/// </summary>
+		/// <param name="retval"></param>
+		protected virtual void ProtectedClone(KptList retval)
+		{
+		}
+
+		public static KptList DefaultPath()
 		{
 			const int pts = 40;
 			KptList retval = new KptList();
 
+			Vector3 Xpt = new Vector3(1, 0, 0) / 2;
+			Vector3 Kpt = new Vector3(1, 1, 0) / 2;
+			Vector3 Rpt = new Vector3(1, 1, 1) / 2;
+			Vector3 Zpt = new Vector3(0, 0, 1) / 2;
+
 			retval.Kpts.Add(new KPoint(Vector3.Zero));
-			retval.AddPts(Vector3.Zero, l.G1 * Math.PI, pts);
-			retval.AddPts(l.G1 * Math.PI, (l.G1 + l.G2) * Math.PI, pts);
-			retval.AddPts((l.G1 + l.G2) * Math.PI, l.G2 * Math.PI, pts);
-			retval.AddPts(l.G2 * Math.PI, l.G3 * Math.PI, pts);
-			retval.AddPts(l.G3 * Math.PI, Vector3.Zero, pts);
+			retval.AddPts(Vector3.Zero, Xpt, pts);
+			retval.AddPts(Xpt, Kpt, pts);
+			retval.AddPts(Kpt, Zpt, pts);
+			retval.AddPts(Zpt, Rpt, pts);
+			retval.AddPts(Rpt, Vector3.Zero, pts);
 
 			return retval;
 		}
-		public static Vector3 CalcK(Lattice l, double dx, double dy, double dz)
+		public static Vector3 CalcK(double dx, double dy, double dz)
 		{
-			return dx * l.G1 + dy * l.G2 + dz * l.G3;
+			return new Vector3(dx, dy, dz);
 		}
 
 		public int[] Mesh { get { return mesh; } }
@@ -116,273 +126,8 @@ namespace TightBindingSuite
 		}
 
 		public List<KPoint> Kpts { get { return kpts; } }
-		public List<KPoint> AllKpts { get { return allKpts; } }
-
-		public List<Tetrahedron> Tetrahedrons { get { return tets; } }
-
-		private static bool CenterOnGamma(Lattice lattice, ref KPoint qpt, KptList list)
-		{
-			double dist = qpt.Value.Magnitude;
-			double olddist = dist;
-			Vector3 newPt = qpt.Value;
-			bool retval = true;
-			double bs, bt;
-
-			list.GetPlaneST(qpt, out bs, out bt);
-
-
-			for (int k = -1; k <= 1; k++)
-			{
-				for (int j = -1; j <= 1; j++)
-				{
-					for (int i = -1; i <= 1; i++)
-					{
-						if (i == 0 && j == 0 && k == 0)
-							continue;
-
-						Vector3 pt = qpt.Value +
-							i * lattice.G1 +
-							j * lattice.G2 +
-							k * lattice.G3;
-
-						double s, t;
-						bool valid = list.GetPlaneST(new KPoint(pt), out s, out t);
-
-						if (!valid)
-							continue;
-
-						if (pt.Magnitude < dist - 1e-6)
-						{
-							if (list.allKpts.Any(x => Math.Abs((x.Value - pt).Magnitude) > 1e-6))
-							{
-								retval = false;
-								continue;
-							}
-
-							dist = pt.Magnitude;
-							newPt = pt;
-						}
-					}
-				}
-			}
-
-			if (olddist != dist)
-				retval = true;
-
-			if (retval == false)
-				return false;
-
-			qpt.Value = newPt;
-
-			return true;
-		}
-
-		public static KptList GeneratePlane(Lattice lattice, Vector3[] points, SymmetryList syms, int[] qgrid, int[] qshift)
-		{
-			KptList qmesh = GenerateMesh(lattice, qgrid, qshift, syms, true);
-			return GeneratePlane(lattice, points, syms, qmesh);
-		}
-		public static KptList GeneratePlane(Lattice lattice, Vector3[] points, SymmetryList syms, KptList qmesh)
-		{
-			Vector3 diff_1 = points[1] - points[0];
-			Vector3 diff_2 = points[2] - points[0];
-			Vector3 norm = Vector3.CrossProduct(diff_1, diff_2);
-
-			KptList retval = new KptList();
-
-			retval.mesh = (int[])qmesh.mesh.Clone();
-			retval.shift = new int[3];
-			retval.gammaCentered = true;
-
-			retval.origin = points[0];
-			retval.sdir = diff_1;
-			retval.tdir = Vector3.CrossProduct(norm, diff_1);
-
-			NormalizeST(lattice, retval);
-
-			int zmax = qmesh.mesh[2] * 2;
-			int ymax = qmesh.mesh[1] * 2;
-			int xmax = qmesh.mesh[0] * 2;
-
-			int index = 0;
-
-			List<KPoint> planePoints  = new List<KPoint>();
-			for (int i = 0; i < qmesh.AllKpts.Count; i++)
-			{
-				var qpt = qmesh.AllKpts[i];
-
-				Vector3 diff = qpt.Value - points[0];
-				double dot = Math.Abs(diff.DotProduct(norm));
-
-				if (dot < 1e-8)
-				{
-					double s, t;
-				
-					retval.GetPlaneST(qpt, out s, out t); 
-					planePoints.Add(qpt);
-				}
-			}
-			SortByDistanceFromGamma(planePoints);
-
-			for (int i = 0; i <planePoints.Count; i++)
-			{
-				var qpt = planePoints[i];
-				double s, t;
-				retval.GetPlaneST(qpt, out s, out t);
-
-				//if (CenterOnGamma(lattice, ref qpt, retval) == false)
-				//    continue;
-
-				//retval.GetPlaneST(qpt, out news, out newt);
-
-				retval.allKpts.Add(qpt);
-			}
-
-			// now sort q-points to lay them in the s,t plane.
-			Comparison<KPoint> sorter = (x, y) =>
-			{
-				double s_x, s_y, t_x, t_y;
-
-				retval.GetPlaneST(x, out s_x, out t_x);
-				retval.GetPlaneST(y, out s_y, out t_y);
-
-				if (Math.Abs(t_x - t_y) > 1e-6)
-					return t_x.CompareTo(t_y);
-				else
-					return s_x.CompareTo(s_y);
-			};
-
-			retval.allKpts.Sort(sorter);
-
-			// now reduce points by symmetry.
-			for (int i = 0; i < retval.allKpts.Count; i++)
-			{
-				var qpt = retval.AllKpts[i];
-
-				int N = retval.KptToInteger(lattice, qpt);
-				int symN = N;
-				bool foundSym = false;
-				List<int> orbitals = null;
-
-				Vector3 pt = qpt.Value;
-
-				foreach (var symmetry in syms)
-				{
-					Vector3 Tpt = symmetry.Value * pt;
-
-					int newi, newj, newk;
-					retval.ReduceKpt(lattice, Tpt, out newi, out newj, out newk);
-
-					if (newi % 2 != 0 || newj % 2 != 0 || newk % 2 != 0)
-						continue;
-
-					symN = retval.KptToInteger(newi, newj, newk);
-
-					if (retval.Nvalues.ContainsKey(symN))
-					{
-						foundSym = true;
-
-						if (symmetry.OrbitalTransform.Count > 0)
-						{
-							orbitals = symmetry.OrbitalTransform;
-						}
-					}
-
-					if (foundSym)
-						break;
-				}
-
-				if (foundSym == false && retval.Nvalues.ContainsKey(N) == false)
-				{
-					retval.kpts.Add(qpt);
-					retval.Nvalues.Add(N, index);
-					index++;
-				}
-				else if (retval.Nvalues.ContainsKey(N) == false)
-				{
-					int newIndex = retval.Nvalues[symN];
-					retval.kpts[newIndex].AddOrbitalSymmetry(orbitals);
-
-					retval.Nvalues.Add(N, newIndex);
-				}
-				else
-				{ }  // skip points which are already in there.  This should only happen for zone edge points
-			}
-			
-			retval.kpts.Sort(sorter);
-
-			Vector3 sd = retval.sdir / SmallestNonzero(retval.sdir);
-			Vector3 td = retval.tdir / SmallestNonzero(retval.tdir);
-
-			Output.WriteLine("Plane horizontal direction: {0}", sd);
-			Output.WriteLine("Plane vertical direction: {0}", td);
-
-			Output.WriteLine("Plane horizontal vector: {0}", retval.sdir);
-			Output.WriteLine("Plane vertical vector: {0}", retval.tdir);
-
-			return retval;
-		}
-
-
-		private static void SortByDistanceFromGamma(List<KPoint> planePoints)
-		{
-			planePoints.Sort(
-				(x, y) =>
-				{
-					return x.Value.Magnitude.CompareTo(y.Value.Magnitude);
-				});
-		}
-
 		
-		private static void NormalizeST(Lattice lattice, KptList retval)
-		{
-			retval.sdir /= retval.sdir.Magnitude;
-			retval.tdir /= retval.tdir.Magnitude;
-
-			retval.sdir /= GammaInDirection(lattice, retval.sdir).Magnitude;
-			retval.tdir /= GammaInDirection(lattice, retval.tdir).Magnitude;
-
-			// double them to make s and t 1 at the zone boundary, instead of 0.5.
-			retval.sdir *= 2;
-			retval.tdir *= 2;
-		}
-
-		private static Vector3 GammaInDirection(Lattice lattice, Vector3 direction)
-		{
-			Vector3 sred = lattice.ReducedCoords(direction);
-			sred /= SmallestNonzero(sred);
-
-			Vector3 retval = sred.X * lattice.G1 + sred.Y * lattice.G2 + sred.Z * lattice.G3;
-
-			return retval;
-		}
-
-		private static double SmallestNonzero(Vector3 vector3)
-		{
-			double smallest = double.MaxValue;
-			for (int i = 0; i < 3; i++)
-			{
-				if (Math.Abs(vector3[i]) < smallest &&
-					Math.Abs(vector3[i]) > 1e-6)
-					smallest = Math.Abs(vector3[i]);
-			}
-
-			return smallest;
-		}
-		public bool GetPlaneST(KPoint kpt, out double s, out double t)
-		{
-			s = (kpt.Value - origin).DotProduct(sdir);
-			t = (kpt.Value - origin).DotProduct(tdir);
-
-			double norm = (kpt.Value - origin).DotProduct(sdir.CrossProduct(tdir));
-
-			if (Math.Abs(norm) > 1e-7)
-				return false;
-			else
-				return true;
-		}
-		
-		public static KptList GenerateMesh(Lattice lattice, int[] kgrid, int[] shift, SymmetryList syms, bool includeEnds)
+		public static KptList GenerateMesh(int[] kgrid, int[] shift, bool includeEnds)
 		{
 			KptList retval = new KptList();
 
@@ -395,9 +140,6 @@ namespace TightBindingSuite
 
 			retval.mesh = (int[])kgrid.Clone();
 			retval.shift = (int[])shift.Clone();
-			retval.gammaCentered = true;
-
-			SymmetryList compatSyms = FindCompatibleSymmetries(kgrid, syms);
 
 			int index = 0;
 			for (int k = -kgrid[2] + shift[2]; k <= kgrid[2]; k += 2)
@@ -417,73 +159,29 @@ namespace TightBindingSuite
 						double dy = j * 0.5 / kgrid[1];
 						double dz = k * 0.5 / kgrid[2];
 
-						Vector3 kptValue = CalcK(lattice, dx, dy, dz);
+						Vector3 kptValue = new Vector3(dx, dy, dz);
 
 						int N = retval.KptToInteger(i, j, k);
 						int symN = N;
 
-						System.Diagnostics.Debug.Assert(!(retval.Nvalues.ContainsKey(N) && includeEnds == false));
+						System.Diagnostics.Debug.Assert(!(retval.ContainsKindex(N) && includeEnds == false));
 						
-						List<int> orbitals = null;
-						bool foundSym = false;
-
-						foreach (var symmetry in compatSyms)
-						{
-							Vector3 Tpt = symmetry.Value * kptValue;
-
-							if (Tpt == kptValue)
-								continue;
-
-							int newi, newj, newk;
-							
-							retval.ReduceKpt(lattice, Tpt, out newi, out newj, out newk);
-
-							if (Math.Abs(newi) % 2 != shift[0] ||
-								Math.Abs(newj) % 2 != shift[1] ||
-								Math.Abs(newk) % 2 != shift[2])
-								continue;
-
-							symN = retval.KptToInteger(newi, newj, newk);
-
-							if (symN < N)
-							{
-								foundSym = true;
-
-								if (symmetry.OrbitalTransform.Count > 0)
-								{
-									orbitals = symmetry.OrbitalTransform;
-								}
-
-								break;
-							}
-						}
+						KPoint kpt = new KPoint(kptValue);
+						kpt.Nvalue = N;
 
 						if (includeEnds)
 						{
-							if (retval.AllNvalues.ContainsKey(N))
+							if (retval.ContainsKindex(N))
 							{
-								retval.allKpts.Add(new KPoint(kptValue));
+								retval.kpts.Add(kpt);
 								continue;
 							}
 						}
 
-						retval.AllNvalues.Add(N, retval.allKpts.Count);
-						retval.allKpts.Add(new KPoint(kptValue));
-						
-						if (foundSym == false)
-						{
-							retval.kpts.Add(new KPoint(kptValue));
-							retval.Nvalues.Add(N, index);
-							index++;
-						}
-						else
-						{
-							int newIndex = retval.Nvalues[symN];
-							retval.kpts[newIndex].Weight++;
-							retval.kpts[newIndex].AddOrbitalSymmetry(orbitals);
+						retval.kpts.Add(kpt);
 
-							retval.Nvalues.Add(N, newIndex);
-						}
+						retval.mNvalues.Add(N, retval.kpts.Count);
+						retval.kpts.Add(kpt);
 					}
 				}
 			}
@@ -493,53 +191,18 @@ namespace TightBindingSuite
 			{
 				retval.kpts[i].Weight /= count;
 			}
-			for (int i = 0; i < retval.allKpts.Count; i++)
-			{
-				retval.allKpts[i].Weight /= count;
-			}
 
 			return retval;
 		}
-		
-		private static void TranslateKptToNearGamma(Lattice lattice, ref Vector3 kptValue)
+
+		protected void ReduceKpt(Vector3 pt, out int newi, out int newj, out int newk)
 		{
-			Vector3 newkpt = kptValue;
-			double newmag = newkpt.MagnitudeSquared;
-
-			for (int i = -1; i <= 1; i++)
-			{
-				for (int j = -1; j <= 1; j++)
-				{
-					for (int k = -1; k <= 1; k++)
-					{
-						if (i == j && j == k && k == 0) continue;
-
-						Vector3 G = i * lattice.G1 + j * lattice.G2 + k * lattice.G3;
-						Vector3 kpt = kptValue + G;
-						double kmag = kpt.MagnitudeSquared;
-
-						if (kmag < newmag - 1e-6)
-						{
-							newkpt = kpt;
-							newmag = kmag;
-						}
-					}
-				}
-			}
-
-			kptValue = newkpt;
+			newi = (int)Math.Round(mesh[0] * pt.X * 2);
+			newj = (int)Math.Round(mesh[1] * pt.Y * 2);
+			newk = (int)Math.Round(mesh[2] * pt.Z * 2);
 		}
 
-		private void ReduceKpt(Lattice lattice, Vector3 pt, out int newi, out int newj, out int newk)
-		{
-			Vector3 red = lattice.ReducedCoords(pt, true);
-
-			newi = (int)Math.Round(mesh[0] * red.X * 2);
-			newj = (int)Math.Round(mesh[1] * red.Y * 2);
-			newk = (int)Math.Round(mesh[2] * red.Z * 2);
-		}
-
-		private int KptToInteger(int i, int j, int k)
+		protected int KptToInteger(int i, int j, int k)
 		{
 			i += mesh[0];
 			j += mesh[1];
@@ -551,289 +214,18 @@ namespace TightBindingSuite
 
 			return i + j * 1000 + k * 1000000;
 		}
-		private int KptToInteger(Lattice lattice, KPoint qpt)
+		protected int KptToInteger(KPoint qpt)
 		{
-			return KptToInteger(lattice, qpt.Value);
+			return KptToInteger( qpt.Value);
 		}
-		private int KptToInteger(Lattice lattice, Vector3 qpt)
+		protected int KptToInteger(Vector3 qpt)
 		{
 			int i, j, k;
-			ReduceKpt(lattice, qpt, out i, out j, out k);
+			ReduceKpt( qpt, out i, out j, out k);
 
 			return KptToInteger(i, j, k);
 		}
 
-		private static SymmetryList FindCompatibleSymmetries(int[] kgrid, SymmetryList syms)
-		{
-			SymmetryList compatSyms;
-			compatSyms = new SymmetryList();
-			Vector3 gridVector = new Vector3(kgrid[0], kgrid[1], kgrid[2]);
-
-			foreach (var symmetry in syms)
-			{
-				Vector3 grid2 = symmetry.Value * gridVector;
-				for (int gi = 0; gi < 3; gi++)
-					grid2[gi] = Math.Abs(grid2[gi]);
-
-				if (grid2 == gridVector)
-				{
-					compatSyms.Add(symmetry);
-				}
-			}
-			return compatSyms;
-		}
-
-		public static KptList oldGenerateMesh(Lattice lattice, int[] kgrid, int[] shift, SymmetryList syms, bool includeEnds)
-		{
-			bool centerGamma = false;
-			KptList retval = new KptList();
-			int zmax = kgrid[2] * 2;
-			int ymax = kgrid[1] * 2;
-			int xmax = kgrid[0] * 2;
-
-			if (shift == null)
-				shift = new int[3];
-
-			retval.mesh = (int[])kgrid.Clone();
-			retval.shift = (int[])shift.Clone();
-			retval.gammaCentered = centerGamma;
-
-			int index = 0;
-			Vector3 gridVector = new Vector3(kgrid[0], kgrid[1], kgrid[2]);
-
-			SymmetryList compatSyms = new SymmetryList();
-			foreach (var symmetry in syms)
-			{
-				Vector3 grid2 = symmetry.Value * gridVector;
-				for (int gi = 0; gi < 3; gi++)
-					grid2[gi] = Math.Abs(grid2[gi]);
-
-				if (grid2 == gridVector)
-				{
-					compatSyms.Add(symmetry);
-				}
-			}
-
-			for (int k = 0; k <= zmax; k += 2)
-			{
-				for (int j = 0; j <= ymax; j += 2)
-				{
-					for (int i = 0; i <= xmax; i += 2)
-					{
-						if (includeEnds == false)
-						{
-							if (k == zmax) break;
-							if (i == xmax) break;
-							if (j == ymax) break;
-						}
-
-						int N = retval.KptToInteger(i, j, k);
-						bool foundSym = false;
-
-						double dx = (i + shift[0]) / (double)xmax;
-						double dy = (j + shift[1]) / (double)ymax;
-						double dz = (k + shift[2]) / (double)zmax;
-						int symN = N;
-						List<int> orbitals = null;
-
-						if (centerGamma)
-						{
-							if (kgrid[0] > 1) dx -= 0.5;
-							if (kgrid[1] > 1) dy -= 0.5;
-							if (kgrid[2] > 1) dz -= 0.5;
-						}
-
-						Vector3 pt = CalcK(lattice, dx, dy, dz);
-						
-#if DEBUG
-						int testi, testj, testk;
-						retval.ReduceKpt(lattice, new Vector3(pt), out testi, out testj, out testk);
-
-						//System.Diagnostics.Debug.Assert(i == testi);
-						//System.Diagnostics.Debug.Assert(j == testj);
-						//System.Diagnostics.Debug.Assert(k == testk);
-
-#endif
-						foreach (var symmetry in compatSyms)
-						{
-							Vector3 Tpt = symmetry.Value * pt;
-
-							if (Tpt == pt)
-								continue;
-
-							Vector3 red = lattice.ReducedCoords(Tpt, true);
-
-							int newi = (int)Math.Round(xmax * red.X - shift[0]);
-							int newj = (int)Math.Round(ymax * red.Y - shift[1]);
-							int newk = (int)Math.Round(zmax * red.Z - shift[2]);
-
-							if (newi % 2 != 0 || newj % 2 != 0 || newk % 2 != 0)
-								continue;
-
-							symN = retval.KptToInteger(newi, newj, newk);
-
-							if (symN < N)
-							{
-								foundSym = true;
-
-								if (symmetry.OrbitalTransform.Count > 0)
-								{
-									orbitals = symmetry.OrbitalTransform;
-								}
-							}
-
-							if (foundSym)
-								break;
-						}
-
-						Vector3 kptValue = CalcK(lattice, dx, dy, dz);
-
-						retval.allKpts.Add(new KPoint(kptValue));
-
-						if (retval.Nvalues.ContainsKey(N))
-						{
-							
-						}
-						else if (foundSym == false)
-						{
-							retval.kpts.Add(new KPoint(kptValue));
-							retval.Nvalues.Add(N, index);
-							index++;
-						}
-						else
-						{
-							int newIndex = retval.Nvalues[symN];
-							retval.kpts[newIndex].Weight++;
-							retval.kpts[newIndex].AddOrbitalSymmetry(orbitals);
-
-							retval.Nvalues.Add(N, newIndex);
-						}
-					}
-				}
-			}
-
-			int count = kgrid[0] * kgrid[1] * kgrid[2];
-			for (int i = 0; i < retval.kpts.Count; i++)
-			{
-				retval.kpts[i].Weight /= count;
-				retval.allKpts[i].Weight /= count;
-			}
-
-			if (includeEnds)
-			{
-				retval.allKpts.Sort((x, y) => x.Value.Z.CompareTo(y.Value.Z));
-
-				List<int> removeThese = new List<int>();
-				List<int> equivKpt = new List<int>();
-
-				// read this value first, because the size of the array will change.
-				int kptCount = retval.AllKpts.Count;
-				for (int kindex = 0; kindex < kptCount; kindex++)
-				{
-					if (removeThese.Contains(kindex))
-						continue;
-
-					Vector3 kpt = retval.allKpts[kindex].Value;
-					double dist = kpt.Magnitude;
-
-					equivKpt.Clear();
-
-					for (int k = -1; k <= 1; k++)
-					{
-						for (int j = -1; j <= 1; j++)
-						{
-							for (int i = -1; i <= 1; i++)
-							{
-								if (i == 0 && j == 0 && k == 0)
-									continue;
-
-								Vector3 pt = kpt +
-									i * lattice.G1 +
-									j * lattice.G2 +
-									k * lattice.G3;
-
-								double newDist = pt.Magnitude;
-
-								if (newDist < dist - 1e-6)
-								{
-									foreach (var value in equivKpt)
-									{
-										if (removeThese.Contains(value) == false)
-											removeThese.Add(value);
-									}
-
-									equivKpt.Clear();
-
-									int search = retval.AllKpts.FindIndex(x => (x.Value - pt).Magnitude < 1e-6);
-
-									if (search != -1)
-									{
-										if (removeThese.Contains(kindex) == false)
-											removeThese.Add(kindex);
-
-										// break out of the loop
-										k = 1; j = 1; i = 2;
-									}
-									else
-									{
-										retval.allKpts[kindex].Value = pt;
-										kpt = pt;
-										dist = newDist;
-
-										// reset variables since we updated this kpoint value.
-										k = -1;
-										j = -1;
-										i = -2;
-									}
-								}
-								else if (Math.Abs(dist - newDist) < 1e-6)
-								{
-									int search = retval.AllKpts.FindIndex(x => (x.Value - pt).Magnitude < 1e-6);
-
-									if (search != -1)
-									{
-										if (removeThese.Contains(search))
-										{
-											k = 1; j = 1; i = 2;
-											removeThese.Add(kindex);
-											break;
-										}
-
-										equivKpt.Add(search);
-										continue;
-									}
-
-									equivKpt.Add(retval.allKpts.Count);
-									retval.allKpts.Add(new KPoint(pt));
-								}
-							}
-						}
-					}
-				}
-
-				// sort in reverse order
-				removeThese.Sort((x, y) => -x.CompareTo(y));
-
-				for (int i = 0; i < removeThese.Count; i++)
-				{
-					retval.allKpts.RemoveAt(removeThese[i]);
-				}
-
-				retval.allKpts.Sort((x, y) => x.Value.Z.CompareTo(y.Value.Z));
-			}
-#if DEBUG
-			if (!includeEnds)
-			{
-				double check = 0;
-				for (int i = 0; i < retval.kpts.Count; i++)
-					check += retval.kpts[i].Weight;
-
-				System.Diagnostics.Debug.Assert(Math.Abs(check - 1) < 1e-8);
-			}
-#endif
-
-			return retval;
-		}
 
 
 
@@ -844,13 +236,13 @@ namespace TightBindingSuite
 				int newi, newj, newk;
 				Vector3 newKpt = symmetries[s].Inverse * kpt;
 
-				ReduceKpt(lattice, newKpt, out newi, out newj, out newk);
+				ReduceKpt(newKpt, out newi, out newj, out newk);
 
 				int N = KptToInteger(newi, newj, newk);
 
-				if (Nvalues.ContainsKey(N))
+				if (ContainsKindex(N))
 				{
-					int index = Nvalues[N];
+					int index = Kindex(N);
 
 					orbitalMap = symmetries[s].OrbitalTransform;
 					return index;
@@ -860,32 +252,27 @@ namespace TightBindingSuite
 			throw new Exception(string.Format("Could not find k-point {0}", kpt));
 		}
 
-		public int AllKindex(Vector3 kpt, Lattice lattice)
+		[Obsolete]
+		public int AllKindex(Vector3 kpt)
 		{
 			int newi, newj, newk;
 				
-			ReduceKpt(lattice, kpt, out newi, out newj, out newk);
+			ReduceKpt(kpt, out newi, out newj, out newk);
 			
 			int N = KptToInteger(newi, newj, newk);
 
-			return AllNvalues[N];
+			return mNvalues[N];
 		}
 
 		public override string ToString()
 		{
-			return string.Format("K-points: {0}   Irreducible: {1}", allKpts.Count, kpts.Count);
+			return string.Format("K-points: {0}", kpts.Count);
 		}
 
 		public void SetTemperature(double temperature, double mu)
 		{
 			double beta = 1 / temperature;
 
-			SetTemperature(Kpts, beta, mu);
-			SetTemperature(AllKpts, beta, mu);
-		}
-
-		private void SetTemperature(List<KPoint> kpts, double beta, double mu)
-		{
 			foreach (var k in kpts)
 			{
 				foreach (Wavefunction wfk in k.Wavefunctions)
@@ -899,6 +286,11 @@ namespace TightBindingSuite
 		private double FermiFunction(double energy, double beta)
 		{
 			return 1.0 / (Math.Exp(beta * energy) + 1);
+		}
+
+		internal KptList CreateIrreducibleMesh(SymmetryList symmetryList)
+		{
+			return this;
 		}
 	}
 }
