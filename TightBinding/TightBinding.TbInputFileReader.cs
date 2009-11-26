@@ -99,9 +99,11 @@ namespace TightBindingSuite
 					}
 				}
 
+				DetectSpaceGroup(tb);
 				ValidateSymmetries(tb.kgrid, tb.symmetries);
 
 			}
+
 
 			private void ValidateSymmetries(int[] kgrid, SymmetryList syms)
 			{
@@ -146,7 +148,7 @@ namespace TightBindingSuite
 			private void GenerateKmesh()
 			{
 				tb.mAllKmesh = KptList.GenerateMesh(tb.kgrid, tb.shift, false);
-				tb.mKmesh = tb.mAllKmesh.CreateIrreducibleMesh(tb.Symmetries);
+				tb.mKmesh = tb.mAllKmesh.CreateIrreducibleMesh(null);
 
 				Output.WriteLine("Applied {0} symmetries to get {1} irreducible kpoints from {2}.",
 					tb.symmetries.Count, tb.mKmesh.Kpts.Count, tb.mAllKmesh.Kpts.Count);
@@ -190,6 +192,13 @@ namespace TightBindingSuite
 						ReadLatticeSection();
 						break;
 
+					case "Symmetry":
+						Output.WriteLine("WARNING: Symmetry section is deprecated.  Remove it.");
+						while (LineType != LineType.NewSection)
+							ReadNextLine();
+
+						break;
+
 					case "Sites":
 						ThrowEx("Sites section has been renamed to \"Orbitals\".");
 						break;
@@ -224,10 +233,6 @@ namespace TightBindingSuite
 
 					case "Poles":
 						ReadPolesSection();
-						break;
-
-					case "Symmetry":
-						ReadSymmetrySection();
 						break;
 
 					case "Frequency":
@@ -506,35 +511,6 @@ namespace TightBindingSuite
 				}
 			}
 
-			[Obsolete("",true)]
-			private bool ReducedVectors()
-			{
-				bool reduced = false;
-
-				if (LineType == LineType.Unknown)
-				{
-					switch (Line.ToLowerInvariant())
-					{
-						case "red":
-						case "reduced":
-						case "crystal":
-							reduced = true;
-							break;
-
-						case "cart":
-						case "cartesian":
-							reduced = false;
-							break;
-
-						default:
-							ThrowEx("Could not understand input " + Line + ".");
-							break;
-					}
-
-					ReadNextLine();
-				}
-				return reduced;
-			}
 			void ReadHoppingsSection()
 			{
 				if (tb.hoppings != null)
@@ -683,308 +659,121 @@ namespace TightBindingSuite
 				}
 			}
 
-			private void ReadSymmetrySection()
+			private void DetectSpaceGroup(TightBinding tb)
 			{
-				if (tb.symmetries.Count > 0)
-					ThrowEx("Second symmetries section encountered.");
+				SymmetryList syms = new SymmetryList();
+				Matrix vecs = new Matrix(3, 3);
+				Matrix vinv;
 
-				var symmetries = tb.symmetries;
+				for (int i = 0; i < 3; i++)
+					vecs.SetColumn(i, tb.Lattice.LatticeVector(i));
 
-				symmetries.Add(Matrix.Identity(3), null);
+				vinv = vecs.Invert();
 
-				while (!EOF && LineType != LineType.NewSection)
+				using (StreamWriter s = new StreamWriter("syms"))
 				{
-					List<string> words = new List<string>();
-					List<int> orbitals = new List<int>();
-					words.AddRange(Line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
-
-					if (words.Count > 1)
+					for (int i = 0;  i < SpaceGroup.PrimitiveSymmetries.Count; i++)
 					{
-						for (int i = 1; i < words.Count; i++)
-							orbitals.Add(int.Parse(words[i]) - 1);
-					}
+						Symmetry sym = SpaceGroup.PrimitiveSymmetries[i];
 
-					Matrix m = Matrix.Identity(3);
-					Matrix n = Matrix.Zero(3);
+						s.WriteLine("Testing symmetry " + sym.Name + ":");
+						s.WriteLine(sym.Value);
 
-					StoreEquivalentOrbitals(orbitals);
+						Matrix symValue = vecs * sym.Value * vinv;
 
-					switch (words[0].ToLowerInvariant())
-					{
-						case "e":
-							break;
-						case "c2(90)":
-							n[0, 0] = -1;
-							n[1, 0] = -1;
-							n[0, 1] = 1;
-							n[2, 2] = -1;
-							symmetries.Add(n, orbitals);
-							break;
-						case "c2(0)":
-							n[0, 0] = 1;
-							n[1, 0] = 1;
-							n[0, 1] = -1;
-							n[2, 2] = -1;
-							symmetries.Add(n, orbitals);
-							break;
-						case "c5/6(z)":
-							n[0, 1] = 1;
-							n[1, 0] = -1;
-							n[1, 1] = 1;
-							n[2, 2] = 1;
-							symmetries.Add(n, orbitals);
-							break;
-						case "c2/3(z)":
-							n[0, 0] = -1;
-							n[0, 1] = 1;
-							n[1, 0] = -1;
-							n[2, 2] = 1;
-							symmetries.Add(n, orbitals);
-							break;
-						case "c1/3(z)":
-							n[0, 1] = -1;
-							n[1, 0] = 1;
-							n[1, 1] = -1;
-							n[2, 2] = 1;
-							symmetries.Add(n, orbitals);
-							break;
-						case "c1/6(z)":
-							n[0, 0] = 1;
-							n[0, 1] = -1;
-							n[1, 0] = 1;
-							n[2, 2] = 1;
-							symmetries.Add(n, orbitals);
-							break;
-						case "c2(xy[30])":
-							n[0, 1] = 1;
-							n[1, 0] = 1;
-							n[2, 2] = -1;
-							symmetries.Add(n, orbitals);
-							break;
-						case "c2(xy[60])":
-							n[0, 0] = -1;
-							n[0, 1] = 1;
-							n[1, 1] = 1;
-							n[2, 2] = -1;
-							symmetries.Add(n, orbitals);
-							break;
-						case "c2(xy[-60])":
-							n[0, 1] = -1;
-							n[1, 0] = -1;
-							n[2, 2] = -1;
-							symmetries.Add(n, orbitals);
-							break;
-						case "c2(xy[-30])":
-							n[0, 0] = 1;
-							n[0, 1] = -1;
-							n[1, 1] = -1;
-							n[2, 2] = -1;
-							symmetries.Add(n, orbitals);
-							break;
-						case "s(90)":
-							n[0, 0] = 1;
-							n[1, 0] = 1;
-							n[1, 1] = -1;
-							n[2, 2] = 1;
-							symmetries.Add(n, orbitals);
-							break;
-						case "s(0)":
-							n[0, 0] = -1;
-							n[1, 0] = -1;
-							n[1, 1] = 1;
-							n[2, 2] = 1;
-							symmetries.Add(n, orbitals);
-							break;
-						case "c2(y)":    //1
-							m[0, 0] = -1;
-							m[2, 2] = -1;
-							symmetries.Add(m, orbitals);
-							break;
-						case "c2(x)":    //2
-							m[1, 1] = -1;
-							m[2, 2] = -1;
-							symmetries.Add(m, orbitals);
-							break;
-						case "c2(z)":    //3
-							m[0, 0] = -1;
-							m[1, 1] = -1;
-							symmetries.Add(m, orbitals);
-							break;
-						case "c2(xy)":    //12
-							n[0, 1] = 1;
-							n[1, 0] = 1;
-							n[2, 2] = -1;
-							symmetries.Add(n, orbitals);
-							break;
-						case "c3/4(z)":    //13
-							n[0, 1] = 1;
-							n[1, 0] = -1;
-							n[2, 2] = 1;
-							symmetries.Add(n, orbitals);
-							break;
-						case "c1/4(z)":    //14
-							n[0, 1] = -1;
-							n[1, 0] = 1;
-							n[2, 2] = 1;
-							symmetries.Add(n, orbitals);
-							break;
-						case "c2(x-y)":    //15
-							n[0, 1] = -1;
-							n[1, 0] = -1;
-							n[2, 2] = -1;
-							symmetries.Add(n, orbitals);
-							break;
-						case "i":    //32
-							symmetries.Add(-1 * m, orbitals);
-							break;
-						case "s(y)":    //33
-							m[1, 1] = -1;
-							symmetries.Add(m, orbitals);
-							break;
-						case "s(x)":    //34
-							m[0, 0] = -1;
-							symmetries.Add(m, orbitals);
-							break;
-						case "s(z)":    //35
-							m[2, 2] = -1;
-							symmetries.Add(m, orbitals);
-							break;
-						case "s(xy)":    // 44
-							n[0, 1] = -1;
-							n[1, 0] = -1;
-							n[2, 2] = 1;
-							symmetries.Add(n, orbitals);
-							break;
-						case "s1/4(z)":    //45
-							n[0, 1] = -1;
-							n[1, 0] = 1;
-							n[2, 2] = -1;
-							symmetries.Add(n, orbitals);
-							break;
-						case "s3/4(z)":    //46
-							n[0, 1] = 1;
-							n[1, 0] = -1;
-							n[2, 2] = -1;
-							symmetries.Add(n, orbitals);
-							break;
-						case "s(x-y)":    //47
-							n[0, 1] = 1;
-							n[1, 0] = 1;
-							n[2, 2] = 1;
-							symmetries.Add(n, orbitals);
-							break;
+						if (CheckLatticeSymmetry(tb.lattice, symValue) == false)
+							goto fail;
+						
+						s.WriteLine("Passed lattice vector symmetry.");
+						s.WriteLine("Testing orbital symmetry.");
 
-						default:
-							Output.WriteLine("Unrecognized Symmetry {0}.", words[0]);
-							ThrowEx("Invalid Symmetry: {0}", words[0]);
-							break;
-					}
+						OrbitalMap orbitalMap;
 
-					ReadNextLine();
-				}
-			}
+						if (CheckOrbitalSymmetry(tb, sym, out orbitalMap) == false)
+							goto fail;
 
-			private void StoreEquivalentOrbitals(List<int> orbitals)
-			{
-				for (int i = 0; i < orbitals.Count; i++)
-				{
-					if (orbitals[i] == i)
+						syms.Add(sym);
 						continue;
-
-					if (tb.orbitals[i].Equivalent.Contains(orbitals[i]) == false)
-						tb.orbitals[i].Equivalent.Add(orbitals[i]);
-					if (tb.orbitals[orbitals[i]].Equivalent.Contains(i) == false)
-						tb.orbitals[orbitals[i]].Equivalent.Add(i);
+					fail:
+						s.WriteLine("Failed.");
+					}
 				}
+
+				tb.SpaceGroup = SpaceGroup.IdentifyGroup(syms);
+
+				Output.WriteLine("Found space group {0}:  {1}", tb.SpaceGroup.Number, tb.SpaceGroup.Name);
+
 			}
 
-			private List<int> SwapOrbitals(List<int> orbitalMap, int count)
+			private bool CheckOrbitalSymmetry(TightBinding tb, Symmetry sym,OrbitalMap orbitalMap)
 			{
-				int[] retval = new int[orbitalMap.Count];
-				for (int i = 0; i < orbitalMap.Count; i++)
-					retval[i] = orbitalMap[i];
+				orbitalMap = new OrbitalMap(tb.Orbitals.Count);
 
-				SwapOrbitalsImpl(orbitalMap, ref retval, count);
-
-				return retval.ToList();
-			}
-
-			private static void SwapOrbitalsImpl(List<int> orbitalMap, ref int[] retval, int count)
-			{
-				if (count <= 0)
-					return;
-
-				int[] newRetval = new int[retval.Length];
-
-				for (int i = 0; i < orbitalMap.Count; i++)
+				for (int i = 0; i < tb.orbitals.Count; i++)
 				{
-					newRetval[i] = retval[orbitalMap[i]];
+					Orbital orb = tb.orbitals[i];
+
+					Vector3 newLoc = sym.Value * orb.Location;
+					newLoc += sym.Translation;
+
+					bool valid = false;
+					for (int j = 0; j < tb.orbitals.Count; j++)
+					{
+						Vector3 diff = newLoc - tb.orbitals[j].Location;
+
+						if (VectorIsInteger(diff))
+						{
+							// now check to see if orbital transforms correctly.
+							if (CheckSymmetryDesignation(orb, tb.orbitals[j], sym) == false)
+								continue;
+
+							valid = true;
+							orbitalMap[i] = j;
+							break;
+						}
+					}
+
+					if (valid == false)
+						return false;
+
 				}
-				count--;
-				retval = newRetval;
 
-				SwapOrbitalsImpl(orbitalMap, ref retval, count);
+				return true;
 			}
-			IEnumerable<Matrix> GetPossibleSymmetries()
+
+			private bool CheckSymmetryDesignation(Orbital orb, Orbital orbital, Symmetry sym)
 			{
-				Matrix m = Matrix.Identity(3);
+				ODHelper.
+			}
 
-				// identity
-				yield return m;
+			bool CheckLatticeSymmetry(Lattice lat, Matrix sym)
+			{
+				for (int i = 0; i < 3; i++)
+				{
+					Vector3 test = sym * lat.LatticeVector(i);
+					Vector3 red = lat.DirectReduce(test);
 
-				// inversion
-				yield return -1 * m;
+					if (VectorIsInteger(red) == false)
+						return false;
+				}
 
-				// reflections
-				m[0, 0] = -1;
-				yield return m;
+				return true;
+			}
 
-				m[0, 0] = 1;
-				m[1, 1] = -1;
-				yield return m;
+			private static bool VectorIsInteger(Vector3 red)
+			{
+				for (int j = 0; j < 3; j++)
+				{
+					while (Math.Abs(red[j] - 1) < Math.Abs(red[j])) red[j] -= 1;
+					while (Math.Abs(red[j] + 1) < Math.Abs(red[j])) red[j] += 1;
 
-				m[1, 1] = 1;
-				m[2, 2] = -1;
-				yield return m;
+					if (Math.Abs(red[j]) > 1e-5)
+					{
+						return false;
+					}
+				}
 
-				// rotations
-				m = Matrix.Zero(3);
-
-				m[1, 0] = 1;
-				m[0, 1] = 1;
-				m[2, 2] = 1;
-				yield return m;
-
-				m = Matrix.Zero(3);
-
-				m[2, 0] = 1;
-				m[0, 2] = 1;
-				m[1, 1] = 1;
-				yield return m;
-
-				m = Matrix.Zero(3);
-
-				m[2, 1] = 1;
-				m[1, 2] = 1;
-				m[0, 0] = 1;
-				yield return m;
-
-				// rotation/reflections
-				yield return new Matrix(3, 3,
-										0, -1, 0,
-										1, 0, 0,
-										0, 0, 1);
-
-				yield return new Matrix(3, 3,
-										0, 1, 0,
-										-1, 0, 0,
-										0, 0, 1);
-
-				yield return new Matrix(3, 3,
-										0, 1, 0,
-										1, 0, 0,
-										0, 0, -1);
-
+				return true;
 			}
 
 			void ApplySymmetries()
@@ -1133,6 +922,109 @@ namespace TightBindingSuite
 				}
 
 				return true;
+			}
+
+			private void StoreEquivalentOrbitals(List<int> orbitals)
+			{
+				for (int i = 0; i < orbitals.Count; i++)
+				{
+					if (orbitals[i] == i)
+						continue;
+
+					if (tb.orbitals[i].Equivalent.Contains(orbitals[i]) == false)
+						tb.orbitals[i].Equivalent.Add(orbitals[i]);
+					if (tb.orbitals[orbitals[i]].Equivalent.Contains(i) == false)
+						tb.orbitals[orbitals[i]].Equivalent.Add(i);
+				}
+			}
+
+			private List<int> SwapOrbitals(List<int> orbitalMap, int count)
+			{
+				int[] retval = new int[orbitalMap.Count];
+				for (int i = 0; i < orbitalMap.Count; i++)
+					retval[i] = orbitalMap[i];
+
+				SwapOrbitalsImpl(orbitalMap, ref retval, count);
+
+				return retval.ToList();
+			}
+
+			private static void SwapOrbitalsImpl(List<int> orbitalMap, ref int[] retval, int count)
+			{
+				if (count <= 0)
+					return;
+
+				int[] newRetval = new int[retval.Length];
+
+				for (int i = 0; i < orbitalMap.Count; i++)
+				{
+					newRetval[i] = retval[orbitalMap[i]];
+				}
+				count--;
+				retval = newRetval;
+
+				SwapOrbitalsImpl(orbitalMap, ref retval, count);
+			}
+			IEnumerable<Matrix> GetPossibleSymmetries()
+			{
+				Matrix m = Matrix.Identity(3);
+
+				// identity
+				yield return m;
+
+				// inversion
+				yield return -1 * m;
+
+				// reflections
+				m[0, 0] = -1;
+				yield return m;
+
+				m[0, 0] = 1;
+				m[1, 1] = -1;
+				yield return m;
+
+				m[1, 1] = 1;
+				m[2, 2] = -1;
+				yield return m;
+
+				// rotations
+				m = Matrix.Zero(3);
+
+				m[1, 0] = 1;
+				m[0, 1] = 1;
+				m[2, 2] = 1;
+				yield return m;
+
+				m = Matrix.Zero(3);
+
+				m[2, 0] = 1;
+				m[0, 2] = 1;
+				m[1, 1] = 1;
+				yield return m;
+
+				m = Matrix.Zero(3);
+
+				m[2, 1] = 1;
+				m[1, 2] = 1;
+				m[0, 0] = 1;
+				yield return m;
+
+				// rotation/reflections
+				yield return new Matrix(3, 3,
+										0, -1, 0,
+										1, 0, 0,
+										0, 0, 1);
+
+				yield return new Matrix(3, 3,
+										0, 1, 0,
+										-1, 0, 0,
+										0, 0, 1);
+
+				yield return new Matrix(3, 3,
+										0, 1, 0,
+										1, 0, 0,
+										0, 0, -1);
+
 			}
 
 

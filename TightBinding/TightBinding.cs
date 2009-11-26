@@ -16,6 +16,7 @@ namespace TightBindingSuite
 		KptList mKmesh;
 		KptPlane mAllQplane;
 		KptPlane mQplane;
+		SpaceGroup mSpaceGroup;
 		List<int> poles = new List<int>();
 
 		public Lattice Lattice { get { return lattice; } }
@@ -30,7 +31,9 @@ namespace TightBindingSuite
 		public double[] TemperatureMesh { get; private set; }
 		public double[] MuMesh { get; private set; }
 		public List<int> PoleStates { get { return poles; } }
+		[Obsolete]
 		public SymmetryList Symmetries { get { return symmetries; } }
+		public SpaceGroup SpaceGroup { get { return mSpaceGroup; } private set { mSpaceGroup = value; } }
 		public double[] Nelec { get; private set; }
 
 		public InteractionList Interactions { get; private set; }

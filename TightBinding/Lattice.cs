@@ -46,6 +46,19 @@ namespace TightBindingSuite
 		public Vector3 G2 { get { return g2; }}
 		public Vector3 G3 { get { return g3; }}
 
+		public Vector3 LatticeVector(int index)
+		{
+			switch (index)
+			{
+				case 0: return a1;
+				case 1: return a2;
+				case 2: return a3;
+
+				default:
+					throw new ArgumentException();
+			}
+		}
+
 		public Vector3 DirectReduce(Vector3 a)
 		{
 			Matrix m = new Matrix(3, 3);

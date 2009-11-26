@@ -64,7 +64,15 @@
     <Compile Include="Main.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="InputReader.cs" />
+    <Compile Include="OrbitalDesignation.cs" />
+    <Compile Include="OrbitalMap.cs" />
     <Compile Include="Output.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Spacegroup.cs" />
     <Compile Include="Symmetry.cs" />
     <Compile Include="SymmetryList.cs" />
     <Compile Include="TightBinding.TbInputFileReader.cs" />
@@ -111,11 +119,16 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Resources\spgroup.txt" />
+    <None Include="Resources\spnames.txt" />
     <Content Include="tightbinding.txt" />
     <Content Include="TODO.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Properties\" />
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>
