@@ -15,30 +15,7 @@
 # Sixth parameter is the orbital symmetry (eg. dxy)
 # Seventh parameter is the interaction group.
 [Orbitals]
-(0 0 0)   s   a   s   a
-
-# Symmetries in the crystal.
-# The numbers following the symmetry name indicate how the orbitals transform 
-# under the symmetry.  If you specify the symmetry operation, you must specify
-# one number for each orbital.  The orbital transforms are optional if the 
-# orbitals transform into themselves.
-[Symmetry]
-E
-C2(y)
-C2(x)
-C2(z)
-C2(xy)   
-C3/4(z)  
-C1/4(z)  
-C2(x-y)  
-I
-s(y)
-s(x)
-s(z)
-s(xy)    
-S1/4(z)  
-S3/4(z)  
-s(x-y)   
+ 0 0 0    s   a   s   a 
 
 # Each hopping is followed by a list of Bravais lattice vectors.
 # Those vectors must be composed of integer values.
@@ -104,5 +81,5 @@ G        0       0       0
 # entered.
 # For long range interactions, only enter two values, which are U prime and J.
 [Interaction]
-4 4 1 1 
-
+:a a:
+1.5 1.0 0.8 0.6 

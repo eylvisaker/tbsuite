@@ -24,29 +24,7 @@
  0   0   0       Cr-4py p p-1 c
  0   0   0       Cr-4pz p p0  c
  0   0   0       Cr-4px p p1  c
- 
-# Symmetries in the crystal.
-# The numbers following the symmetry name indicate how the orbitals transform 
-# under the symmetry.  If you specify the symmetry operation, you must specify
-# one number for each orbital.  The orbital transforms are optional if the 
-# orbitals transform into themselves.
-[Symmetry]
-E
-#C2(y)
-#C2(x)
-#C2(z)
-#C2(xy)   
-#C3/4(z)  
-#C1/4(z)  
-#C2(x-y)  
-I
-#s(y)
-#s(x)
-#s(z)
-#s(xy)    
-#S1/4(z)  
-#S3/4(z)  
-#s(x-y)
+
 
 # Each hopping is followed by a list of Bravais lattice vectors.
 # Those vectors must be composed of integer values.

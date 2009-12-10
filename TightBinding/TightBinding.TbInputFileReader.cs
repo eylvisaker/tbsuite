@@ -36,8 +36,6 @@ namespace TightBindingSuite
 					ThrowEx(@"There are no sites.");
 				if (tb.hoppings.Count == 0)
 					ThrowEx(@"There are no hoppings.");
-				if (tb.symmetries.Count == 0)
-					tb.symmetries.Add(new Symmetry(Matrix.Identity(3)));
 
 				if (tb.Nelec != null)
 				{
@@ -100,7 +98,7 @@ namespace TightBindingSuite
 				}
 
 				DetectSpaceGroup(tb);
-				ValidateSymmetries(tb.kgrid, tb.symmetries);
+				ValidateSymmetries(tb.kgrid, tb.SpaceGroup.Symmetries);
 
 			}
 
@@ -109,17 +107,17 @@ namespace TightBindingSuite
 			{
 				Vector3 gridVector = new Vector3(kgrid[0], kgrid[1], kgrid[2]);
 
-				foreach (var symmetry in syms)
-				{
-					Vector3 grid2 = symmetry.Value * gridVector;
-					for (int gi = 0; gi < 3; gi++)
-						grid2[gi] = Math.Abs(grid2[gi]);
+				//foreach (var symmetry in syms)
+				//{
+				//    Vector3 grid2 = symmetry.Value * gridVector;
+				//    for (int gi = 0; gi < 3; gi++)
+				//        grid2[gi] = Math.Abs(grid2[gi]);
 
-					if (grid2 != gridVector)
-					{
-						ThrowEx("The kmesh specified is not compatible with the symmetry of the system.");
-					}
-				}
+				//    if (grid2 != gridVector)
+				//    {
+				//        ThrowEx("The kmesh specified is not compatible with the symmetry of the system.");
+				//    }
+				//}
 			}
 
 			private Vector3 MoveNearGamma(Vector3 v)
@@ -148,10 +146,10 @@ namespace TightBindingSuite
 			private void GenerateKmesh()
 			{
 				tb.mAllKmesh = KptList.GenerateMesh(tb.kgrid, tb.shift, false);
-				tb.mKmesh = tb.mAllKmesh.CreateIrreducibleMesh(null);
+				tb.mKmesh = tb.mAllKmesh.CreateIrreducibleMesh(tb.SpaceGroup.Symmetries);
 
 				Output.WriteLine("Applied {0} symmetries to get {1} irreducible kpoints from {2}.",
-					tb.symmetries.Count, tb.mKmesh.Kpts.Count, tb.mAllKmesh.Kpts.Count);
+					tb.SpaceGroup.Symmetries.Count, tb.mKmesh.Kpts.Count, tb.mAllKmesh.Kpts.Count);
 
 				using (StreamWriter writer = new StreamWriter("kpts"))
 				{
@@ -163,25 +161,24 @@ namespace TightBindingSuite
 					}
 				}
 
-				return;
+				if (tb.setQplane)
+				{
+					tb.mAllQplane = KptPlane.GeneratePlane(tb.lattice, tb.qplaneDef, tb.qgrid, null);
+					tb.mQplane = tb.mAllQplane.CreateIrreduciblePlane(tb.SpaceGroup.Symmetries);
 
-				//if (tb.setQplane)
-				//{
-				//    tb.mQplane = KptPlane.GeneratePlane(tb.lattice, tb.qplaneDef, tb.qgrid);
-				//    Output.WriteLine("Found {0} irreducible qpoints in the plane of {1} qpoints.",
-				//        tb.mQplane.Kpts.Count, tb.mQplane.AllKpts.Count);
+					Output.WriteLine("Found {0} irreducible qpoints in the plane of {1} qpoints.",
+						tb.mQplane.Kpts.Count, tb.mAllQplane.Kpts.Count);
 
+					using (StreamWriter writer = new StreamWriter("qpts"))
+					{
+						for (int i = 0; i < tb.mQplane.Kpts.Count; i++)
+						{
+							Vector3 red = tb.lattice.ReciprocalReduce(tb.mQplane.Kpts[i].Value);
 
-				//    using (StreamWriter writer = new StreamWriter("qpts"))
-				//    {
-				//        for (int i = 0; i < tb.mQplane.Kpts.Count; i++)
-				//        {
-				//            Vector3 red = tb.lattice.ReciprocalReduce(tb.mQplane.Kpts[i].Value);
-
-				//            writer.WriteLine("{0}     {1}", i, red);
-				//        }
-				//    }
-				//}
+							writer.WriteLine("{0}     {1}", i, red);
+						}
+					}
+				}
 			}
 
 			protected override void ReadSection(string sectionName)
@@ -193,9 +190,7 @@ namespace TightBindingSuite
 						break;
 
 					case "Symmetry":
-						Output.WriteLine("WARNING: Symmetry section is deprecated.  Remove it.");
-						while (LineType != LineType.NewSection)
-							ReadNextLine();
+						ReadSymmetrySection();
 
 						break;
 
@@ -254,6 +249,16 @@ namespace TightBindingSuite
 					default:
 						ThrowEx("Unrecognized section " + sectionName);
 						break;
+				}
+			}
+
+			private void ReadSymmetrySection()
+			{
+				ReadSectionOptions();
+
+				if (Options.ContainsKey("disable"))
+				{
+					tb.disableSymmetries = true;
 				}
 			}
 
@@ -672,9 +677,9 @@ namespace TightBindingSuite
 
 				using (StreamWriter s = new StreamWriter("syms"))
 				{
-					for (int i = 0;  i < SpaceGroup.PrimitiveSymmetries.Count; i++)
+					for (int i = 0;  i < SpaceGroup.AllPrimitiveSymmetries.Count; i++)
 					{
-						Symmetry sym = SpaceGroup.PrimitiveSymmetries[i];
+						Symmetry sym = SpaceGroup.AllPrimitiveSymmetries[i];
 
 						s.WriteLine("Testing symmetry " + sym.Name + ":");
 						s.WriteLine(sym.Value);
@@ -692,6 +697,9 @@ namespace TightBindingSuite
 						if (CheckOrbitalSymmetry(tb, sym, out orbitalMap) == false)
 							goto fail;
 
+						if (CheckHoppingSymmetry(tb, sym, orbitalMap) == false)
+							goto fail;
+
 						syms.Add(sym);
 						continue;
 					fail:
@@ -699,13 +707,52 @@ namespace TightBindingSuite
 					}
 				}
 
-				tb.SpaceGroup = SpaceGroup.IdentifyGroup(syms);
+				SpaceGroup sp = SpaceGroup.IdentifyGroup(syms);
 
-				Output.WriteLine("Found space group {0}:  {1}", tb.SpaceGroup.Number, tb.SpaceGroup.Name);
+				Output.WriteLine();
+				Output.WriteLine("Found space group {0}:  {1}", sp.Number, sp.Name);
+
+				if (tb.disableSymmetries)
+				{
+					sp = SpaceGroup.LowestSymmetryGroup;
+					Output.WriteLine("But symmetries are disabled, so instead using {0}:  {1}", sp.Number, sp.Name);
+				}
+
+				Output.WriteLine();
+
+				tb.SpaceGroup = sp;
+			}
+
+			private bool CheckHoppingSymmetry(TightBinding tb, Symmetry sym, OrbitalMap orbitalMap)
+			{
+				HoppingPairList newHopPairs = new HoppingPairList();
+
+				foreach (var hopPair in tb.hoppings)
+				{
+					HoppingPair p = new HoppingPair(orbitalMap[hopPair.Left], orbitalMap[hopPair.Right]);
+
+					foreach (var hop in hopPair.Hoppings)
+					{
+						HoppingValue val = new HoppingValue();
+						val.R = sym.Value * hop.R;
+						val.Value = hop.Value;
+
+						// TODO: need to multiply value by -1 if one basis orbital changes sign!
+
+						p.Hoppings.Add(val);
+					}
+
+					newHopPairs.Add(p);
+				}
+
+				if (newHopPairs.Equals(tb.hoppings))
+					return true;
+				else
+					return false;
 
 			}
 
-			private bool CheckOrbitalSymmetry(TightBinding tb, Symmetry sym,OrbitalMap orbitalMap)
+			private bool CheckOrbitalSymmetry(TightBinding tb, Symmetry sym, out OrbitalMap orbitalMap)
 			{
 				orbitalMap = new OrbitalMap(tb.Orbitals.Count);
 
@@ -743,7 +790,15 @@ namespace TightBindingSuite
 
 			private bool CheckSymmetryDesignation(Orbital orb, Orbital orbital, Symmetry sym)
 			{
-				ODHelper.
+				OrbitalDesignation odl = ODHelper.FromString(orb.LocalSymmetry);
+				OrbitalDesignation odr = ODHelper.FromString(orbital.LocalSymmetry);
+
+				OrbitalDesignation trans = ODHelper.TransformUnderSymmetry(odl, sym.Value);
+
+				if (odr == trans)
+					return true;
+				else
+					return false;
 			}
 
 			bool CheckLatticeSymmetry(Lattice lat, Matrix sym)

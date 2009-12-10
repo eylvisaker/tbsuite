@@ -31,8 +31,6 @@ namespace TightBindingSuite
 		public double[] TemperatureMesh { get; private set; }
 		public double[] MuMesh { get; private set; }
 		public List<int> PoleStates { get { return poles; } }
-		[Obsolete]
-		public SymmetryList Symmetries { get { return symmetries; } }
 		public SpaceGroup SpaceGroup { get { return mSpaceGroup; } private set { mSpaceGroup = value; } }
 		public double[] Nelec { get; private set; }
 
@@ -40,13 +38,12 @@ namespace TightBindingSuite
 
 		int[] kgrid = new int[3];
 		int[] shift = new int[] { 1, 1, 1 };
-		SymmetryList symmetries = new SymmetryList();
-
 
 		int[] qgrid = new int[3];
 		Vector3[] qplaneDef = new Vector3[3];
 		bool setQplane = false;
 		bool specifiedNelec = false;
+		bool disableSymmetries = false;
 
 		string outputfile;
 
@@ -60,6 +57,8 @@ namespace TightBindingSuite
 			retval.hoppings = hoppings.Clone();
 			retval.kpath = kpath.Clone();
 			retval.mAllKmesh = mAllKmesh.Clone();
+			retval.mKmesh = mKmesh.Clone();
+			retval.mAllQplane = mAllQplane.Clone();
 			retval.mQplane = mQplane.Clone();
 			retval.poles.AddRange(poles);
 			retval.FrequencyMesh = (double[])FrequencyMesh.Clone();
@@ -70,7 +69,7 @@ namespace TightBindingSuite
 			retval.Interactions = Interactions.Clone();
 			retval.kgrid = (int[])kgrid.Clone();
 			retval.shift = (int[])shift.Clone();
-			retval.symmetries = symmetries.Clone();
+			retval.SpaceGroup = SpaceGroup.Clone();
 			retval.qgrid = (int[])qgrid.Clone();
 			retval.qplaneDef = (Vector3[])qplaneDef.Clone();
 			retval.setQplane = setQplane;
@@ -115,18 +114,8 @@ namespace TightBindingSuite
 				Matrix vals, vecs;
 				m.EigenValsVecs(out vals, out vecs);
 
-				mAllKmesh.Kpts[i].SetWavefunctions(vals, vecs);
+				KMesh.Kpts[i].SetWavefunctions(vals, vecs);
 			}
-
-			//for (int i = 0; i < kmesh.AllKpts.Count; i++)
-			//{
-			//    KPoint kpt = kmesh.AllKpts[i];
-			//    List<int> orbitalMap;
-
-			//    int index = kmesh.IrreducibleIndex(kpt, lattice, symmetries, out orbitalMap);
-
-			//    kpt.SetWavefunctions(kmesh.Kpts[index], symmetries, orbitalMap);
-			//}
 		}
 		double FermiFunction(double omega, double mu, double beta)
 		{
@@ -296,6 +285,8 @@ namespace TightBindingSuite
 			KptList ks = KMesh;
 			using (StreamWriter outf = new StreamWriter(outputfile + ".dos"))
 			{
+				outf.WriteLine("# Density of states");
+				outf.WriteLine("# From {0} k-points.", ks.Kpts.Count);
 
 				double smearing = TemperatureMesh[0];
 				double effBeta = 1 / smearing;

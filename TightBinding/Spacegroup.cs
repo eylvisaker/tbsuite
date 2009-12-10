@@ -64,7 +64,7 @@ namespace TightBindingSuite
 						if (mPrimitiveSymmetries.Contains(sym) == false)
 							mPrimitiveSymmetries.Add(sym);
 
-						sp.Symmetries.Add(sym);
+						sp.PrimitiveSymmetries.Add(sym);
 					}
 
 					mGroups.Add(number, sp);
@@ -173,7 +173,7 @@ namespace TightBindingSuite
 			return retval;
 		}
 
-		public static SymmetryList PrimitiveSymmetries { get { return mPrimitiveSymmetries; } }
+		public static SymmetryList AllPrimitiveSymmetries { get { return mPrimitiveSymmetries; } }
 
 		public static SpaceGroup IdentifyGroup(SymmetryList syms)
 		{
@@ -182,33 +182,97 @@ namespace TightBindingSuite
 				SpaceGroup test = mGroups[i];
 				bool found = true;
 
-				foreach (var sym in test.Symmetries)
+				foreach (var sym in test.PrimitiveSymmetries)
 				{
 					if (syms.Contains(sym) == false)
 						found = false;
 				}
 
 				if (found)
+				{
+					test.GenerateSymmetries();
 					return test;
+				}
 			}
 
 			// return lowest symmetry group.
+			mGroups[1].GenerateSymmetries();
 			return mGroups[1];
 		}
-		public SpaceGroup()
+		public static SpaceGroup LowestSymmetryGroup
 		{
-			Symmetries = new SymmetryList();
+			get
+			{
+				mGroups[1].GenerateSymmetries();
+				return mGroups[1];
+			}
 		}
 
+		public SpaceGroup()
+		{
+			PrimitiveSymmetries = new SymmetryList();
+		}
+
+		public SpaceGroup Clone()
+		{
+			SpaceGroup retval = new SpaceGroup();
+
+			retval.Number = Number;
+			retval.Name = Name;
+			retval.Symmetries = Symmetries.Clone();
+			retval.PrimitiveSymmetries = PrimitiveSymmetries.Clone();
+
+			return retval;
+		}
 		public int Number { get; private set; }
 		public string Name { get; private set; }
 
-		public SymmetryList Symmetries { get; private set; }
+		public SymmetryList PrimitiveSymmetries { get; private set; }
+		public SymmetryList Symmetries { get; set; }
+
+		private void GenerateSymmetries()
+		{
+			Symmetries = new SymmetryList();
+			Symmetries.Add(new Symmetry(Matrix.Identity(3)));
+
+			foreach (var sym in PrimitiveSymmetries)
+			{
+				Symmetries.Add(sym.Clone());
+
+				GenerateSymmetries(sym);
+			}
+		}
+
+		private void GenerateSymmetries(Symmetry sym)
+		{
+			foreach (var s in PrimitiveSymmetries)
+			{
+				Symmetry newSym = Symmetry.Compose(sym, s);
+
+				if (DuplicateSymmetry(newSym))
+					continue;
+
+				Symmetries.Add(newSym);
+				GenerateSymmetries(newSym);
+			}
+		}
+
+		private bool DuplicateSymmetry(Symmetry newSym)
+		{
+			foreach (Symmetry sym in Symmetries)
+			{
+				if ((sym.Value - newSym.Value).IsZero)
+					return true;
+			}
+
+			return false;
+		}
 
 		public override string ToString()
 		{
-			return Name + " : " + Number.ToString() + "; " + Symmetries.Count.ToString();
+			return Name + " : " + Number.ToString() + "; " + PrimitiveSymmetries.Count.ToString();
 		}
+
 
 	}
 }

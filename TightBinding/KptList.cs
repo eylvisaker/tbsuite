@@ -43,6 +43,11 @@ namespace TightBindingSuite
 		{
 			retval.kpts.AddRange(kpts.Select(x => x.Clone()));
 
+			foreach (var kvp in mNvalues)
+			{
+				retval.mNvalues.Add(kvp.Key, kvp.Value);
+			}
+
 			if (mesh != null)				retval.mesh = (int[])mesh.Clone();
 			if (shift != null)				retval.shift = (int[])shift.Clone();
 		}
@@ -80,21 +85,26 @@ namespace TightBindingSuite
 
 		public int[] Mesh { get { return mesh; } }
 
-		public int IndexOf(Vector3 kpt, int start)
+		public int IndexOf(Vector3 kpt)
 		{
-			for (int i = start; i < kpts.Count; i++)
+			int newi, newj, newk;
+
+			TranslateKpt(ref kpt);
+
+			ReduceKpt(kpt, out newi, out newj, out newk);
+
+			int N = KptToInteger(newi, newj, newk);
+
+			return mNvalues[N];
+		}
+
+		private void TranslateKpt(ref Vector3 kpt)
+		{
+			for (int i = 0; i < 3; i++)
 			{
-				Vector3 diff = kpts[i].Value - kpt;
-
-				if (diff.X > 0.01) continue;
-				if (diff.Y > 0.01) continue;
-				if (diff.Z > 0.01) continue;
-
-				if (diff.MagnitudeSquared < 1e-6)
-					return i;
+				while (kpt[i] < -0.5) kpt[i] += 1;
+				while (kpt[i] > 0.5) kpt[i] -= 1;
 			}
-
-			return -1;
 		}
 
 		/// <summary>
@@ -178,8 +188,6 @@ namespace TightBindingSuite
 							}
 						}
 
-						retval.kpts.Add(kpt);
-
 						retval.mNvalues.Add(N, retval.kpts.Count);
 						retval.kpts.Add(kpt);
 					}
@@ -229,6 +237,19 @@ namespace TightBindingSuite
 
 
 
+		public int IrreducibleIndex(KptList irredList, Vector3 qpt, out List<int> orbitalMap)
+		{
+			int newi, newj, newk;
+			TranslateKpt(ref qpt);
+			ReduceKpt(qpt, out newi, out newj, out newk);
+
+			int N = KptToInteger(newi, newj, newk);
+
+			orbitalMap = Kpts[mNvalues[N]].ReducingSymmetry.OrbitalTransform;
+
+			return irredList.mNvalues[N];
+		}
+
 		public int IrreducibleIndex(Vector3 kpt, Lattice lattice, SymmetryList symmetries, out List<int> orbitalMap)
 		{
 			for (int s = 0; s < symmetries.Count; s++)
@@ -250,18 +271,6 @@ namespace TightBindingSuite
 			}
 
 			throw new Exception(string.Format("Could not find k-point {0}", kpt));
-		}
-
-		[Obsolete]
-		public int AllKindex(Vector3 kpt)
-		{
-			int newi, newj, newk;
-				
-			ReduceKpt(kpt, out newi, out newj, out newk);
-			
-			int N = KptToInteger(newi, newj, newk);
-
-			return mNvalues[N];
 		}
 
 		public override string ToString()
@@ -288,9 +297,81 @@ namespace TightBindingSuite
 			return 1.0 / (Math.Exp(beta * energy) + 1);
 		}
 
-		internal KptList CreateIrreducibleMesh(SymmetryList symmetryList)
+		public virtual KptList CreateIrreducibleMesh(SymmetryList symmetryList)
 		{
-			return this;
+			KptList retval = new KptList();
+			FillIrreducibleMesh(symmetryList, retval);
+
+			return retval;
+		}
+
+		protected void FillIrreducibleMesh(SymmetryList symmetryList, KptList retval)
+		{
+			retval.mesh = (int[]) mesh.Clone();
+			retval.shift = (int[])shift.Clone();
+
+			foreach (KPoint kpt in this.Kpts)
+			{
+				bool found = false;
+				int N = KptToInteger(kpt);
+				int symN = 0;
+				Symmetry s = null;
+
+				foreach (Symmetry sym in symmetryList)
+				{
+					Vector3 trans_k = sym.Inverse * kpt;
+
+					symN = KptToInteger(trans_k);
+
+					if (retval.mNvalues.ContainsKey(symN))
+					{
+						s = sym;
+						found = true;
+						break;
+					}
+				}
+
+				if (found)
+				{
+					kpt.ReducingSymmetry = s;
+					retval.mNvalues[N] = retval.mNvalues[symN];
+				}
+				else
+				{
+					retval.mNvalues[N] = retval.kpts.Count;
+					retval.kpts.Add(kpt.Clone());
+				}
+			}
+		}
+
+		public void FillWavefunctions(KptList kptList, SymmetryList symmetries)
+		{
+			foreach (KPoint kpt in kptList.Kpts)
+			{
+				bool found = false;
+				int N = KptToInteger(kpt);
+				int symN = 0;
+				
+				foreach (Symmetry sym in symmetries)
+				{
+					Vector3 trans_k = sym.Inverse * kpt;
+
+					symN = KptToInteger(trans_k);
+
+					int index = mNvalues[symN];
+
+					if (Kpts[index].Nvalue != symN)
+						continue;
+
+					found = true;
+
+					kpt.SetWavefunctions(Kpts[index], symmetries, sym.OrbitalTransform);
+					break;
+				}
+
+				if (!found)
+					throw new Exception();
+			}
 		}
 	}
 }

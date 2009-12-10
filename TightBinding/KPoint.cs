@@ -25,6 +25,7 @@ namespace TightBindingSuite
 
 			retval.Weight = Weight;
 			retval.Name = Name;
+			retval.Nvalue = Nvalue;
 
 			foreach (var transform in mOrbitalTransform)
 			{
@@ -75,7 +76,7 @@ namespace TightBindingSuite
 		}
 
 		public List<Wavefunction> Wavefunctions { get { return wfk; } }
-		public IEnumerable<List<int>> OrbitalTransform { get { return mOrbitalTransform; } }
+		public Symmetry ReducingSymmetry { get; set; }
 
 		public override string ToString()
 		{

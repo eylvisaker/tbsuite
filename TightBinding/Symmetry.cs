@@ -40,10 +40,26 @@ namespace TightBindingSuite
 
 		public Symmetry Clone()
 		{
-			Symmetry x = new Symmetry(Value.Clone());
+			Symmetry x = new Symmetry(Value.Clone(), Translation);
+
 			x.OrbitalTransform.AddRange(OrbitalTransform);
 
 			return x;
+		}
+
+		public static Symmetry Compose(Symmetry sym, Symmetry s)
+		{
+			Symmetry retval = new Symmetry(sym.Value * s.Value);
+
+			for (int i = 0; i < s.OrbitalTransform.Count; i++)
+			{
+				int newOne = s.OrbitalTransform[i];
+				int newTwo = sym.OrbitalTransform[newOne];
+
+				retval.OrbitalTransform.Add(newTwo);
+			}
+
+			return retval;
 		}
 	}
 }

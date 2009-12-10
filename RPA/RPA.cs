@@ -30,6 +30,7 @@ namespace TightBindingSuite
 			TightBinding tb = new TightBinding();
 			tb.LoadTB(inputfile);
 			tb.RunTB();
+			tb.KMesh.FillWavefunctions(tb.AllKMesh, tb.SpaceGroup.Symmetries);
 
 			bool ranRPA = false;
 
@@ -197,7 +198,7 @@ namespace TightBindingSuite
 			Output.WriteLine();
 
 			RpaParams largestParams = null;
-			double largest = 0;
+			double largest = double.MinValue;
 			string indices = "";
 			bool charge = false;
 
@@ -607,7 +608,7 @@ namespace TightBindingSuite
 
 											tb.QPlane.GetPlaneST(qplane.Kpts[0], out last_s, out last_t);
 
-											for (int qi = 0; qi < tb.QPlane.Kpts.Count; qi++)
+											for (int qi = 0; qi < qplane.Kpts.Count; qi++)
 											{
 												Vector3 qpt = qplane.Kpts[qi];
 												List<int> orbitalMap;
@@ -622,18 +623,18 @@ namespace TightBindingSuite
 													w_mag.WriteLine();
 												}
 
-												int kindex =
-													qplane.IrreducibleIndex(qpt, tb.Lattice, tb.Symmetries, out orbitalMap);
+												int kindex = qplane.IrreducibleIndex(
+													tb.QPlane, qpt, out orbitalMap);
 
 												int index = GetRpaIndex(rpa, kindex, 
 													tb.TemperatureMesh[ti], 
 													tb.FrequencyMesh[wi], 
 													tb.MuMesh[ui]);
 
-												int newL1 = tb.Symmetries.TransformOrbital(orbitalMap, l1);
-												int newL2 = tb.Symmetries.TransformOrbital(orbitalMap, l2);
-												int newL3 = tb.Symmetries.TransformOrbital(orbitalMap, l3);
-												int newL4 = tb.Symmetries.TransformOrbital(orbitalMap, l4);
+												int newL1 = tb.SpaceGroup.Symmetries.TransformOrbital(orbitalMap, l1);
+												int newL2 = tb.SpaceGroup.Symmetries.TransformOrbital(orbitalMap, l2);
+												int newL3 = tb.SpaceGroup.Symmetries.TransformOrbital(orbitalMap, l3);
+												int newL4 = tb.SpaceGroup.Symmetries.TransformOrbital(orbitalMap, l4);
 
 												int newii = GetIndex(tb, newL1, newL2);
 												int newjj = GetIndex(tb, newL3, newL4);
@@ -873,9 +874,9 @@ namespace TightBindingSuite
 							//if (writeThis)
 							//    w.WriteLine("{0}{1}{2}{3}", l1, l2, l3, l4);
 
-							for (int s = 0; s < tb.Symmetries.Count; s++)
+							for (int s = 0; s < tb.SpaceGroup.Symmetries.Count; s++)
 							{
-								Symmetry sym = tb.Symmetries[s];
+								Symmetry sym = tb.SpaceGroup.Symmetries[s];
 
 								if (sym.OrbitalTransform == null || sym.OrbitalTransform.Count == 0)
 									continue;
@@ -923,8 +924,8 @@ namespace TightBindingSuite
 
 								//int kindex = tb.KMesh.IrreducibleIndex(k, tb.Lattice, tb.Symmetries, out kOrbitalMap);
 								//int kqindex = tb.KMesh.IrreducibleIndex(kq, tb.Lattice, tb.Symmetries, out kqOrbitalMap);
-								int kindex = kpts.AllKindex(k);
-								int kqindex = kpts.AllKindex(kq);
+								int kindex = allkindex;
+								int kqindex = kpts.IndexOf(kq);
 
 								System.Diagnostics.Debug.Assert(kindex == allkindex);
 

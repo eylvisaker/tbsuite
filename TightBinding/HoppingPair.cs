@@ -22,6 +22,12 @@ namespace TightBindingSuite
 		
 		public List<HoppingValue> Hoppings { get { return hoppings; } }
 
+		public override string ToString()
+		{
+			return string.Format(
+				"HoppingPair: {0} to {1}, hoppings: {2}",
+				left, right, hoppings.Count);
+		}
 
 		public HoppingPair Clone()
 		{
@@ -83,9 +89,12 @@ namespace TightBindingSuite
 		{
 			foreach (HoppingValue a in Hoppings)
 			{
-				if (a.Value != val.Value)
+				if (Math.Abs(a.Value - val.Value) > 1e-5)
 					continue;
-				if ((a.R - val.R).Magnitude > 1e-6)
+
+				Vector3 diff = a.R - val.R;
+
+				if ((a.R - val.R).Magnitude > 1e-4)
 					continue;
 				
 				//Console.WriteLine("hop: {0} {1} {2} {3}",

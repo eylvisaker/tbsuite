@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using ERY.EMath;
@@ -26,6 +27,22 @@ namespace TightBindingSuite
 
 			return retval;
 		}
+
+		[Browsable(false)]
+		public override KptList  CreateIrreducibleMesh(SymmetryList symmetryList)
+		{
+			return CreateIrreduciblePlane(symmetryList);
+		}
+
+		public KptPlane CreateIrreduciblePlane(SymmetryList symmetries)
+		{
+			KptPlane p = new KptPlane();
+
+			FillIrreducibleMesh(symmetries, p);
+
+			return p;
+		}
+
 
 		public static KptPlane GeneratePlane(Lattice lattice, Vector3[] points, int[] qgrid, int[] qshift)
 		{
@@ -171,6 +188,6 @@ namespace TightBindingSuite
 			else
 				return true;
 		}
-		
+
 	}
 }
