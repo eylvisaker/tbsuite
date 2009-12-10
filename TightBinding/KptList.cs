@@ -335,6 +335,7 @@ namespace TightBindingSuite
 				{
 					kpt.ReducingSymmetry = s;
 					retval.mNvalues[N] = retval.mNvalues[symN];
+					retval.kpts[retval.mNvalues[N]].Weight += kpt.Weight;
 				}
 				else
 				{
