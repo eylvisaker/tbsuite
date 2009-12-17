@@ -38,6 +38,10 @@ namespace TightBindingSuite
 		{
 			KptPlane p = new KptPlane();
 
+			p.origin = origin;
+			p.tdir = tdir;
+			p.sdir = sdir;
+
 			FillIrreducibleMesh(symmetries, p);
 
 			return p;
@@ -94,12 +98,7 @@ namespace TightBindingSuite
 				double s, t;
 				retval.GetPlaneST(qpt, out s, out t);
 
-				//if (CenterOnGamma(lattice, ref qpt, retval) == false)
-				//    continue;
-
-				//retval.GetPlaneST(qpt, out news, out newt);
-
-				retval.Kpts.Add(qpt);
+				retval.AddKpt(qpt);
 			}
 
 			// now sort q-points to lay them in the s,t plane.

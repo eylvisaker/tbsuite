@@ -22,6 +22,17 @@ namespace TightBindingSuite
 			return CloneImpl();
 		}
 
+		protected void AddKpt(KPoint kpt)
+		{
+			int N = KptToInteger(kpt);
+
+			if (mNvalues.ContainsKey(N) == false)
+			{
+				mNvalues.Add(N, kpts.Count);
+			}
+
+			kpts.Add(kpt);
+		}
 		protected bool ContainsKindex(int N)
 		{
 			return mNvalues.ContainsKey(N);
@@ -234,9 +245,6 @@ namespace TightBindingSuite
 			return KptToInteger(i, j, k);
 		}
 
-
-
-
 		public int IrreducibleIndex(KptList irredList, Vector3 qpt, out List<int> orbitalMap)
 		{
 			int newi, newj, newk;
@@ -245,7 +253,12 @@ namespace TightBindingSuite
 
 			int N = KptToInteger(newi, newj, newk);
 
-			orbitalMap = Kpts[mNvalues[N]].ReducingSymmetry.OrbitalTransform;
+			KPoint irrdKpt = Kpts[mNvalues[N]];
+
+			if (irrdKpt.ReducingSymmetry != null)
+				orbitalMap = irrdKpt.ReducingSymmetry.OrbitalTransform;
+			else
+				orbitalMap = new List<int>();
 
 			return irredList.mNvalues[N];
 		}

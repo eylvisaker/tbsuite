@@ -121,6 +121,7 @@ namespace TightBindingSuite
 			Beta = 1 / temperature;
 
 			tb.KMesh.SetTemperature(temperature, mu);
+			tb.AllKMesh.SetTemperature(temperature, mu);
 
 		}
 
@@ -130,15 +131,6 @@ namespace TightBindingSuite
 
 			Matrix[] S, C;
 			CalcSpinChargeMatrices(tb, rpa, out S, out C);
-
-
-#if DEBUG
-			for (int i = 0; i < S.Length; i++)
-			{
-				//VerifySymmetry(tb, S[i], 0, 1);
-				//VerifySymmetry(tb, C[i], 0, 1);
-			}
-#endif
 
 			Output.WriteLine("Calculating X0...");
 
@@ -606,7 +598,7 @@ namespace TightBindingSuite
 											double last_t;
 											double last_s;
 
-											tb.QPlane.GetPlaneST(qplane.Kpts[0], out last_s, out last_t);
+											qplane.GetPlaneST(qplane.Kpts[0], out last_s, out last_t);
 
 											for (int qi = 0; qi < qplane.Kpts.Count; qi++)
 											{

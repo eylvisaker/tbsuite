@@ -254,12 +254,27 @@ namespace TightBindingSuite
 
 			private void ReadSymmetrySection()
 			{
+				bool deprecated = false;
+
 				ReadSectionOptions();
 
 				if (Options.ContainsKey("disable"))
 				{
 					tb.disableSymmetries = true;
+
+					if (Options.Count > 1)
+						deprecated = true;
 				}
+				else if (Options.Count > 0)
+					deprecated = true;
+
+
+				if (deprecated)
+				{
+					Output.WriteLine("Deprecated symmetry options present.");
+					Output.WriteLine("Remove them or suffer the consequences.");
+				}
+				
 			}
 
 			private void ReadQPlaneSection()
@@ -595,6 +610,7 @@ namespace TightBindingSuite
 						}
 
 						tb.Interactions.MaxEigenvalue = 1 - val;
+						tb.Interactions.AdjustInteractions = true;
 					}
 				}
 
