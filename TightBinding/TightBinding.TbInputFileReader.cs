@@ -60,6 +60,19 @@ namespace TightBindingSuite
 				if (tb.FrequencyMesh == null)
 					tb.FrequencyMesh = new double[] { 0 };
 
+				for (int i = 0; i < 3; i++)
+				{
+					if (tb.qgrid[i] != 0)
+					{
+						int intDiv = tb.kgrid[i] / tb.qgrid[i];
+						double dDiv = tb.kgrid[i] / (double)tb.qgrid[i];
+
+						if (dDiv != intDiv)
+						{
+							ThrowEx("QGrid is not commensurate with KGrid.");
+						}
+					}
+				}
 				foreach (HoppingPair h in tb.hoppings)
 				{
 					if (h.Left >= tb.orbitals.Count || h.Right >= tb.orbitals.Count)
@@ -778,6 +791,7 @@ namespace TightBindingSuite
 
 					Vector3 newLoc = sym.Value * orb.Location;
 					newLoc += sym.Translation;
+					orbitalMap[i] = i;
 
 					bool valid = false;
 					for (int j = 0; j < tb.orbitals.Count; j++)

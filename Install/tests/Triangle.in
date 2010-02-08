@@ -3,9 +3,9 @@
 # Enter direct lattice vectors in cartesian coordinates.
 # This section must be first.
 [Lattice]
-1    0           0
--.5  0.866025404 0
-0    0           1
+0           1    0
+0.866025404 -.5  0
+0           0    1
  
 # Locations of orbitals and their names / symmetry designations, etc.
 # Positions are in cartesian coordinates
@@ -18,24 +18,20 @@
  0 0 0  s  a  s   a
   
 # Symmetries in the crystal.
-# The numbers following the symmetry name indicate how the orbitals transform 
-# under the symmetry.  If you specify the symmetry operation, you must specify
-# one number for each orbital.  The orbital transforms are optional if the 
-# orbitals transform into themselves.
 [Symmetry]
-E
-I
+disable
+
 
 # Each hopping is followed by a list of Bravais lattice vectors.
 # Those vectors must be composed of integer values.
 [Hoppings]
 :1 1:
- 1          0             0             1
--1          0             0             1
--0.5       -0.866025404   0             1
- 0.5       -0.866025404   0             1
--0.5        0.866025404   0             1
- 0.5        0.866025404   0             1
+ 0              1         0             1
+ 0             -1         0             1
+-0.866025404   -0.5       0             1
+-0.866025404    0.5       0             1
+ 0.866025404   -0.5       0             1
+ 0.866025404    0.5       0             1
  
 
   
@@ -45,9 +41,8 @@ I
 # internally.
 [KPath]
 G        0              0             0      
-X        0.5            0.5           0
-P        0.5            0.5           0.5
-Z        0              0             1
+M        0.577350269    0             0
+K        0.577350269    0.3333333333  0   
 G        0              0             0
 
 # Number of electrons for RPA and tight binding calculation.
@@ -56,14 +51,14 @@ G        0              0             0
 
 # Gives a k-mesh for calculating the density of states and doing RPA.
 [KMesh]
-100 100 1  1 1 1
+120 120 1  1 1 1
 
 # Gives data for a plane of q-points in the BZ to plot.  There must be
 # four sets of three numbers here.
 # The first three numbers are the q-point mesh from which points are taken.
 # The next three groups of three numbers are q-points which define the plane.
 [QPlane]
-10 10 1
+40 40 1
 0   0   0
 1   0   0
 0   1   0

@@ -59,6 +59,7 @@
   <ItemGroup>
     <Compile Include="AgrWriter.cs" />
     <Compile Include="BootStrap.cs" />
+    <Compile Include="BZonePlane.cs" />
     <Compile Include="InteractionPair.cs" />
     <Compile Include="KptPlane.cs" />
     <Compile Include="Main.cs" />

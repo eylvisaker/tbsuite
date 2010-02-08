@@ -4,26 +4,9 @@
  0 0 1
  
 [Orbitals]
-(0 0 0)   s1 a s a
-(0 0 0)   s2 a s b
+ 0 0 0    s1 a s a
+ 0 0 0    s2 a s a
 
-[Symmetry]
-E
-C2(y)
-C2(x)
-C2(z)
-C2(xy)   
-C3/4(z)  
-C1/4(z)  
-C2(x-y)  
-I
-s(y)
-s(x)
-s(z)
-s(xy)    
-S1/4(z)  
-S3/4(z)  
-s(x-y) 
 
 [Hoppings]
 :1 1:
@@ -55,10 +38,10 @@ G        0       0       0
 0
 
 [KMesh]
-80 80 1 1 1 1
+120 120 1 1 1 1
 
 [QPlane]
-10 10 1 
+40 40 1 
 0   0   0  
 0.5 0   0
 0   0.5 0
@@ -71,9 +54,6 @@ G        0       0       0
 
 # U, U', J, J' (don't enter commas).
 [Interaction]
-adjust
+adjust 0.01
 :a a:
-1 1 0.6 0.6 
-
-:b b:
-1 1 0.6 0.6
+1 1 0 0   

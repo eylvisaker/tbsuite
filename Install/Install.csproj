@@ -104,6 +104,9 @@
     <None Include="prepare_dist">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="script\fplobweights">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="script\fplowannierconverter">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

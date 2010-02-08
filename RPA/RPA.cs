@@ -77,6 +77,9 @@ namespace TightBindingSuite
 
 			CalcSusceptibility(tb, qpts, rpa);
 
+			SaveMatricesQPlane(tb, QMesh, rpa, (RpaParams x) => x.C, "C");
+			SaveMatricesQPlane(tb, QMesh, rpa, (RpaParams x) => x.S, "S");
+			
 			SaveMatricesQPlane(tb, QMesh, rpa, x => x.X0, "chi_0");
 			SaveMatricesQPlane(tb, QMesh, rpa, x => x.Xs, "chi_s");
 			SaveMatricesQPlane(tb, QMesh, rpa, x => x.Xc, "chi_c");
@@ -129,8 +132,7 @@ namespace TightBindingSuite
 		{
 			Matrix ident = Matrix.Identity(tb.Orbitals.Count * tb.Orbitals.Count);
 
-			Matrix[] S, C;
-			CalcSpinChargeMatrices(tb, rpa, out S, out C);
+			CalcSpinChargeMatrices(tb, rpa);
 
 			Output.WriteLine("Calculating X0...");
 
@@ -167,7 +169,7 @@ namespace TightBindingSuite
 			Output.WriteLine("Bare susceptibility calculation completed.");
 			Output.WriteLine();
 
-			double factor = InteractionAdjustment(rpa, S, C, tb);
+			double factor = InteractionAdjustment(rpa, tb);
 
 			if (tb.Interactions.AdjustInteractions)
 			{
@@ -175,8 +177,8 @@ namespace TightBindingSuite
 
 				for (int i = 0; i < rpa.Count; i++)
 				{
-					S[i] *= factor;
-					C[i] *= factor;
+					rpa[i].S *= factor;
+					rpa[i].C *= factor;
 				}
 			}
 			else if (factor < 1)
@@ -196,8 +198,8 @@ namespace TightBindingSuite
 
 			for (int i = 0; i < rpa.Count; i++)
 			{
-				Matrix s_denom = (ident - S[i] * rpa[i].X0);
-				Matrix c_denom = (ident + C[i] * rpa[i].X0);
+				Matrix s_denom = (ident - rpa[i].S * rpa[i].X0);
+				Matrix c_denom = (ident + rpa[i].C * rpa[i].X0);
 
 				//VerifySymmetry(tb, s_denom, 0, 1);
 				//VerifySymmetry(tb, c_denom, 0, 1);
@@ -364,7 +366,7 @@ namespace TightBindingSuite
 			return infos;
 		}
 
-		double InteractionAdjustment(List<RpaParams> rpa, Matrix[] S, Matrix[] C, TightBinding tb)
+		double InteractionAdjustment(List<RpaParams> rpa, TightBinding tb)
 		{
 			double largest = double.MinValue;
 			RpaParams largestParams = null;
@@ -374,7 +376,7 @@ namespace TightBindingSuite
 			{
 				RpaParams p = rpa[i];
 				Matrix x0 = p.X0;
-				Matrix test = x0 * S[i];
+				Matrix test = x0 * rpa[i].S;
 
 				double lv = LargestPositiveEigenvalue(test);
 
@@ -385,7 +387,7 @@ namespace TightBindingSuite
 					Cdiv = false;
 				}
 
-				test = -x0 * C[i];
+				test = -x0 * rpa[i].C;
 				lv = LargestPositiveEigenvalue(test);
 
 				if (lv > largest)
@@ -532,7 +534,11 @@ namespace TightBindingSuite
 				}
 			}
 		}
-		private void SaveByQPlane(TightBinding tb, List<KPoint> QMesh, List<RpaParams> rpa, MatrixGetter g, string name)
+		private void SaveByQPlane(TightBinding tb,
+		                          List<KPoint> QMesh, 
+		                          List<RpaParams> rpa, 
+		                          MatrixGetter g, 
+		                          string name)
 		{
 			rpa.Sort(RpaParams.QIndexComparison);
 
@@ -581,11 +587,11 @@ namespace TightBindingSuite
 								{
 									for (int wi = 0; wi < tb.FrequencyMesh.Length; wi++)
 									{
-										string filename_re = string.Format("{0}.re.{1}{2}{3}{4}.w{5}.T{6}.u{7}.qm",
+										string filename_re = string.Format("{0}.{1}{2}{3}{4}.re.w{5}.T{6}.u{7}.qm",
 															   name, l1, l2, l3, l4, wi, ti, ui);
-										string filename_im = string.Format("{0}.im.{1}{2}{3}{4}.w{5}.T{6}.u{7}.qm",
+										string filename_im = string.Format("{0}.{1}{2}{3}{4}.im.w{5}.T{6}.u{7}.qm",
 															   name, l1, l2, l3, l4, wi, ti, ui);
-										string filename_mag = string.Format("{0}.mag.{1}{2}{3}{4}.w{5}.T{6}.u{7}.qm",
+										string filename_mag = string.Format("{0}.{1}{2}{3}{4}.mag.w{5}.T{6}.u{7}.qm",
 															   name, l1, l2, l3, l4, wi, ti, ui);
 
 										Complex maxvalue = new Complex(double.MinValue, double.MinValue);
@@ -684,7 +690,9 @@ namespace TightBindingSuite
 				 return false;
 		}
 
-		private void SaveMatricesQPlane(TightBinding tb, List<KPoint> QMesh, List<RpaParams> chi, MatrixGetter g, string name)
+		private void SaveMatricesQPlane(TightBinding tb, 
+		                                List<KPoint> QMesh, List<RpaParams> chi, 
+		                                MatrixGetter g, string name)
 		{
 			if (tb.TemperatureMesh.Length > 1)
 			{
@@ -725,11 +733,8 @@ namespace TightBindingSuite
 
 		}
 
-		private void CalcSpinChargeMatrices(TightBinding tb, List<RpaParams> rpa, out Matrix[] S, out Matrix[] C)
+		private void CalcSpinChargeMatrices(TightBinding tb, List<RpaParams> rpa)
 		{
-			S = new Matrix[rpa.Count];
-			C = new Matrix[rpa.Count];
-
 			for (int rpa_index = 0; rpa_index < rpa.Count; rpa_index++)
 			{
 				Vector3 q = rpa[rpa_index].QptValue;
@@ -752,8 +757,8 @@ namespace TightBindingSuite
 				System.Diagnostics.Debug.Assert(_S.IsSymmetric);
 				System.Diagnostics.Debug.Assert(_C.IsSymmetric);
 
-				S[rpa_index] = _S;
-				C[rpa_index] = _C;
+				rpa[rpa_index].S = _S;
+				rpa[rpa_index].C = _C;
 			}
 		}
 
@@ -795,7 +800,9 @@ namespace TightBindingSuite
 				}
 			}
 		}
-		private void CalcOffSiteInteraction(TightBinding tb, Matrix _S, Matrix _C, InteractionPair interaction, double structureFactor)
+		private void CalcOffSiteInteraction(TightBinding tb, Matrix _S, Matrix _C, 
+		                                    InteractionPair interaction, 
+		                                    double structureFactor)
 		{
 			foreach (int l1 in interaction.OrbitalsLeft)
 			{
