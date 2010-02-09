@@ -1,0 +1,1 @@
+mono $INSTALL_DIR/CoeffBrowser.exe $*
