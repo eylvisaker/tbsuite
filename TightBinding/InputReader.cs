@@ -57,12 +57,15 @@ namespace TightBindingSuite
 			throw new Exception(string.Format(
 			    "Line {0}: {1}", lineIndex+1, inner.Message), inner);
 		}
+		
+		string sectionName;
+		
 		void ReadSection()
 		{
 			if (LineType != LineType.NewSection)
 				ThrowEx("Did not find new section.");
 			
-			string sectionName = line.Substring(1, line.Length - 2);
+			ReadSectionNameAndOptions();
 			
 			try
 			{
@@ -79,6 +82,21 @@ namespace TightBindingSuite
 			}
 #endif
 		}
+
+		void ReadSectionNameAndOptions ()
+		{
+			if (Line.Contains(":"))
+			{
+				int index = Line.IndexOf(":");
+				
+				sectionName = line.Substring(1, index - 1);
+				
+				ReadSectionOptions(Line.Substring(index+1, line.Length - 2 - index));
+			}
+			else
+				sectionName = line.Substring(1, line.Length - 2);
+		}
+
 		protected abstract void ReadSection(string sectionName);
 		
 		protected void ReadNextLine()
@@ -155,11 +173,20 @@ namespace TightBindingSuite
 				return LineType.Unknown;
 			}
 		}
-		protected SectionOptions Options { get { return options; } }
+		protected SectionOptions Options
+		{ 
+			get
+			{ 
+				if (options == null)
+					options = new SectionOptions();
+				
+				return options; 
+			}
+		}
 
-		protected void ReadSectionOptions()
+		private void ReadSectionOptions(string text)
 		{
-			string[] vals = LineWords;
+			string[] vals = text.Split(new char[] { ' '}, StringSplitOptions.RemoveEmptyEntries);
 
 			options = new SectionOptions();
 			double number;
@@ -183,8 +210,6 @@ namespace TightBindingSuite
 					options.Add(key, null);
 				}
 			}
-
-			ReadNextLine();
 		}
 		protected string[] ReadSubSectionParameters()
 		{

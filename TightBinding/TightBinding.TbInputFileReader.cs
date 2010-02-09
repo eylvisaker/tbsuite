@@ -269,8 +269,6 @@ namespace TightBindingSuite
 			{
 				bool deprecated = false;
 
-				ReadSectionOptions();
-
 				if (Options.ContainsKey("disable"))
 				{
 					tb.disableSymmetries = true;
@@ -292,6 +290,10 @@ namespace TightBindingSuite
 
 			private void ReadQPlaneSection()
 			{
+				bool reduced = false;
+
+				reduced = Options.ContainsKey("reduced");
+				
 				for (int i = 0; i < 3; i++)
 				{
 					tb.qgrid[i] = int.Parse(LineWords[i]);
@@ -302,7 +304,12 @@ namespace TightBindingSuite
 				for (int i = 0; i < 3; i++)
 				{
 					tb.qplaneDef[i] = Vector3.Parse(Line);
-
+					
+					if (reduced)
+					{
+						tb.qplaneDef[i] = tb.Lattice.ReciprocalExpand(tb.qplaneDef[i]);
+					}
+					
 					ReadNextLine();
 				}
 
@@ -324,7 +331,6 @@ namespace TightBindingSuite
 			{
 				tb.FrequencyMesh = ReadDoubleMesh();
 			}
-
 			private void ReadTemperatureSection()
 			{
 				tb.TemperatureMesh = ReadDoubleMesh();
@@ -398,12 +404,7 @@ namespace TightBindingSuite
 
 				bool reduced = false;
 
-				if (Line[1] != ' ' && Line[1] != '\t')
-				{
-					ReadSectionOptions();
-					reduced = Options.ContainsKey("reduced");
-				}
-
+				reduced = Options.ContainsKey("reduced");
 
 				path = new KptList();
 				while (EOF == false && LineType != LineType.NewSection)
@@ -510,11 +511,7 @@ namespace TightBindingSuite
 				tb.orbitals = new OrbitalList();
 				bool reduced = false;
 
-				if (LineType != LineType.NewSection)
-				{
-					ReadSectionOptions();
-					reduced = Options.ContainsKey("reduced");
-				}
+				reduced = Options.ContainsKey("reduced");
 
 
 				while (EOF == false && LineType != LineType.NewSection)
@@ -554,11 +551,7 @@ namespace TightBindingSuite
 
 				bool reduced = false;
 
-				if (LineType != LineType.NewSection && LineType !=  LineType.NewSubSection)
-				{
-					ReadSectionOptions();
-					reduced = Options.ContainsKey("reduced");
-				}
+				reduced = Options.ContainsKey("reduced");
 
 				tb.hoppings = new HoppingPairList();
 
@@ -607,32 +600,29 @@ namespace TightBindingSuite
 
 				tb.Interactions = new InteractionList();
 
-				if (LineType != LineType.NewSubSection && LineType != LineType.NewSection)
+				if (Options.ContainsKey("adjust"))
 				{
-					ReadSectionOptions();
+					double val;
 
-					if (Options.ContainsKey("adjust"))
+					val = Options["adjust"] ?? 0.001;
+
+					if (val <= 0 || val >= 1)
 					{
-						double val;
-
-						val = Options["adjust"] ?? 0.001;
-
-						if (val <= 0 || val >= 1)
-						{
-							ThrowEx("Interaction adjustment must be between 0 and 1, and should be close to zero.");
-						}
-
-						tb.Interactions.MaxEigenvalue = 1 - val;
-						tb.Interactions.AdjustInteractions = true;
+						ThrowEx("Interaction adjustment must be between 0 and 1, and should be close to zero.");
 					}
+
+					tb.Interactions.MaxEigenvalue = 1 - val;
+					tb.Interactions.AdjustInteractions = true;
 				}
 
 				bool reduced = Options.ContainsKey("reduced");
-
+				
 				while (!EOF && LineType != LineType.NewSection)
 				{
 					if (LineType != LineType.NewSubSection)
+					{
 						ThrowEx("Could not understand contents of interaction section.");
+					}
 
 					string[] values = ReadSubSectionParameters();
 

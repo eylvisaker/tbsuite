@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -86,7 +86,7 @@ namespace TightBindingSuite
 			{
 				var qpt = qmesh.Kpts[i];
 
-				Vector3 diff = qpt.Value - points[0];
+				Vector3 diff = lattice.ReciprocalExpand(qpt.Value) - points[0];
 				double dot = Math.Abs(diff.DotProduct(norm));
 
 				if (dot < 1e-8)

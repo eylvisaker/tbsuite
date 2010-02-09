@@ -258,7 +258,8 @@ namespace TightBindingSuite
 			Output.WriteLine("    Temperature: {0}", largestParams.Temperature);
 			Output.WriteLine("    Frequency: {0}", largestParams.Frequency);
 			Output.WriteLine("    Chemical Potential: {0}", largestParams.ChemicalPotential);
-			Output.WriteLine("    Q: {0}", largestParams.QptValue);
+			Output.WriteLine("    Q (red):  {0}", largestParams.QptValue);
+			Output.WriteLine("    Q (cart): {0}", tb.Lattice.ReciprocalExpand(largestParams.QptValue));
 		}
 
 		private void VerifySymmetry(TightBinding tb, Matrix S, int a, int b)
