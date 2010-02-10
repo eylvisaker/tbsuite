@@ -299,6 +299,9 @@ namespace TightBindingSuite
 					tb.qgrid[i] = int.Parse(LineWords[i]);
 				}
 
+				if (Options.ContainsKey("skip"))
+					tb.SkipQPlaneLines = true;
+				
 				ReadNextLine();
 
 				for (int i = 0; i < 3; i++)
@@ -627,7 +630,7 @@ namespace TightBindingSuite
 					string[] values = ReadSubSectionParameters();
 
 					InteractionPair inter = new InteractionPair(tb.orbitals, values[0], values[1]);
-
+					
 					if (inter.OrbitalsLeft.Count == 0) ThrowEx("Could not identify interaction group \"" + values[0] + "\".");
 					if (inter.OrbitalsRight.Count == 0) ThrowEx("Could not identify interaction group \"" + values[1] + "\".");
 
@@ -636,9 +639,10 @@ namespace TightBindingSuite
 					double[] vals = interactionVals.Select(x => double.Parse(x)).ToArray();
 
 					ReadNextLine();
-
+					
 					while (!EOF && LineType != LineType.NewSection && LineType != LineType.NewSubSection)
 					{
+					
 						Vector3 vec = Vector3.Parse(Line);
 						if (reduced == false)
 							vec = tb.lattice.DirectReduce(vec);

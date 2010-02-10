@@ -607,6 +607,8 @@ namespace TightBindingSuite
 
 											qplane.GetPlaneST(qplane.Kpts[0], out last_s, out last_t);
 
+											bool skip = false;
+											
 											for (int qi = 0; qi < qplane.Kpts.Count; qi++)
 											{
 												Vector3 qpt = qplane.Kpts[qi];
@@ -617,11 +619,21 @@ namespace TightBindingSuite
 
 												if (Math.Abs(t - last_t) > 1e-6)
 												{
-													w_re.WriteLine();
-													w_im.WriteLine();
-													w_mag.WriteLine();
+													if (!skip)
+													{
+														w_re.WriteLine();
+														w_im.WriteLine();
+														w_mag.WriteLine();
+													}
+													if (tb.SkipQPlaneLines)
+													{
+														skip = ! skip;	
+													}
 												}
-
+												
+												last_t = t;
+												last_s = s;
+												
 												int kindex = qplane.IrreducibleIndex(
 													tb.QPlane, qpt, out orbitalMap);
 
@@ -640,17 +652,18 @@ namespace TightBindingSuite
 
 												Complex val = g(rpa[index])[newii, newjj];
 
-												w_re.WriteLine(" {0}       {1}       {2:0.0000000}", s, t, val.RealPart);
-												w_im.WriteLine(" {0}       {1}       {2:0.0000000}", s, t, val.ImagPart);
-												w_mag.WriteLine(" {0}       {1}       {2:0.0000000}", s, t, val.Magnitude);
-
+												if (!skip)
+												{
+													w_re.WriteLine(" {0}       {1}       {2:0.0000000}", s, t, val.RealPart);
+													w_im.WriteLine(" {0}       {1}       {2:0.0000000}", s, t, val.ImagPart);
+													w_mag.WriteLine(" {0}       {1}       {2:0.0000000}", s, t, val.Magnitude);
+												}
+												
 												if (val.RealPart > maxvalue.RealPart) maxvalue.RealPart = val.RealPart;
 												if (val.ImagPart > maxvalue.ImagPart) maxvalue.ImagPart = val.ImagPart;
 												if (val.RealPart < minvalue.RealPart) minvalue.RealPart = val.RealPart;
 												if (val.ImagPart < minvalue.ImagPart) minvalue.ImagPart = val.ImagPart;
 
-												last_t = t;
-												last_s = s;
 											}
 										}
 

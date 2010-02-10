@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -27,6 +27,7 @@ namespace TightBindingSuite
 		public KptList KMesh { get { return mKmesh; } }
 		public KptPlane AllQPlane { get { return mAllQplane; } }
 		public KptPlane QPlane { get { return mQplane; } }
+		public bool SkipQPlaneLines { get; set; }
 		public double[] FrequencyMesh { get; private set; }
 		public double[] TemperatureMesh { get; private set; }
 		public double[] MuMesh { get; private set; }
