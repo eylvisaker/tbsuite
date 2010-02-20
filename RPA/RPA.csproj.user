@@ -1,5 +1,5 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <StartWorkingDirectory>C:\Users\Erik\devel\Physics\tbsuite\out\tests\</StartWorkingDirectory>
+    <StartWorkingDirectory>C:\Users\Erik\devel\Physics\tbsuite\tbsuite\out\tests\</StartWorkingDirectory>
   </PropertyGroup>
 </Project>

@@ -137,8 +137,7 @@ A        0              0             0.025295276665
 [Mu]
 0
 
-[Symmetry]
-disable
+[Symmetry: disable]
 
 # Gives a k-mesh for calculating the density of states and doing RPA.
 [KMesh]
@@ -176,8 +175,7 @@ disable
 # After the interaction parameters, vectors for long range interactions can be
 # entered.
 # For long range interactions, only enter two values, which are U prime and J.
-[Interaction]
-adjust
+[Interaction: adjust 0.01]
 :a a:
 2
 :b b:
