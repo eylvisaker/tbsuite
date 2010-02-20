@@ -869,23 +869,21 @@ namespace TightBindingSuite
 
 			for (int l1 = 0; l1 < orbitalCount; l1++)
 			{
-				for (int l4 = 0; l4 < orbitalCount; l4++)
+				for (int l2 = 0; l2 < orbitalCount; l2++)
 				{
-					for (int l3 = l1; l3 < orbitalCount; l3++)
+					for (int l3 = 0; l3 < orbitalCount; l3++)
 					{
-						for (int l2 = l4; l2 < orbitalCount; l2++)
+						for (int l4 = 0; l4 < orbitalCount; l4++)
 						{
 							int i = GetIndex(tb, l1, l2);
 							int j = GetIndex(tb, l3, l4);
 							bool foundSymmetry = false;
 
-							//if (l1 == 0 && l2 == 0 && l3 == 0 && l4 == 0)
-							//    writeThis = true;
-							//else
-								//writeThis = false;
-
-							//if (writeThis)
-							//    w.WriteLine("{0}{1}{2}{3}", l1, l2, l3, l4);
+							// already calculated
+							if (i > j)
+							{
+								continue;
+							}
 
 							for (int s = 0; s < tb.SpaceGroup.Symmetries.Count; s++)
 							{
