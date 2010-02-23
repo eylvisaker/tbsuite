@@ -536,6 +536,12 @@ namespace TightBindingSuite
 				}
 			}
 		}
+		
+		readonly string[] letters = new string[] { 
+			"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+			"a", "b", "c", "d", "e", "f", "g", "h", "i", "j",
+			"k", "l", "m", "n", "o", "p", "q", "r", "s", "t" };
+		
 		private void SaveByQPlane(TightBinding tb,
 								  List<KPoint> QMesh,
 								  List<RpaParams> rpa,
@@ -585,7 +591,11 @@ namespace TightBindingSuite
 								{
 									for (int l4 = 0; l4 < tb.Orbitals.Count; l4++)
 									{
-										string filePrefix = string.Format("{0}.{1}{2}{3}{4}.", name, l1, l2, l3, l4);
+										string filePrefix = string.Format("{0}.{1}{2}{3}{4}.", name, 
+										                                  letters[l1], 
+										                                  letters[l2], 
+										                                  letters[l3], 
+										                                  letters[l4]);
 										string filePostfix = string.Format(".w{0}.T{1}.u{2}.qm", wi, ti, ui);
 
 										SaveMatrix(tb, rpa, qplane, filePrefix, filePostfix, qpt =>

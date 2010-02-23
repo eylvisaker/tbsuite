@@ -93,7 +93,33 @@ namespace TightBindingSuite
 						}
 					}
 				}
-
+				
+				bool addedPairs = false;
+				for (int i = 0; i < tb.orbitals.Count; i++)
+				{
+					for (int j = i; j < tb.orbitals.Count; j++)
+					{
+						HoppingPair p = tb.hoppings.Find(i, j);
+							
+						if (p == null)
+						{
+							if (i == j)
+								ThrowEx(string.Format("There is no hopping for the {0} channel.", i+1));
+							
+							Output.WriteLine("WARNING: Could not find hopping pair {0}-{1}.", i+1,j+1);
+							addedPairs = true;
+							
+							tb.hoppings.Add(new HoppingPair(i,j));
+							tb.hoppings.Add(new HoppingPair(j,i));
+						}
+					}
+				}
+				if (addedPairs)
+				{
+					Output.WriteLine("Added missing hopping pairs.  Check to make sure this behavior is correct.");
+					Output.WriteLine();
+				}
+				
 				foreach (Orbital orb in tb.Orbitals)
 				{
 					var interactionOrbs = tb.Orbitals.Where((x,y) => x.InteractionGroup == orb.InteractionGroup);
