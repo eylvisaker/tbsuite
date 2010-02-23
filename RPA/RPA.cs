@@ -244,7 +244,9 @@ namespace TightBindingSuite
 								if (found == false)
 									continue;
 
-								indices = string.Format("{0}{1}{2}{3}", l1, l2, l3, l4);
+								indices = string.Format("{0}{1}{2}{3}", 
+								                        letters[l1], letters[l2], 
+								                        letters[l3], letters[l4]);
 								largestParams = rpa[i];
 							}
 						}
