@@ -54,7 +54,7 @@ G        0       0       0
 
 # Gives a k-mesh for calculating the density of states and doing RPA.
 [KMesh]
-400 400 1 1 1 1
+80 80 1 1 1 1
 
 # Gives data for a plane of q-points in the BZ to plot.  There must be
 # four sets of three numbers here.
@@ -62,7 +62,7 @@ G        0       0       0
 # The next three groups of three numbers are q-points which are constrained to be
 # on the plane.
 [QPlane]
-100 100 1
+20 20 1 
 0   0   0  
 1   0   0
 0   1   0
@@ -78,7 +78,7 @@ G        0       0       0
 # Temperature mesh for RPA calculation
 # Same input format as the frequency.
 [Temperature]
-0.02
+0.01
 
 # Hubbard model parameters for RPA calculation
 # * If the word "adjust" is the first word, then the interaction will 
@@ -88,10 +88,8 @@ G        0       0       0
 #   range interactions, or just V and J for long range interactions.
 # * After the interaction parameters, vectors for long range interactions can be
 #   entered.
-# For short range interactions, positive J is ferromagnetic, 
-# but for long range interactions, negative J is ferromagnetic.
 [Interaction]
-adjust 0.01
+adjust
 :a a:
 0 -1
   1  0  0      

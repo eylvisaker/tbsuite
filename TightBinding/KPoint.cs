@@ -12,12 +12,12 @@ namespace TightBindingSuite
 		public string Name;
 		List<List<int>> mOrbitalTransform = new List<List<int>>();
 		List<Wavefunction> wfk = new List<Wavefunction>();
-		public int Nvalue { get; set; }
 
 		public KPoint(Vector3 v)
 		{
 			Value = v;	
 		}
+
 
 		public KPoint Clone()
 		{
@@ -25,7 +25,6 @@ namespace TightBindingSuite
 
 			retval.Weight = Weight;
 			retval.Name = Name;
-			retval.Nvalue = Nvalue;
 
 			foreach (var transform in mOrbitalTransform)
 			{
@@ -76,7 +75,7 @@ namespace TightBindingSuite
 		}
 
 		public List<Wavefunction> Wavefunctions { get { return wfk; } }
-		public Symmetry ReducingSymmetry { get; set; }
+		public IEnumerable<List<int>> OrbitalTransform { get { return mOrbitalTransform; } }
 
 		public override string ToString()
 		{

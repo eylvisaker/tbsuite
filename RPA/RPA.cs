@@ -30,7 +30,6 @@ namespace TightBindingSuite
 			TightBinding tb = new TightBinding();
 			tb.LoadTB(inputfile);
 			tb.RunTB();
-			tb.KMesh.FillWavefunctions(tb.AllKMesh, tb.SpaceGroup.Symmetries);
 
 			bool ranRPA = false;
 
@@ -77,12 +76,9 @@ namespace TightBindingSuite
 
 			CalcSusceptibility(tb, qpts, rpa);
 
-			SaveMatricesQPlane(tb, QMesh, rpa, (RpaParams x) => x.C, "C", false);
-			SaveMatricesQPlane(tb, QMesh, rpa, (RpaParams x) => x.S, "S", false);
-
-			SaveMatricesQPlane(tb, QMesh, rpa, x => x.X0, "chi_0", true);
-			SaveMatricesQPlane(tb, QMesh, rpa, x => x.Xs, "chi_s", true);
-			SaveMatricesQPlane(tb, QMesh, rpa, x => x.Xc, "chi_c", true);
+			SaveMatricesQPlane(tb, QMesh, rpa, x => x.X0, "chi_0");
+			SaveMatricesQPlane(tb, QMesh, rpa, x => x.Xs, "chi_s");
+			SaveMatricesQPlane(tb, QMesh, rpa, x => x.Xc, "chi_c");
 
 		}
 
@@ -116,7 +112,7 @@ namespace TightBindingSuite
 
 		public Wavefunction Bands(TightBinding tb, int kpt, int band)
 		{
-			return tb.AllKMesh.Kpts[kpt].Wavefunctions[band];
+			return tb.KMesh.AllKpts[kpt].Wavefunctions[band];
 		}
 		void SetTemperature(TightBinding tb, double temperature, double mu)
 		{
@@ -124,7 +120,6 @@ namespace TightBindingSuite
 			Beta = 1 / temperature;
 
 			tb.KMesh.SetTemperature(temperature, mu);
-			tb.AllKMesh.SetTemperature(temperature, mu);
 
 		}
 
@@ -132,11 +127,21 @@ namespace TightBindingSuite
 		{
 			Matrix ident = Matrix.Identity(tb.Orbitals.Count * tb.Orbitals.Count);
 
-			CalcSpinChargeMatrices(tb, rpa);
+			Matrix[] S, C;
+			CalcSpinChargeMatrices(tb, rpa, out S, out C);
+
+
+#if DEBUG
+			for (int i = 0; i < S.Length; i++)
+			{
+				VerifySymmetry(tb, S[i], 0, 1);
+				VerifySymmetry(tb, C[i], 0, 1);
+			}
+#endif
 
 			Output.WriteLine("Calculating X0...");
 
-
+			
 			RpaThreadInfo[] threadInfos = CreateThreadInfos(tb, rpa, qpts);
 
 			Output.WriteLine("Using {0} threads.", threads);
@@ -148,7 +153,7 @@ namespace TightBindingSuite
 				if (i == 0)
 					Thread.Sleep(20);
 			}
-
+			
 			bool threadsRunning;
 
 			do
@@ -169,7 +174,7 @@ namespace TightBindingSuite
 			Output.WriteLine("Bare susceptibility calculation completed.");
 			Output.WriteLine();
 
-			double factor = InteractionAdjustment(rpa, tb);
+			double factor = InteractionAdjustment(rpa, S, C, tb);
 
 			if (tb.Interactions.AdjustInteractions)
 			{
@@ -177,8 +182,8 @@ namespace TightBindingSuite
 
 				for (int i = 0; i < rpa.Count; i++)
 				{
-					rpa[i].S *= factor;
-					rpa[i].C *= factor;
+					S[i] *= factor;
+					C[i] *= factor;
 				}
 			}
 			else if (factor < 1)
@@ -192,29 +197,31 @@ namespace TightBindingSuite
 			Output.WriteLine();
 
 			RpaParams largestParams = null;
-			double largest = double.MinValue;
+			double largest = 0;
 			string indices = "";
 			bool charge = false;
 
 			for (int i = 0; i < rpa.Count; i++)
 			{
-				Matrix s_denom = (ident - rpa[i].S * rpa[i].X0);
-				Matrix c_denom = (ident + rpa[i].C * rpa[i].X0);
+				Matrix s_denom = (ident - S[i] * rpa[i].X0);
+				Matrix c_denom = (ident + C[i] * rpa[i].X0);
 
-				//VerifySymmetry(tb, s_denom, 0, 1);
-				//VerifySymmetry(tb, c_denom, 0, 1);
+				VerifySymmetry(tb, s_denom, 0, 1);
+				VerifySymmetry(tb, c_denom, 0, 1);
 
 				Matrix s_inv = s_denom.Invert();
 				Matrix c_inv = c_denom.Invert();
 
-				//VerifySymmetry(tb, s_inv, 0, 1);
-				//VerifySymmetry(tb, c_inv, 0, 1);
+				System.Diagnostics.Debug.Assert((s_denom * s_inv).IsIdentity);
+
+				VerifySymmetry(tb, s_inv, 0, 1);
+				VerifySymmetry(tb, c_inv, 0, 1);
 
 				rpa[i].Xs = rpa[i].X0 * s_inv;
 				rpa[i].Xc = rpa[i].X0 * c_inv;
 
-				//VerifySymmetry(tb, rpa[i].Xs, 0, 1);
-				//VerifySymmetry(tb, rpa[i].Xc, 0, 1);
+				VerifySymmetry(tb, rpa[i].Xs, 0, 1);
+				VerifySymmetry(tb, rpa[i].Xc, 0, 1);
 
 				for (int l1 = 0; l1 < tb.Orbitals.Count; l1++)
 				{
@@ -229,9 +236,9 @@ namespace TightBindingSuite
 
 								bool found = false;
 
-								if (rpa[i].Xs[a, b].MagnitudeSquared > largest)
+								if (rpa[i].Xs[a,b].MagnitudeSquared > largest)
 								{
-									largest = rpa[i].Xs[a, b].MagnitudeSquared;
+									largest = rpa[i].Xs[a,b].MagnitudeSquared;
 									charge = false;
 									found = true;
 								}
@@ -244,9 +251,7 @@ namespace TightBindingSuite
 								if (found == false)
 									continue;
 
-								indices = string.Format("{0}{1}{2}{3}", 
-								                        letters[l1], letters[l2], 
-								                        letters[l3], letters[l4]);
+								indices = string.Format("{0}{1}{2}{3}", l1, l2, l3, l4);
 								largestParams = rpa[i];
 							}
 						}
@@ -260,8 +265,7 @@ namespace TightBindingSuite
 			Output.WriteLine("    Temperature: {0}", largestParams.Temperature);
 			Output.WriteLine("    Frequency: {0}", largestParams.Frequency);
 			Output.WriteLine("    Chemical Potential: {0}", largestParams.ChemicalPotential);
-			Output.WriteLine("    Q (red):  {0}", largestParams.QptValue);
-			Output.WriteLine("    Q (cart): {0}", tb.Lattice.ReciprocalExpand(largestParams.QptValue));
+			Output.WriteLine("    Q: {0}", largestParams.QptValue);
 		}
 
 		private void VerifySymmetry(TightBinding tb, Matrix S, int a, int b)
@@ -292,8 +296,8 @@ namespace TightBindingSuite
 
 							var diff = S[i, j] - S[ii, jj];
 
-							//if (diff.Magnitude > 1e-8)
-							//    throw new Exception("blah");
+							if (diff.Magnitude > 1e-8)
+								throw new Exception("blah");
 						}
 					}
 				}
@@ -340,8 +344,8 @@ namespace TightBindingSuite
 				}
 				Complex val = rpa[i].X0.Trace();
 
-				//VerifySymmetry(tb, rpa[i].X0, 0, 1);
-
+				VerifySymmetry(tb, rpa[i].X0, 0, 1);
+				
 				Output.Write("q = {0}, T = {1:0.000}, mu = {2:0.000}, omega = {3:0.0000}",
 					rpa[i].Qindex + 1, rpa[i].Temperature, rpa[i].ChemicalPotential, rpa[i].Frequency);
 				Output.WriteLine(", Tr(X_0) = {0}", val.ToString("0.0000"));
@@ -369,7 +373,7 @@ namespace TightBindingSuite
 			return infos;
 		}
 
-		double InteractionAdjustment(List<RpaParams> rpa, TightBinding tb)
+		double InteractionAdjustment(List<RpaParams> rpa, Matrix[] S, Matrix[] C, TightBinding tb)
 		{
 			double largest = double.MinValue;
 			RpaParams largestParams = null;
@@ -379,9 +383,8 @@ namespace TightBindingSuite
 			{
 				RpaParams p = rpa[i];
 				Matrix x0 = p.X0;
-				Matrix test = x0 * rpa[i].S;
 
-				double lv = LargestPositiveEigenvalue(test);
+				double lv = LargestPositiveEigenvalue(x0 * S[i]);
 
 				if (lv > largest)
 				{
@@ -390,8 +393,7 @@ namespace TightBindingSuite
 					Cdiv = false;
 				}
 
-				test = -x0 * rpa[i].C;
-				lv = LargestPositiveEigenvalue(test);
+				lv = LargestPositiveEigenvalue(-x0 * C[i]);
 
 				if (lv > largest)
 				{
@@ -399,6 +401,11 @@ namespace TightBindingSuite
 					largestParams = p;
 					Cdiv = true;
 				}
+			}
+
+			if (largest >= 1)
+			{
+				Output.WriteLine("Interaction should be reduced to avoid divergence.", largest);
 			}
 
 			Output.WriteLine("Largest eigenvalue of denominator found at:");
@@ -411,16 +418,8 @@ namespace TightBindingSuite
 
 			largest /= tb.Interactions.MaxEigenvalue;
 
-
-
-			double retval = 1 / largest;
-
 			Output.WriteLine();
-			Output.WriteLine("The largest eigenvalue can be set to {0} by choosing", tb.Interactions.MaxEigenvalue);
-			Output.WriteLine("Scaling factor of {0}, which will be just below divergence.", largest);
-			Output.WriteLine();
-
-			return retval;
+			return 1 / largest;
 		}
 
 		private static double LargestPositiveEigenvalue(Matrix x)
@@ -431,12 +430,12 @@ namespace TightBindingSuite
 			double thisValue = 0;
 			int iter = 0;
 
-
+			
 			if (x.IsHermitian)
 			{
 				x.EigenValsVecs(out eigenvals, out eigenvecs);
 
-				return eigenvals[eigenvals.Rows - 1, 0].RealPart;
+				return eigenvals[eigenvals.Rows - 1, 0].Magnitude;
 			}
 			else if (Matrix.CanDiagonalizeNonHermitian)
 			{
@@ -474,7 +473,6 @@ namespace TightBindingSuite
 		}
 
 		delegate Matrix MatrixGetter(RpaParams p);
-		delegate Complex ValueGetter(Vector3 qpoint);
 
 		private void SaveByTemperature(TightBinding tb, List<KPoint> QMesh, List<RpaParams> rpa, MatrixGetter g, string name)
 		{
@@ -538,18 +536,7 @@ namespace TightBindingSuite
 				}
 			}
 		}
-		
-		readonly string[] letters = new string[] { 
-			"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
-			"a", "b", "c", "d", "e", "f", "g", "h", "i", "j",
-			"k", "l", "m", "n", "o", "p", "q", "r", "s", "t" };
-		
-		private void SaveByQPlane(TightBinding tb,
-								  List<KPoint> QMesh,
-								  List<RpaParams> rpa,
-								  MatrixGetter g,
-								  string name,
-								  bool saveMacroSum)
+		private void SaveByQPlane(TightBinding tb, List<KPoint> QMesh, List<RpaParams> rpa, MatrixGetter g, string name)
 		{
 			rpa.Sort(RpaParams.QIndexComparison);
 
@@ -557,186 +544,130 @@ namespace TightBindingSuite
 			double[] chimag = new double[rpa.Count];
 			double[] chimagsqr = new double[rpa.Count];
 
-
-			string gpfilename = "gnuplot.colors";
-
-			//minvalue.RealPart = Math.Floor(minvalue.RealPart);
-			//maxvalue.RealPart = Math.Ceiling(maxvalue.RealPart);
-
-			using (StreamWriter w = new StreamWriter(gpfilename))
+			for (int l1 = 0; l1 < tb.Orbitals.Count; l1++)
 			{
-				w.WriteLine("#!/usr/bin/gnuplot");
-				//w.WriteLine("set pm3d at bs flush center ftriangles scansbackward interpolate 1,1");
-				w.WriteLine("set pm3d flush center ftriangles scansbackward interpolate 5,5");
-				w.WriteLine("set palette rgbformula 23,9,-36");
-				//w.WriteLine("set border 895");
-				w.WriteLine("set key off");
-				//w.WriteLine("set zrange [{0}:{1}]", minvalue.RealPart, maxvalue.RealPart);
-				// label z = minvalue - 0.5 * (maxvalue - minvalue)
-				//  set label 1 "G" at 0,0,1 font "Symbol" center front
-			}
-
-			KptPlane qplane = tb.AllQPlane;
-
-			for (int ti = 0; ti < tb.TemperatureMesh.Length; ti++)
-			{
-				for (int ui = 0; ui < tb.MuMesh.Length; ui++)
+				for (int l2 = 0; l2 < tb.Orbitals.Count; l2++)
 				{
-					for (int wi = 0; wi < tb.FrequencyMesh.Length; wi++)
+					for (int l3 = 0; l3 < tb.Orbitals.Count; l3++)
 					{
-
-						for (int l1 = 0; l1 < tb.Orbitals.Count; l1++)
+						for (int l4 = 0; l4 < tb.Orbitals.Count; l4++)
 						{
-							for (int l2 = 0; l2 < tb.Orbitals.Count; l2++)
+							double lastFreq = double.MinValue;
+							double lastMu = double.MinValue;
+							double lastq = int.MinValue;
+
+							int baseIndex = 0;
+
+							for (int ti = 0; ti < tb.TemperatureMesh.Length; ti++)
 							{
-								for (int l3 = 0; l3 < tb.Orbitals.Count; l3++)
+								for (int ui = 0; ui < tb.MuMesh.Length; ui++)
 								{
-									for (int l4 = 0; l4 < tb.Orbitals.Count; l4++)
+									for (int wi = 0; wi < tb.FrequencyMesh.Length; wi++)
 									{
-										string filePrefix = string.Format("{0}.{1}{2}{3}{4}.", name, 
-										                                  letters[l1], 
-										                                  letters[l2], 
-										                                  letters[l3], 
-										                                  letters[l4]);
-										string filePostfix = string.Format(".w{0}.T{1}.u{2}.qm", wi, ti, ui);
+										string filename_re = string.Format("{0}.re.{1}{2}{3}{4}.w{5}.T{6}.u{7}.qm",
+															   name, l1, l2, l3, l4, wi, ti, ui);
+										string filename_im = string.Format("{0}.im.{1}{2}{3}{4}.w{5}.T{6}.u{7}.qm",
+															   name, l1, l2, l3, l4, wi, ti, ui);
+										string filename_mag = string.Format("{0}.mag.{1}{2}{3}{4}.w{5}.T{6}.u{7}.qm",
+															   name, l1, l2, l3, l4, wi, ti, ui);
 
-										SaveMatrix(tb, rpa, qplane, filePrefix, filePostfix, qpt =>
+										Complex maxvalue = new Complex(double.MinValue, double.MinValue);
+										Complex minvalue = new Complex(double.MaxValue, double.MaxValue);
+
+										using (StreamWriter w_re = new StreamWriter(filename_re))
+										using (StreamWriter w_im = new StreamWriter(filename_im))
+										using (StreamWriter w_mag = new StreamWriter(filename_mag))
 										{
-											List<int> orbitalMap;
+											double last_t;
+											double last_s;
 
-											int kindex = qplane.IrreducibleIndex(
-												tb.QPlane, qpt, out orbitalMap);
+											tb.QPlane.GetPlaneST(tb.QPlane.AllKpts[0], out last_s, out last_t);
 
-											int index = GetRpaIndex(rpa, kindex,
-												tb.TemperatureMesh[ti],
-												tb.FrequencyMesh[wi],
-												tb.MuMesh[ui]);
+											for (int qi = 0; qi < tb.QPlane.AllKpts.Count; qi++)
+											{
+												Vector3 qpt = tb.QPlane.AllKpts[qi];
+												List<int> orbitalMap;
 
-											int newL1 = tb.SpaceGroup.Symmetries.TransformOrbital(orbitalMap, l1);
-											int newL2 = tb.SpaceGroup.Symmetries.TransformOrbital(orbitalMap, l2);
-											int newL3 = tb.SpaceGroup.Symmetries.TransformOrbital(orbitalMap, l3);
-											int newL4 = tb.SpaceGroup.Symmetries.TransformOrbital(orbitalMap, l4);
+												double s, t;
+												tb.QPlane.GetPlaneST(tb.QPlane.AllKpts[qi], out s, out t);
 
-											int newii = GetIndex(tb, newL1, newL2);
-											int newjj = GetIndex(tb, newL3, newL4);
+												if (Math.Abs(t - last_t) > 1e-6)
+												{
+													w_re.WriteLine();
+													w_im.WriteLine();
+													w_mag.WriteLine();
+												}
 
-											Complex val = g(rpa[index])[newii, newjj];
+												int kindex =
+													tb.QPlane.IrreducibleIndex(qpt, tb.Lattice, tb.Symmetries, out orbitalMap);
 
-											return val;
-										});
+												int index = GetRpaIndex(rpa, kindex, 
+													tb.TemperatureMesh[ti], 
+													tb.FrequencyMesh[wi], 
+													tb.MuMesh[ui]);
 
+												int newL1 = tb.Symmetries.TransformOrbital(orbitalMap, l1);
+												int newL2 = tb.Symmetries.TransformOrbital(orbitalMap, l2);
+												int newL3 = tb.Symmetries.TransformOrbital(orbitalMap, l3);
+												int newL4 = tb.Symmetries.TransformOrbital(orbitalMap, l4);
+
+												int newii = GetIndex(tb, newL1, newL2);
+												int newjj = GetIndex(tb, newL3, newL4);
+
+												Complex val = g(rpa[index])[newii, newjj];
+
+												w_re.WriteLine(" {0}       {1}       {2:0.0000000}", s, t, val.RealPart);
+												w_im.WriteLine(" {0}       {1}       {2:0.0000000}", s, t, val.ImagPart);
+												w_mag.WriteLine(" {0}       {1}       {2:0.0000000}", s, t, val.Magnitude);
+
+												if (val.RealPart > maxvalue.RealPart) maxvalue.RealPart = val.RealPart;
+												if (val.ImagPart > maxvalue.ImagPart) maxvalue.ImagPart = val.ImagPart;
+												if (val.RealPart < minvalue.RealPart) minvalue.RealPart = val.RealPart;
+												if (val.ImagPart < minvalue.ImagPart) minvalue.ImagPart = val.ImagPart;
+
+												last_t = t;
+												last_s = s;
+											}
+										}
+
+										for (int i = 0; i < 3; i++)
+										{
+											string filename;
+											switch (i)
+											{
+												case 0: filename = filename_re; break;
+												case 1: filename = filename_im; break;
+												case 2: filename = filename_mag; break;
+												default:
+													continue;
+											}
+
+											string gpfilename = "gnuplot." + filename;
+
+											//minvalue.RealPart = Math.Floor(minvalue.RealPart);
+											//maxvalue.RealPart = Math.Ceiling(maxvalue.RealPart);
+
+											using (StreamWriter w = new StreamWriter(gpfilename))
+											{
+												w.WriteLine("#!/usr/bin/gnuplot");
+												//w.WriteLine("set pm3d at bs flush center ftriangles scansbackward interpolate 1,1");
+												w.WriteLine("set pm3d map flush center ftriangles scansbackward interpolate 5,5");
+												w.WriteLine("set palette rgbformula 23,9,-36");
+												//w.WriteLine("set border 895");
+												w.WriteLine("set key off");
+												//w.WriteLine("set zrange [{0}:{1}]", minvalue.RealPart, maxvalue.RealPart);
+												// label z = minvalue - 0.5 * (maxvalue - minvalue)
+												//  set label 1 "G" at 0,0,1 font "Symbol" center front
+												w.WriteLine("splot '{0}' with pm3d", filename);
+											}
+										}
 									}
 
+									baseIndex += QMesh.Count;
 								}
 							}
 						}
-
-						if (saveMacroSum)
-						{
-							string filePrefix = string.Format("{0}.macro.", name);
-							string filePostfix = string.Format(".w{0}.T{1}.u{2}.qm", wi, ti, ui);
-
-							SaveMatrix(tb, rpa, qplane, filePrefix, filePostfix, qpt =>
-							{
-								List<int> orbitalMap;
-
-								int kindex = qplane.IrreducibleIndex(
-									   tb.QPlane, qpt, out orbitalMap);
-
-								int index = GetRpaIndex(rpa, kindex,
-									tb.TemperatureMesh[ti],
-									tb.FrequencyMesh[wi],
-									tb.MuMesh[ui]);
-
-								Complex val = new Complex();
-
-								for (int l1 = 0; l1 < tb.Orbitals.Count; l1++)
-								{
-									int l2 = l1;
-
-									for (int l3 = 0; l3 < tb.Orbitals.Count; l3++)
-									{
-										int l4 = l3;
-
-										int newL1 = tb.SpaceGroup.Symmetries.TransformOrbital(orbitalMap, l1);
-										int newL2 = tb.SpaceGroup.Symmetries.TransformOrbital(orbitalMap, l2);
-										int newL3 = tb.SpaceGroup.Symmetries.TransformOrbital(orbitalMap, l3);
-										int newL4 = tb.SpaceGroup.Symmetries.TransformOrbital(orbitalMap, l4);
-
-										int newii = GetIndex(tb, newL1, newL2);
-										int newjj = GetIndex(tb, newL3, newL4);
-
-										val += g(rpa[index])[newii, newjj];
-									}
-								}
-
-								return val;
-							});
-						}
 					}
-				}
-			}
-		}
-
-		private void SaveMatrix(TightBinding tb, List<RpaParams> rpa, KptPlane qplane, string filePrefix, string filePostfix, ValueGetter g)
-		{
-
-			string filename_re = filePrefix + "re" + filePostfix;
-			string filename_im = filePrefix + "im" + filePostfix;
-			string filename_mag = filePrefix + "mag" + filePostfix;
-
-			Complex maxvalue = new Complex(double.MinValue, double.MinValue);
-			Complex minvalue = new Complex(double.MaxValue, double.MaxValue);
-
-			using (StreamWriter w_re = new StreamWriter(filename_re))
-			using (StreamWriter w_im = new StreamWriter(filename_im))
-			using (StreamWriter w_mag = new StreamWriter(filename_mag))
-			{
-				double last_t;
-				double last_s;
-
-				qplane.GetPlaneST(qplane.Kpts[0], out last_s, out last_t);
-
-				bool skip = false;
-
-				for (int qi = 0; qi < qplane.Kpts.Count; qi++)
-				{
-					Vector3 qpt = qplane.Kpts[qi];
-
-					double s, t;
-					qplane.GetPlaneST(qplane.Kpts[qi], out s, out t);
-
-					if (Math.Abs(t - last_t) > 1e-6)
-					{
-						if (!skip)
-						{
-							w_re.WriteLine();
-							w_im.WriteLine();
-							w_mag.WriteLine();
-						}
-						if (tb.SkipQPlaneLines)
-						{
-							skip = !skip;
-						}
-					}
-
-					last_t = t;
-					last_s = s;
-
-					Complex val = g(qpt);
-
-					if (!skip)
-					{
-						w_re.WriteLine(" {0}       {1}       {2:0.0000000}", s, t, val.RealPart);
-						w_im.WriteLine(" {0}       {1}       {2:0.0000000}", s, t, val.ImagPart);
-						w_mag.WriteLine(" {0}       {1}       {2:0.0000000}", s, t, val.Magnitude);
-					}
-
-					if (val.RealPart > maxvalue.RealPart) maxvalue.RealPart = val.RealPart;
-					if (val.ImagPart > maxvalue.ImagPart) maxvalue.ImagPart = val.ImagPart;
-					if (val.RealPart < minvalue.RealPart) minvalue.RealPart = val.RealPart;
-					if (val.ImagPart < minvalue.ImagPart) minvalue.ImagPart = val.ImagPart;
-
 				}
 			}
 		}
@@ -758,18 +689,16 @@ namespace TightBindingSuite
 		}
 		private static bool ChangeValue(ref double value, double newValue)
 		{
-			if (value != newValue)
-			{
-				value = newValue;
-				return true;
-			}
-			else
-				return false;
+			 if (value != newValue)
+			 {
+				 value = newValue;
+				 return true;
+			 }
+			 else
+				 return false;
 		}
 
-		private void SaveMatricesQPlane(TightBinding tb,
-										List<KPoint> QMesh, List<RpaParams> chi,
-										MatrixGetter g, string name, bool saveMacroSum)
+		private void SaveMatricesQPlane(TightBinding tb, List<KPoint> QMesh, List<RpaParams> chi, MatrixGetter g, string name)
 		{
 			if (tb.TemperatureMesh.Length > 1)
 			{
@@ -777,7 +706,7 @@ namespace TightBindingSuite
 				SaveByTemperature(tb, QMesh, chi, g, name);
 			}
 
-			SaveByQPlane(tb, QMesh, chi, g, name, saveMacroSum);
+			SaveByQPlane(tb, QMesh, chi, g, name);
 		}
 		private void Analyze(string name, Matrix S)
 		{
@@ -810,8 +739,11 @@ namespace TightBindingSuite
 
 		}
 
-		private void CalcSpinChargeMatrices(TightBinding tb, List<RpaParams> rpa)
+		private void CalcSpinChargeMatrices(TightBinding tb, List<RpaParams> rpa, out Matrix[] S, out Matrix[] C)
 		{
+			S = new Matrix[rpa.Count];
+			C = new Matrix[rpa.Count];
+
 			for (int rpa_index = 0; rpa_index < rpa.Count; rpa_index++)
 			{
 				Vector3 q = rpa[rpa_index].QptValue;
@@ -834,8 +766,8 @@ namespace TightBindingSuite
 				System.Diagnostics.Debug.Assert(_S.IsSymmetric);
 				System.Diagnostics.Debug.Assert(_C.IsSymmetric);
 
-				rpa[rpa_index].S = _S;
-				rpa[rpa_index].C = _C;
+				S[rpa_index] = _S;
+				C[rpa_index] = _C;
 			}
 		}
 
@@ -877,9 +809,7 @@ namespace TightBindingSuite
 				}
 			}
 		}
-		private void CalcOffSiteInteraction(TightBinding tb, Matrix _S, Matrix _C,
-											InteractionPair interaction,
-											double structureFactor)
+		private void CalcOffSiteInteraction(TightBinding tb, Matrix _S, Matrix _C, InteractionPair interaction, double structureFactor)
 		{
 			foreach (int l1 in interaction.OrbitalsLeft)
 			{
@@ -895,29 +825,26 @@ namespace TightBindingSuite
 
 							if (l1 == l2 && l2 == l3 && l3 == l4)
 							{
-								Sval = -interaction.Exchange * structureFactor;
-								Cval = (2 * interaction.InterorbitalU) * structureFactor;
+								Sval = -0.5 * interaction.Exchange * structureFactor;
+								Cval = (2 * interaction.InterorbitalU - 0.5 * interaction.Exchange) * structureFactor;
 							}
 							else if (l1 == l2 && l2 != l3 && l3 == l4)
 							{
-								Sval = -interaction.Exchange * structureFactor;
-								Cval = (2 * interaction.InterorbitalU) * structureFactor;
+								Sval = -0.25 * interaction.Exchange * structureFactor;
+								Cval = (2 * interaction.InterorbitalU - 0.5 * interaction.Exchange) * structureFactor;
 							}
 
-							Sval /= 2;
-							Cval /= 2;
-
 							_S[i, j] += Sval;
-							_C[i, j] += Cval;
-
 							_S[j, i] += Sval;
+
+							_C[i, j] += Cval;
 							_C[j, i] += Cval;
 						}
 					}
 				}
 			}
 		}
-
+		
 		Matrix CalcX0(TightBinding tb, double freq, Vector3 q)
 		{
 			int orbitalCount = tb.Orbitals.Count;
@@ -928,29 +855,30 @@ namespace TightBindingSuite
 
 			//StreamWriter w = new StreamWriter(string.Format("qcont.{0}", q.ToString("0.000")));
 			//bool writeThis = false;
-			KptList kpts = tb.AllKMesh;
 
 			for (int l1 = 0; l1 < orbitalCount; l1++)
 			{
-				for (int l2 = 0; l2 < orbitalCount; l2++)
+				for (int l4 = 0; l4 < orbitalCount; l4++)
 				{
-					for (int l3 = 0; l3 < orbitalCount; l3++)
+					for (int l3 = l1; l3 < orbitalCount; l3++)
 					{
-						for (int l4 = 0; l4 < orbitalCount; l4++)
+						for (int l2 = l4; l2 < orbitalCount; l2++)
 						{
 							int i = GetIndex(tb, l1, l2);
 							int j = GetIndex(tb, l3, l4);
 							bool foundSymmetry = false;
 
-							// already calculated
-							if (i > j)
-							{
-								continue;
-							}
+							//if (l1 == 0 && l2 == 0 && l3 == 0 && l4 == 0)
+							//    writeThis = true;
+							//else
+								//writeThis = false;
 
-							for (int s = 0; s < tb.SpaceGroup.Symmetries.Count; s++)
+							//if (writeThis)
+							//    w.WriteLine("{0}{1}{2}{3}", l1, l2, l3, l4);
+
+							for (int s = 0; s < tb.Symmetries.Count; s++)
 							{
-								Symmetry sym = tb.SpaceGroup.Symmetries[s];
+								Symmetry sym = tb.Symmetries[s];
 
 								if (sym.OrbitalTransform == null || sym.OrbitalTransform.Count == 0)
 									continue;
@@ -987,10 +915,10 @@ namespace TightBindingSuite
 
 							Complex total = 0;
 
-							for (int allkindex = 0; allkindex < kpts.Kpts.Count; allkindex++)
+							for (int allkindex = 0; allkindex < tb.KMesh.AllKpts.Count; allkindex++)
 							{
 								Complex val = 0;
-								Vector3 k = kpts.Kpts[allkindex];
+								Vector3 k = tb.KMesh.AllKpts[allkindex];
 								Vector3 kq = k + q;
 
 								//List<int> kOrbitalMap;
@@ -998,8 +926,8 @@ namespace TightBindingSuite
 
 								//int kindex = tb.KMesh.IrreducibleIndex(k, tb.Lattice, tb.Symmetries, out kOrbitalMap);
 								//int kqindex = tb.KMesh.IrreducibleIndex(kq, tb.Lattice, tb.Symmetries, out kqOrbitalMap);
-								int kindex = allkindex;
-								int kqindex = kpts.IndexOf(kq);
+								int kindex = tb.KMesh.AllKindex(k, tb.Lattice);
+								int kqindex = tb.KMesh.AllKindex(kq, tb.Lattice);
 
 								System.Diagnostics.Debug.Assert(kindex == allkindex);
 
@@ -1054,7 +982,7 @@ namespace TightBindingSuite
 								//    Math.Round(val.RealPart, 4), Math.Round(val.ImagPart, 4));
 
 								//Output.WriteLine(tb.KMesh.AllKpts[kindex].Weight.ToString());
-								val *= kpts.Kpts[kindex].Weight;
+								val *= tb.KMesh.AllKpts[kindex].Weight;
 								total += val;
 
 								//if (writeThis)

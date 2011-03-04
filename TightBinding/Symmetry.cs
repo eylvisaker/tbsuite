@@ -8,23 +8,14 @@ namespace TightBindingSuite
 	public class Symmetry
 	{
 		Matrix mInverse;
-		Vector3 mTranslation;
-		
+
 		public Symmetry(Matrix val)
 		{
 			Value = val;
 			OrbitalTransform = new List<int>();
 		}
-		public Symmetry(Matrix val, Vector3 translation)
-			: this(val)
-		{
-			mTranslation = translation;
-		}
 
 		public Matrix Value { get; private set; }
-		public Vector3 Translation { get { return mTranslation; } }
-		public string Name { get; set; }
-
 		public List<int> OrbitalTransform { get; private set; }
 
 		public Matrix Inverse
@@ -40,26 +31,10 @@ namespace TightBindingSuite
 
 		public Symmetry Clone()
 		{
-			Symmetry x = new Symmetry(Value.Clone(), Translation);
-
+			Symmetry x = new Symmetry(Value.Clone());
 			x.OrbitalTransform.AddRange(OrbitalTransform);
 
 			return x;
-		}
-
-		public static Symmetry Compose(Symmetry sym, Symmetry s)
-		{
-			Symmetry retval = new Symmetry(sym.Value * s.Value);
-
-			for (int i = 0; i < s.OrbitalTransform.Count; i++)
-			{
-				int newOne = s.OrbitalTransform[i];
-				int newTwo = sym.OrbitalTransform[newOne];
-
-				retval.OrbitalTransform.Add(newTwo);
-			}
-
-			return retval;
 		}
 	}
 }

@@ -23,19 +23,21 @@ namespace TightBindingSuite
 			{
 				if (tb.lattice == null)
 					ThrowEx(@"""Lattice"" section missing.");
-				if (tb.orbitals == null)
+				if (tb.sites == null)
 					ThrowEx(@"""Sites"" section missing.");
 				if (tb.hoppings == null)
 					ThrowEx(@"""Hoppings"" section missing.");
 				if (tb.kpath == null)
-					tb.kpath = KptList.DefaultPath();
+					tb.kpath = KptList.DefaultPath(tb.lattice);
 				if (tb.kgrid == null || tb.kgrid[0] == 0 || tb.kgrid[1] == 0 || tb.kgrid[2] == 0)
 					ThrowEx(@"KMesh was not defined properly.");
 
-				if (tb.orbitals.Count == 0)
+				if (tb.sites.Count == 0)
 					ThrowEx(@"There are no sites.");
 				if (tb.hoppings.Count == 0)
 					ThrowEx(@"There are no hoppings.");
+				if (tb.symmetries.Count == 0)
+					tb.symmetries.Add(new Symmetry(Matrix.Identity(3)));
 
 				if (tb.Nelec != null)
 				{
@@ -60,66 +62,13 @@ namespace TightBindingSuite
 				if (tb.FrequencyMesh == null)
 					tb.FrequencyMesh = new double[] { 0 };
 
-				for (int i = 0; i < 3; i++)
-				{
-					if (tb.qgrid[i] != 0)
-					{
-						int intDiv = tb.kgrid[i] / tb.qgrid[i];
-						double dDiv = tb.kgrid[i] / (double)tb.qgrid[i];
-
-						if (dDiv != intDiv)
-						{
-							ThrowEx("QGrid is not commensurate with KGrid.");
-						}
-					}
-				}
 				foreach (HoppingPair h in tb.hoppings)
 				{
-					if (h.Left >= tb.orbitals.Count || h.Right >= tb.orbitals.Count)
+					if (h.Left >= tb.sites.Count || h.Right >= tb.sites.Count)
 						ThrowEx(string.Format(@"The hopping {0} to {1} was specified, but there are only {2} sites.",
-											  h.Left+1, h.Right+1, tb.orbitals.Count));
-
-					Vector3 localDiff = tb.Orbitals[h.Right].Location - tb.Orbitals[h.Left].Location;
-
-					foreach (var hop in h.Hoppings)
-					{
-						Vector3 test = hop.R - localDiff;
-
-						test = MoveNearGamma(test);
-						if (test.Magnitude > 1e-4)
-						{
-							ThrowEx(string.Format("The hopping between orbitals {0} and {1} along vector {2} does not seem to match the position of the orbitals.",
-								h.Left + 1, h.Right + 1, hop.R.ToString("0.0000")));
-						}
-					}
+											  h.Left+1, h.Right+1, tb.sites.Count));
 				}
-				
-				bool addedPairs = false;
-				for (int i = 0; i < tb.orbitals.Count; i++)
-				{
-					for (int j = i; j < tb.orbitals.Count; j++)
-					{
-						HoppingPair p = tb.hoppings.Find(i, j);
-							
-						if (p == null)
-						{
-							if (i == j)
-								ThrowEx(string.Format("There is no hopping for the {0} channel.", i+1));
-							
-							Output.WriteLine("WARNING: Could not find hopping pair {0}-{1}.", i+1,j+1);
-							addedPairs = true;
-							
-							tb.hoppings.Add(new HoppingPair(i,j));
-							tb.hoppings.Add(new HoppingPair(j,i));
-						}
-					}
-				}
-				if (addedPairs)
-				{
-					Output.WriteLine("Added missing hopping pairs.  Check to make sure this behavior is correct.");
-					Output.WriteLine();
-				}
-				
+
 				foreach (Orbital orb in tb.Orbitals)
 				{
 					var interactionOrbs = tb.Orbitals.Where((x,y) => x.InteractionGroup == orb.InteractionGroup);
@@ -135,47 +84,7 @@ namespace TightBindingSuite
 						}
 					}
 				}
-
-				DetectSpaceGroup(tb);
-				ValidateSymmetries(tb.kgrid, tb.SpaceGroup.Symmetries);
-
 			}
-
-
-			private void ValidateSymmetries(int[] kgrid, SymmetryList syms)
-			{
-				Vector3 gridVector = new Vector3(kgrid[0], kgrid[1], kgrid[2]);
-
-				//foreach (var symmetry in syms)
-				//{
-				//    Vector3 grid2 = symmetry.Value * gridVector;
-				//    for (int gi = 0; gi < 3; gi++)
-				//        grid2[gi] = Math.Abs(grid2[gi]);
-
-				//    if (grid2 != gridVector)
-				//    {
-				//        ThrowEx("The kmesh specified is not compatible with the symmetry of the system.");
-				//    }
-				//}
-			}
-
-			private Vector3 MoveNearGamma(Vector3 v)
-			{
-				for (int i = 0; i < 3; i++)
-				{
-					while (Math.Abs(v[i] - 1) < Math.Abs(v[i]))
-					{
-						v[i] -= 1;
-					}
-					while (Math.Abs(v[i] + 1) < Math.Abs(v[i]))
-					{
-						v[i] += 1;
-					}
-				}
-
-				return v;
-			}
-
 			protected override void PostProcess()
 			{
 				GenerateKmesh();
@@ -184,17 +93,16 @@ namespace TightBindingSuite
 
 			private void GenerateKmesh()
 			{
-				tb.mAllKmesh = KptList.GenerateMesh(tb.kgrid, tb.shift, false);
-				tb.mKmesh = tb.mAllKmesh.CreateIrreducibleMesh(tb.SpaceGroup.Symmetries);
+				tb.kmesh = KptList.GenerateMesh(tb.lattice, tb.kgrid, tb.shift, tb.symmetries, false);
 
 				Output.WriteLine("Applied {0} symmetries to get {1} irreducible kpoints from {2}.",
-					tb.SpaceGroup.Symmetries.Count, tb.mKmesh.Kpts.Count, tb.mAllKmesh.Kpts.Count);
+					tb.symmetries.Count, tb.kmesh.Kpts.Count, tb.kmesh.AllKpts.Count);
 
 				using (StreamWriter writer = new StreamWriter("kpts"))
 				{
-					for (int i = 0; i < tb.mAllKmesh.Kpts.Count; i++)
+					for (int i = 0; i < tb.kmesh.Kpts.Count; i++)
 					{
-						Vector3 red = tb.lattice.ReciprocalReduce(tb.mAllKmesh.Kpts[i].Value);
+						Vector3 red = tb.lattice.ReducedCoords(tb.kmesh.Kpts[i].Value);
 
 						writer.WriteLine("{0}     {1}", i, red);
 					}
@@ -202,17 +110,16 @@ namespace TightBindingSuite
 
 				if (tb.setQplane)
 				{
-					tb.mAllQplane = KptPlane.GeneratePlane(tb.lattice, tb.qplaneDef, tb.qgrid, null);
-					tb.mQplane = tb.mAllQplane.CreateIrreduciblePlane(tb.SpaceGroup.Symmetries);
-
+					tb.qplane = KptList.GeneratePlane(tb.lattice, tb.qplaneDef, tb.symmetries, tb.qgrid, null);
 					Output.WriteLine("Found {0} irreducible qpoints in the plane of {1} qpoints.",
-						tb.mQplane.Kpts.Count, tb.mAllQplane.Kpts.Count);
+						tb.qplane.Kpts.Count, tb.qplane.AllKpts.Count);
+
 
 					using (StreamWriter writer = new StreamWriter("qpts"))
 					{
-						for (int i = 0; i < tb.mQplane.Kpts.Count; i++)
+						for (int i = 0; i < tb.qplane.Kpts.Count; i++)
 						{
-							Vector3 red = tb.lattice.ReciprocalReduce(tb.mQplane.Kpts[i].Value);
+							Vector3 red = tb.lattice.ReducedCoords(tb.qplane.Kpts[i].Value);
 
 							writer.WriteLine("{0}     {1}", i, red);
 						}
@@ -226,11 +133,6 @@ namespace TightBindingSuite
 				{
 					case "Lattice":
 						ReadLatticeSection();
-						break;
-
-					case "Symmetry":
-						ReadSymmetrySection();
-
 						break;
 
 					case "Sites":
@@ -269,6 +171,10 @@ namespace TightBindingSuite
 						ReadPolesSection();
 						break;
 
+					case "Symmetry":
+						ReadSymmetrySection();
+						break;
+
 					case "Frequency":
 						ReadFrequencySection();
 						break;
@@ -291,54 +197,19 @@ namespace TightBindingSuite
 				}
 			}
 
-			private void ReadSymmetrySection()
-			{
-				bool deprecated = false;
-
-				if (Options.ContainsKey("disable"))
-				{
-					tb.disableSymmetries = true;
-
-					if (Options.Count > 1)
-						deprecated = true;
-				}
-				else if (Options.Count > 0)
-					deprecated = true;
-
-
-				if (deprecated)
-				{
-					Output.WriteLine("Deprecated symmetry options present.");
-					Output.WriteLine("Remove them or suffer the consequences.");
-				}
-				
-			}
-
 			private void ReadQPlaneSection()
 			{
-				bool reduced = false;
-
-				reduced = Options.ContainsKey("reduced");
-				
 				for (int i = 0; i < 3; i++)
 				{
 					tb.qgrid[i] = int.Parse(LineWords[i]);
 				}
 
-				if (Options.ContainsKey("skip"))
-					tb.SkipQPlaneLines = true;
-				
 				ReadNextLine();
 
 				for (int i = 0; i < 3; i++)
 				{
 					tb.qplaneDef[i] = Vector3.Parse(Line);
-					
-					if (reduced)
-					{
-						tb.qplaneDef[i] = tb.Lattice.ReciprocalExpand(tb.qplaneDef[i]);
-					}
-					
+
 					ReadNextLine();
 				}
 
@@ -360,6 +231,7 @@ namespace TightBindingSuite
 			{
 				tb.FrequencyMesh = ReadDoubleMesh();
 			}
+
 			private void ReadTemperatureSection()
 			{
 				tb.TemperatureMesh = ReadDoubleMesh();
@@ -431,10 +303,6 @@ namespace TightBindingSuite
 				const double ptScale = 400;
 				int ptCount = 0;
 
-				bool reduced = false;
-
-				reduced = Options.ContainsKey("reduced");
-
 				path = new KptList();
 				while (EOF == false && LineType != LineType.NewSection)
 				{
@@ -453,14 +321,9 @@ namespace TightBindingSuite
 						name = vals[0];
 					}
 
-					Vector3 kpt =Vector3.Parse(text);
-					
-					if (reduced == false)
-					{
-						kpt = tb.Lattice.ReciprocalReduce(kpt);
-					}
-
-					double length = (tb.Lattice.ReciprocalExpand(kpt) - tb.Lattice.ReciprocalExpand(lastKpt)).Magnitude;
+					Vector3 vecval = Vector3.Parse(text);
+					Vector3 kpt = vecval;
+					double length = (kpt - lastKpt).Magnitude;
 
 					if (ptCount == 0)
 					{
@@ -534,14 +397,10 @@ namespace TightBindingSuite
 			}
 			void ReadOrbitalsSection()
 			{
-				if (tb.orbitals != null)
+				if (tb.sites != null)
 					ThrowEx("Multiple sites sections found.");
 
-				tb.orbitals = new OrbitalList();
-				bool reduced = false;
-
-				reduced = Options.ContainsKey("reduced");
-
+				tb.sites = new OrbitalList();
 
 				while (EOF == false && LineType != LineType.NewSection)
 				{
@@ -555,21 +414,16 @@ namespace TightBindingSuite
 						ThrowEx("Insufficient information about site.");
 
 					Vector3 loc = new Vector3(double.Parse(vals[0]), double.Parse(vals[1]), double.Parse(vals[2]));
-
-					if (!reduced)
-						loc = tb.Lattice.DirectReduce(loc);
-
 					string name = vals[3];
 					string sitename = vals[4];
 					string localsym = vals[5];
 					string interactionGroup = vals[6];
 
-					tb.orbitals.Add(new Orbital(loc, name, sitename, localsym, interactionGroup));
+					tb.sites.Add(new Orbital(loc, name, sitename, localsym, interactionGroup));
 
 					ReadNextLine();
 				}
 			}
-
 			void ReadHoppingsSection()
 			{
 				if (tb.hoppings != null)
@@ -577,10 +431,6 @@ namespace TightBindingSuite
 
 				if (LineType != LineType.NewSubSection)
 					ThrowEx("Hoppings section must start with :..: delimited section.");
-
-				bool reduced = false;
-
-				reduced = Options.ContainsKey("reduced");
 
 				tb.hoppings = new HoppingPairList();
 
@@ -593,6 +443,8 @@ namespace TightBindingSuite
 
 					HoppingPair p = new HoppingPair(left, right);
 					tb.hoppings.Add(p);
+
+					//Output.WriteLine("Reading hoppings for {0}-{1}", left + 1, right + 1);
 
 					ReadNextLine();
 
@@ -607,8 +459,6 @@ namespace TightBindingSuite
 						double value = double.Parse(vals[vals.Count - 1]);
 
 						Vector3 loc = new Vector3(double.Parse(vals[0]), double.Parse(vals[1]), double.Parse(vals[2]));
-						if (reduced == false)
-							loc = tb.lattice.DirectReduce(loc);
 
 						HoppingValue v = new HoppingValue();
 						v.Value = value;
@@ -618,6 +468,8 @@ namespace TightBindingSuite
 
 						ReadNextLine();
 					}
+
+					//Output.WriteLine("Count: {0}", p.Hoppings.Count);
 
 				}
 			}
@@ -629,34 +481,42 @@ namespace TightBindingSuite
 
 				tb.Interactions = new InteractionList();
 
-				if (Options.ContainsKey("adjust"))
+				if (LineType != LineType.NewSubSection && LineType != LineType.NewSection)
 				{
-					double val;
-
-					val = Options["adjust"] ?? 0.001;
-
-					if (val <= 0 || val >= 1)
+					if (Line.ToLowerInvariant().StartsWith( "adjust"))
 					{
-						ThrowEx("Interaction adjustment must be between 0 and 1, and should be close to zero.");
+						tb.Interactions.AdjustInteractions = true;
+
+						string ltext = Line.ToLowerInvariant().Substring(6);
+						double val;
+
+						if (double.TryParse(ltext, out val) == false)
+						{
+							val = 0.001;
+							
+						}
+
+						if (val <= 0 || val >= 1)
+						{
+							ThrowEx("Interaction adjustment should be between 0 and 1.");
+						}
+
+						tb.Interactions.MaxEigenvalue = 1 - val;
 					}
 
-					tb.Interactions.MaxEigenvalue = 1 - val;
-					tb.Interactions.AdjustInteractions = true;
+					ReadNextLine();
 				}
 
-				bool reduced = Options.ContainsKey("reduced");
-				
+
 				while (!EOF && LineType != LineType.NewSection)
 				{
 					if (LineType != LineType.NewSubSection)
-					{
 						ThrowEx("Could not understand contents of interaction section.");
-					}
 
 					string[] values = ReadSubSectionParameters();
 
-					InteractionPair inter = new InteractionPair(tb.orbitals, values[0], values[1]);
-					
+					InteractionPair inter = new InteractionPair(tb.sites, values[0], values[1]);
+
 					if (inter.OrbitalsLeft.Count == 0) ThrowEx("Could not identify interaction group \"" + values[0] + "\".");
 					if (inter.OrbitalsRight.Count == 0) ThrowEx("Could not identify interaction group \"" + values[1] + "\".");
 
@@ -665,13 +525,10 @@ namespace TightBindingSuite
 					double[] vals = interactionVals.Select(x => double.Parse(x)).ToArray();
 
 					ReadNextLine();
-					
+
 					while (!EOF && LineType != LineType.NewSection && LineType != LineType.NewSubSection)
 					{
-					
 						Vector3 vec = Vector3.Parse(Line);
-						if (reduced == false)
-							vec = tb.lattice.DirectReduce(vec);
 
 						inter.Vectors.Add(vec);
 
@@ -713,320 +570,205 @@ namespace TightBindingSuite
 				}
 			}
 
-			private void DetectSpaceGroup(TightBinding tb)
+			private void ReadSymmetrySection()
 			{
-				SymmetryList syms = new SymmetryList();
-				Matrix vecs = new Matrix(3, 3);
-				Matrix vinv;
+				if (tb.symmetries.Count > 0)
+					ThrowEx("Second symmetries section encountered.");
 
-				for (int i = 0; i < 3; i++)
-					vecs.SetColumn(i, tb.Lattice.LatticeVector(i));
+				var symmetries = tb.symmetries;
 
-				vinv = vecs.Invert();
+				symmetries.Add(Matrix.Identity(3), null);
 
-				using (StreamWriter s = new StreamWriter("syms"))
+				while (!EOF && LineType != LineType.NewSection)
 				{
-					for (int i = 0;  i < SpaceGroup.AllPrimitiveSymmetries.Count; i++)
+					List<string> words = new List<string>();
+					List<int> orbitals = new List<int>();
+					words.AddRange(Line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
+
+					if (words.Count > 1)
 					{
-						Symmetry sym = SpaceGroup.AllPrimitiveSymmetries[i];
-
-						s.WriteLine("Testing symmetry " + sym.Name + ":");
-						s.WriteLine(sym.Value);
-
-						Matrix symValue = vecs * sym.Value * vinv;
-
-						if (CheckLatticeSymmetry(tb.lattice, symValue) == false)
-							goto fail;
-						
-						s.WriteLine("Passed lattice vector symmetry.");
-						s.WriteLine("Testing orbital symmetry.");
-
-						OrbitalMap orbitalMap;
-
-						if (CheckOrbitalSymmetry(tb, sym, out orbitalMap) == false)
-							goto fail;
-
-						if (CheckHoppingSymmetry(tb, sym, orbitalMap) == false)
-							goto fail;
-
-						syms.Add(sym);
-						continue;
-					fail:
-						s.WriteLine("Failed.");
-					}
-				}
-
-				SpaceGroup sp = SpaceGroup.IdentifyGroup(syms);
-
-				Output.WriteLine();
-				Output.WriteLine("Found space group {0}:  {1}", sp.Number, sp.Name);
-
-				if (tb.disableSymmetries)
-				{
-					sp = SpaceGroup.LowestSymmetryGroup;
-					Output.WriteLine("But symmetries are disabled, so instead using {0}:  {1}", sp.Number, sp.Name);
-				}
-
-				Output.WriteLine();
-
-				tb.SpaceGroup = sp;
-			}
-
-			private bool CheckHoppingSymmetry(TightBinding tb, Symmetry sym, OrbitalMap orbitalMap)
-			{
-				HoppingPairList newHopPairs = new HoppingPairList();
-
-				foreach (var hopPair in tb.hoppings)
-				{
-					HoppingPair p = new HoppingPair(orbitalMap[hopPair.Left], orbitalMap[hopPair.Right]);
-
-					foreach (var hop in hopPair.Hoppings)
-					{
-						HoppingValue val = new HoppingValue();
-						val.R = sym.Value * hop.R;
-						val.Value = hop.Value;
-
-						// TODO: need to multiply value by -1 if one basis orbital changes sign!
-
-						p.Hoppings.Add(val);
+						for (int i = 1; i < words.Count; i++)
+							orbitals.Add(int.Parse(words[i]) - 1);
 					}
 
-					newHopPairs.Add(p);
-				}
+					Matrix m = Matrix.Identity(3);
+					Matrix n = Matrix.Zero(3);
 
-				if (newHopPairs.Equals(tb.hoppings))
-					return true;
-				else
-					return false;
+					StoreEquivalentOrbitals(orbitals);
 
-			}
-
-			private bool CheckOrbitalSymmetry(TightBinding tb, Symmetry sym, out OrbitalMap orbitalMap)
-			{
-				orbitalMap = new OrbitalMap(tb.Orbitals.Count);
-
-				for (int i = 0; i < tb.orbitals.Count; i++)
-				{
-					Orbital orb = tb.orbitals[i];
-
-					Vector3 newLoc = sym.Value * orb.Location;
-					newLoc += sym.Translation;
-					orbitalMap[i] = i;
-
-					bool valid = false;
-					for (int j = 0; j < tb.orbitals.Count; j++)
+					switch (words[0].ToLowerInvariant())
 					{
-						Vector3 diff = newLoc - tb.orbitals[j].Location;
-
-						if (VectorIsInteger(diff))
-						{
-							// now check to see if orbital transforms correctly.
-							if (CheckSymmetryDesignation(orb, tb.orbitals[j], sym) == false)
-								continue;
-
-							valid = true;
-							orbitalMap[i] = j;
+						case "e":
 							break;
-						}
+						case "c2(90)":
+							n[0, 0] = -1;
+							n[1, 0] = -1;
+							n[0, 1] = 1;
+							n[2, 2] = -1;
+							symmetries.Add(n, orbitals);
+							break;
+						case "c2(0)":
+							n[0, 0] = 1;
+							n[1, 0] = 1;
+							n[0, 1] = -1;
+							n[2, 2] = -1;
+							symmetries.Add(n, orbitals);
+							break;
+						case "c5/6(z)":
+							n[0, 1] = 1;
+							n[1, 0] = -1;
+							n[1, 1] = 1;
+							n[2, 2] = 1;
+							symmetries.Add(n, orbitals);
+							break;
+						case "c2/3(z)":
+							n[0, 0] = -1;
+							n[0, 1] = 1;
+							n[1, 0] = -1;
+							n[2, 2] = 1;
+							symmetries.Add(n, orbitals);
+							break;
+						case "c1/3(z)":
+							n[0, 1] = -1;
+							n[1, 0] = 1;
+							n[1, 1] = -1;
+							n[2, 2] = 1;
+							symmetries.Add(n, orbitals);
+							break;
+						case "c1/6(z)":
+							n[0, 0] = 1;
+							n[0, 1] = -1;
+							n[1, 0] = 1;
+							n[2, 2] = 1;
+							symmetries.Add(n, orbitals);
+							break;
+						case "c2(xy[30])":
+							n[0, 1] = 1;
+							n[1, 0] = 1;
+							n[2, 2] = -1;
+							symmetries.Add(n, orbitals);
+							break;
+						case "c2(xy[60])":
+							n[0, 0] = -1;
+							n[0, 1] = 1;
+							n[1, 1] = 1;
+							n[2, 2] = -1;
+							symmetries.Add(n, orbitals);
+							break;
+						case "c2(xy[-60])":
+							n[0, 1] = -1;
+							n[1, 0] = -1;
+							n[2, 2] = -1;
+							symmetries.Add(n, orbitals);
+							break;
+						case "c2(xy[-30])":
+							n[0, 0] = 1;
+							n[0, 1] = -1;
+							n[1, 1] = -1;
+							n[2, 2] = -1;
+							symmetries.Add(n, orbitals);
+							break;
+						case "s(90)":
+							n[0, 0] = 1;
+							n[1, 0] = 1;
+							n[1, 1] = -1;
+							n[2, 2] = 1;
+							symmetries.Add(n, orbitals);
+							break;
+						case "s(0)":
+							n[0, 0] = -1;
+							n[1, 0] = -1;
+							n[1, 1] = 1;
+							n[2, 2] = 1;
+							symmetries.Add(n, orbitals);
+							break;
+						case "c2(y)":    //1
+							m[0, 0] = -1;
+							m[2, 2] = -1;
+							symmetries.Add(m, orbitals);
+							break;
+						case "c2(x)":    //2
+							m[1, 1] = -1;
+							m[2, 2] = -1;
+							symmetries.Add(m, orbitals);
+							break;
+						case "c2(z)":    //3
+							m[0, 0] = -1;
+							m[1, 1] = -1;
+							symmetries.Add(m, orbitals);
+							break;
+						case "c2(xy)":    //12
+							n[0, 1] = 1;
+							n[1, 0] = 1;
+							n[2, 2] = -1;
+							symmetries.Add(n, orbitals);
+							break;
+						case "c3/4(z)":    //13
+							n[0, 1] = 1;
+							n[1, 0] = -1;
+							n[2, 2] = 1;
+							symmetries.Add(n, orbitals);
+							break;
+						case "c1/4(z)":    //14
+							n[0, 1] = -1;
+							n[1, 0] = 1;
+							n[2, 2] = 1;
+							symmetries.Add(n, orbitals);
+							break;
+						case "c2(x-y)":    //15
+							n[0, 1] = -1;
+							n[1, 0] = -1;
+							n[2, 2] = -1;
+							symmetries.Add(n, orbitals);
+							break;
+						case "i":    //32
+							symmetries.Add(-1 * m, orbitals);
+							break;
+						case "s(y)":    //33
+							m[1, 1] = -1;
+							symmetries.Add(m, orbitals);
+							break;
+						case "s(x)":    //34
+							m[0, 0] = -1;
+							symmetries.Add(m, orbitals);
+							break;
+						case "s(z)":    //35
+							m[2, 2] = -1;
+							symmetries.Add(m, orbitals);
+							break;
+						case "s(xy)":    // 44
+							n[0, 1] = -1;
+							n[1, 0] = -1;
+							n[2, 2] = 1;
+							symmetries.Add(n, orbitals);
+							break;
+						case "s1/4(z)":    //45
+							n[0, 1] = -1;
+							n[1, 0] = 1;
+							n[2, 2] = -1;
+							symmetries.Add(n, orbitals);
+							break;
+						case "s3/4(z)":    //46
+							n[0, 1] = 1;
+							n[1, 0] = -1;
+							n[2, 2] = -1;
+							symmetries.Add(n, orbitals);
+							break;
+						case "s(x-y)":    //47
+							n[0, 1] = 1;
+							n[1, 0] = 1;
+							n[2, 2] = 1;
+							symmetries.Add(n, orbitals);
+							break;
+
+						default:
+							Output.WriteLine("Unrecognized Symmetry {0}.", words[0]);
+							ThrowEx("Invalid Symmetry: {0}", words[0]);
+							break;
 					}
 
-					if (valid == false)
-						return false;
-
+					ReadNextLine();
 				}
-
-				return true;
-			}
-
-			private bool CheckSymmetryDesignation(Orbital orb, Orbital orbital, Symmetry sym)
-			{
-				OrbitalDesignation odl = ODHelper.FromString(orb.LocalSymmetry);
-				OrbitalDesignation odr = ODHelper.FromString(orbital.LocalSymmetry);
-
-				OrbitalDesignation trans = ODHelper.TransformUnderSymmetry(odl, sym.Value);
-
-				if (odr == trans)
-					return true;
-				else
-					return false;
-			}
-
-			bool CheckLatticeSymmetry(Lattice lat, Matrix sym)
-			{
-				for (int i = 0; i < 3; i++)
-				{
-					Vector3 test = sym * lat.LatticeVector(i);
-					Vector3 red = lat.DirectReduce(test);
-
-					if (VectorIsInteger(red) == false)
-						return false;
-				}
-
-				return true;
-			}
-
-			private static bool VectorIsInteger(Vector3 red)
-			{
-				for (int j = 0; j < 3; j++)
-				{
-					while (Math.Abs(red[j] - 1) < Math.Abs(red[j])) red[j] -= 1;
-					while (Math.Abs(red[j] + 1) < Math.Abs(red[j])) red[j] += 1;
-
-					if (Math.Abs(red[j]) > 1e-5)
-					{
-						return false;
-					}
-				}
-
-				return true;
-			}
-
-			void ApplySymmetries()
-			{
-				List<Matrix> validSyms = new List<Matrix>();
-				Matrix reduce = new Matrix(3, 3);
-				reduce.SetRows(tb.lattice.G1, tb.lattice.G2, tb.lattice.G3);
-				int symIndex = 0;
-
-				using (StreamWriter s = new StreamWriter("syms"))
-				{
-					foreach (var sym in GetPossibleSymmetries())
-					{
-						symIndex++;
-						s.WriteLine();
-						s.WriteLine("Applying symmetry " + symIndex.ToString() + ":");
-						s.WriteLine(sym);
-
-						Matrix lat = new Matrix(3, 3);
-						lat.SetColumns(sym * tb.lattice.A1, sym * tb.lattice.A2, sym * tb.lattice.A3);
-
-						lat = reduce * lat;
-
-						s.WriteLine("Lattice vector test...");
-						if (CheckLatticeSymmetry(lat) == false)
-							goto fail;
-
-						Dictionary<int, int> sitemap = new Dictionary<int, int>();
-
-						s.WriteLine("Generating site map...");
-
-						for (int i = 0; i < tb.orbitals.Count; i++)
-						{
-							var site = tb.orbitals[i];
-							Vector3 loc = sym * site.Location;
-
-							int index = tb.Orbitals.FindIndex(tb.lattice, loc);
-
-							if (index == -1)
-							{
-								s.WriteLine("Failed to map site " + i.ToString());
-								goto fail;
-							}
-
-							sitemap[i] = index;
-							s.WriteLine("  " + i.ToString() + " => " + index.ToString());
-						}
-
-						HoppingPairList newHops = new HoppingPairList();
-
-						// rotate hoppings
-						for (int i = 0; i < tb.hoppings.Count; i++)
-						{
-							var pair = tb.hoppings[i];
-
-							int newleft = sitemap[pair.Left];
-							int newright = sitemap[pair.Right];
-
-							HoppingPair newPair = new HoppingPair(newleft, newright);
-							newHops.Add(newPair);
-
-							foreach (var hop in pair.Hoppings)
-							{
-								HoppingValue v = new HoppingValue();
-								v.Value = hop.Value;
-								v.R = sym * hop.R;
-
-								newPair.Hoppings.Add(v);
-							}
-
-						}
-
-						s.WriteLine("Performing hopping test...");
-						if (newHops.Equals(tb.hoppings) == false)
-							goto fail;
-
-						s.WriteLine("Success.");
-						validSyms.Add(sym);
-						continue;
-
-					fail:
-						s.WriteLine("Failed.");
-					}
-
-					// now apply symmetries to reduce k-points in kmesh
-					int initialKptCount = tb.mAllKmesh.Kpts.Count;
-
-					System.Diagnostics.Stopwatch watch = new System.Diagnostics.Stopwatch();
-					watch.Start();
-
-					foreach (var sym in validSyms)
-					{
-						for (int i = 0; i < tb.mAllKmesh.Kpts.Count; i++)
-						{
-							KPoint kpt = tb.mAllKmesh.Kpts[i];
-							Vector3 trans = kpt.Value;
-							/*
-							for (int j = 0; j < 3; j++)
-							{
-								trans = sym * trans;
-							
-								int index = kmesh.IndexOf(trans, i+1);
-							
-								if (index == -1)
-									continue;
-							
-								kmesh.Kpts.RemoveAt(index);
-								kpt.Weight ++;
-							
-							}
-							*/
-						}
-					}
-					watch.Stop();
-
-					string fmt = string.Format("{0} total kpts, {1} irreducible kpts.  Applying symmetries took {2} seconds.",
-											   initialKptCount, tb.mAllKmesh.Kpts.Count, watch.ElapsedMilliseconds / 1000);
-
-					Output.WriteLine(fmt);
-					s.WriteLine(fmt);
-				}
-			}
-			bool CheckLatticeSymmetry(Matrix lat)
-			{
-				for (int col = 0; col < 3; col++)
-				{
-					int count = 0;
-
-					for (int row = 0; row < 3; row++)
-					{
-						double x = lat[row, col].RealPart;
-
-						// skip zeros
-						if (Math.Abs(x) < 1e-6)
-							continue;
-
-						if (Math.Abs(x) - 1 > 1e-6)
-							return false;
-						else
-							count++;
-
-					}
-
-					if (count != 1)
-						return false;
-				}
-
-				return true;
 			}
 
 			private void StoreEquivalentOrbitals(List<int> orbitals)
@@ -1036,10 +778,10 @@ namespace TightBindingSuite
 					if (orbitals[i] == i)
 						continue;
 
-					if (tb.orbitals[i].Equivalent.Contains(orbitals[i]) == false)
-						tb.orbitals[i].Equivalent.Add(orbitals[i]);
-					if (tb.orbitals[orbitals[i]].Equivalent.Contains(i) == false)
-						tb.orbitals[orbitals[i]].Equivalent.Add(i);
+					if (tb.sites[i].Equivalent.Contains(orbitals[i]) == false)
+						tb.sites[i].Equivalent.Add(orbitals[i]);
+					if (tb.sites[orbitals[i]].Equivalent.Contains(i) == false)
+						tb.sites[orbitals[i]].Equivalent.Add(i);
 				}
 			}
 
@@ -1130,6 +872,154 @@ namespace TightBindingSuite
 										1, 0, 0,
 										0, 0, -1);
 
+			}
+
+			void ApplySymmetries()
+			{
+				List<Matrix> validSyms = new List<Matrix>();
+				Matrix reduce = new Matrix(3, 3);
+				reduce.SetRows(tb.lattice.G1, tb.lattice.G2, tb.lattice.G3);
+				int symIndex = 0;
+
+				using (StreamWriter s = new StreamWriter("syms"))
+				{
+					foreach (var sym in GetPossibleSymmetries())
+					{
+						symIndex++;
+						s.WriteLine();
+						s.WriteLine("Applying symmetry " + symIndex.ToString() + ":");
+						s.WriteLine(sym);
+
+						Matrix lat = new Matrix(3, 3);
+						lat.SetColumns(sym * tb.lattice.A1, sym * tb.lattice.A2, sym * tb.lattice.A3);
+
+						lat = reduce * lat;
+
+						s.WriteLine("Lattice vector test...");
+						if (CheckLatticeSymmetry(lat) == false)
+							goto fail;
+
+						Dictionary<int, int> sitemap = new Dictionary<int, int>();
+
+						s.WriteLine("Generating site map...");
+
+						for (int i = 0; i < tb.sites.Count; i++)
+						{
+							var site = tb.sites[i];
+							Vector3 loc = sym * site.Location;
+
+							int index = tb.Orbitals.FindIndex(tb.lattice, loc);
+
+							if (index == -1)
+							{
+								s.WriteLine("Failed to map site " + i.ToString());
+								goto fail;
+							}
+
+							sitemap[i] = index;
+							s.WriteLine("  " + i.ToString() + " => " + index.ToString());
+						}
+
+						HoppingPairList newHops = new HoppingPairList();
+
+						// rotate hoppings
+						for (int i = 0; i < tb.hoppings.Count; i++)
+						{
+							var pair = tb.hoppings[i];
+
+							int newleft = sitemap[pair.Left];
+							int newright = sitemap[pair.Right];
+
+							HoppingPair newPair = new HoppingPair(newleft, newright);
+							newHops.Add(newPair);
+
+							foreach (var hop in pair.Hoppings)
+							{
+								HoppingValue v = new HoppingValue();
+								v.Value = hop.Value;
+								v.R = sym * hop.R;
+
+								newPair.Hoppings.Add(v);
+							}
+
+						}
+
+						s.WriteLine("Performing hopping test...");
+						if (newHops.Equals(tb.hoppings) == false)
+							goto fail;
+
+						s.WriteLine("Success.");
+						validSyms.Add(sym);
+						continue;
+
+					fail:
+						s.WriteLine("Failed.");
+					}
+
+					// now apply symmetries to reduce k-points in kmesh
+					int initialKptCount = tb.kmesh.Kpts.Count;
+
+					System.Diagnostics.Stopwatch watch = new System.Diagnostics.Stopwatch();
+					watch.Start();
+
+					foreach (var sym in validSyms)
+					{
+						for (int i = 0; i < tb.kmesh.Kpts.Count; i++)
+						{
+							KPoint kpt = tb.kmesh.Kpts[i];
+							Vector3 trans = kpt.Value;
+							/*
+							for (int j = 0; j < 3; j++)
+							{
+								trans = sym * trans;
+							
+								int index = kmesh.IndexOf(trans, i+1);
+							
+								if (index == -1)
+									continue;
+							
+								kmesh.Kpts.RemoveAt(index);
+								kpt.Weight ++;
+							
+							}
+							*/
+						}
+					}
+					watch.Stop();
+
+					string fmt = string.Format("{0} total kpts, {1} irreducible kpts.  Applying symmetries took {2} seconds.",
+											   initialKptCount, tb.kmesh.Kpts.Count, watch.ElapsedMilliseconds / 1000);
+
+					Output.WriteLine(fmt);
+					s.WriteLine(fmt);
+				}
+			}
+			bool CheckLatticeSymmetry(Matrix lat)
+			{
+				for (int col = 0; col < 3; col++)
+				{
+					int count = 0;
+
+					for (int row = 0; row < 3; row++)
+					{
+						double x = lat[row, col].RealPart;
+
+						// skip zeros
+						if (Math.Abs(x) < 1e-6)
+							continue;
+
+						if (Math.Abs(x) - 1 > 1e-6)
+							return false;
+						else
+							count++;
+
+					}
+
+					if (count != 1)
+						return false;
+				}
+
+				return true;
 			}
 
 

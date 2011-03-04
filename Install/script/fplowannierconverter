@@ -1,1 +1,1 @@
-﻿mono $INSTALL_DIR/FploWannierConverter.exe $*
+﻿mono $INSTALL_DIR/PlotGreen.exe $*

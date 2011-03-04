@@ -1,5 +1,5 @@
+
 using System;
-using System.Collections.Generic;
 using System.IO;
 
 namespace TightBindingSuite
@@ -9,12 +9,6 @@ namespace TightBindingSuite
 		StreamReader reader;
 		string line;
 		int lineIndex;
-		SectionOptions options;
-
-		public class SectionOptions : Dictionary<string,double?>
-		{
-
-		}
 
 		public InputReader(string filename)
 		{
@@ -57,15 +51,12 @@ namespace TightBindingSuite
 			throw new Exception(string.Format(
 			    "Line {0}: {1}", lineIndex+1, inner.Message), inner);
 		}
-		
-		string sectionName;
-		
 		void ReadSection()
 		{
 			if (LineType != LineType.NewSection)
 				ThrowEx("Did not find new section.");
 			
-			ReadSectionNameAndOptions();
+			string sectionName = line.Substring(1, line.Length - 2);
 			
 			try
 			{
@@ -82,21 +73,6 @@ namespace TightBindingSuite
 			}
 #endif
 		}
-
-		void ReadSectionNameAndOptions ()
-		{
-			if (Line.Contains(":"))
-			{
-				int index = Line.IndexOf(":");
-				
-				sectionName = line.Substring(1, index - 1);
-				
-				ReadSectionOptions(Line.Substring(index+1, line.Length - 2 - index));
-			}
-			else
-				sectionName = line.Substring(1, line.Length - 2);
-		}
-
 		protected abstract void ReadSection(string sectionName);
 		
 		protected void ReadNextLine()
@@ -173,44 +149,7 @@ namespace TightBindingSuite
 				return LineType.Unknown;
 			}
 		}
-		protected SectionOptions Options
-		{ 
-			get
-			{ 
-				if (options == null)
-					options = new SectionOptions();
-				
-				return options; 
-			}
-		}
 
-		private void ReadSectionOptions(string text)
-		{
-			string[] vals = text.Split(new char[] { ' '}, StringSplitOptions.RemoveEmptyEntries);
-
-			options = new SectionOptions();
-			double number;
-
-			if (double.TryParse(vals[0], out number))
-				return;
-
-			for (int i = 0; i < vals.Length; i++)
-			{
-				string key = vals[i];
-
-				if (i < vals.Length - 1)
-				{
-					if (double.TryParse(vals[i + 1], out number))
-						options.Add(key, number);
-					else
-						options.Add(key, null);
-				}
-				else
-				{
-					options.Add(key, null);
-				}
-			}
-		}
 		protected string[] ReadSubSectionParameters()
 		{
 			if (LineType != LineType.NewSubSection)

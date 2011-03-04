@@ -45,6 +45,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AGRWriter.cs" />
+    <Compile Include="AlgLib\ap.cs" />
+    <Compile Include="AlgLib\blas.cs" />
+    <Compile Include="AlgLib\hessenberg.cs" />
+    <Compile Include="AlgLib\hsschur.cs" />
+    <Compile Include="AlgLib\nsevd.cs" />
+    <Compile Include="AlgLib\reflections.cs" />
+    <Compile Include="AlgLib\rotations.cs" />
     <Compile Include="AxisEditor.cs">
       <SubType>Form</SubType>
     </Compile>

@@ -18,6 +18,36 @@
   1.581999136091590     -2.740102881240705      4.941633816858237   Nb1  2c  dz2   a
  -1.581999136091590      2.740102881240705     -4.941633816858237   Nb2  2c  dz2   b
 
+# Symmetries in the crystal.
+# The numbers following the symmetry name indicate how the orbitals transform 
+# under the symmetry.  If you specify the symmetry operation, you must specify
+# one number for each orbital.  The orbital transforms are optional if the 
+# orbitals transform into themselves.
+[Symmetry]
+E
+#C2(90) 2 1
+#C2(0)  2 1
+C2(z)
+#C5/6(z)
+#C2/3(z)
+#C1/3(z)
+#C1/6(z)
+C2(xy[30])  2 1
+#C2(xy[60])  2 1
+#C2(xy[-60]) 2 1
+#C2(xy[-30]) 2 1
+I 2 1
+#s(90)
+#s(0)
+s(z) 2 1
+#S1/3(z)
+#S1/6(z)
+#S5/6(z)
+#S5/3(z)
+#s(xy[30])
+#s(xy[60])
+#s(xy[-60])
+#s(xy[-30])
 
 # Each hopping is followed by a list of Bravais lattice vectors.
 # Those vectors must be composed of integer values.
@@ -137,11 +167,9 @@ A        0              0             0.025295276665
 [Mu]
 0
 
-[Symmetry: disable]
-
 # Gives a k-mesh for calculating the density of states and doing RPA.
 [KMesh]
-20 20 10 1 1 1
+50 50 10 1 1 1
 
 # Gives data for a plane of q-points in the BZ to plot.  There must be
 # four sets of three numbers here.
@@ -151,8 +179,8 @@ A        0              0             0.025295276665
 [QPlane]
 10 10 1
 0   0   0  
-1   0   0
-0   1   0
+0.5 0   0
+0   0.5 0
 
 # Frequency mesh for RPA calculation
 # You may enter just a single number to calculate a single frequency,
@@ -175,7 +203,8 @@ A        0              0             0.025295276665
 # After the interaction parameters, vectors for long range interactions can be
 # entered.
 # For long range interactions, only enter two values, which are U prime and J.
-[Interaction: adjust 0.01]
+[Interaction]
+adjust
 :a a:
 2
 :b b:

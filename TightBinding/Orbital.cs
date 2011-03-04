@@ -24,11 +24,11 @@ namespace TightBindingSuite
 		}
 		public int FindIndex(Lattice latt, Vector3 pos)
 		{
-			Vector3 reduced = latt.ReciprocalReduce(pos, true);
+			Vector3 reduced = latt.ReducedCoords(pos, true);
 			
 			for (int i = 0; i < Count; i++)
 			{
-				Vector3 tr = latt.ReciprocalReduce(this[i].Location, true);
+				Vector3 tr = latt.ReducedCoords(this[i].Location, true);
 				
 				if ((reduced - tr).Magnitude < 1e-6)
 					return i;

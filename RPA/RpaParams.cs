@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using ERY.EMath;
@@ -26,9 +26,7 @@ namespace TightBindingSuite
 		public Matrix Xs { get; set; }
 		public Matrix Xc { get; set; }
 
-		public Matrix S { get; set; }
-		public Matrix C { get; set; }
-		
+
 		/// <summary>
 		/// Sorts by qindex, chemical potential, frequency, and temperature
 		/// </summary>

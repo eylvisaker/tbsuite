@@ -5,36 +5,33 @@
   </MonoDevelop.Ide.DebuggingService>
   <MonoDevelop.Ide.Workbench ActiveDocument="Install/install" ctype="Workbench">
     <Files>
-      <File FileName="CoeffBrowser/KPoint.cs" Line="1" Column="1" />
-      <File FileName="CoeffBrowser/Wavefunction.cs" Line="1" Column="1" />
-      <File FileName="Install/script/coeffbrowser" Line="1" Column="1" />
-      <File FileName="CoeffBrowser/Main.cs" Line="1" Column="1" />
-      <File FileName="Install/install" Line="12" Column="6" />
-      <File FileName="CoeffBrowser/CoeffBrowser.cs" Line="1" Column="1" />
-      <File FileName="FploWannierConverter/WannierConverter.cs" Line="1" Column="1" />
-      <File FileName="RPA/RPA.cs" Line="1" Column="1" />
-      <File FileName="TightBinding/TightBinding.TbInputFileReader.cs" Line="1" Column="1" />
-      <File FileName="TightBinding/KptPlane.cs" Line="1" Column="1" />
-      <File FileName="TightBinding/Lattice.cs" Line="1" Column="1" />
-      <File FileName="TightBinding/InteractionPair.cs" Line="1" Column="1" />
-      <File FileName="TightBinding/InputReader.cs" Line="1" Column="1" />
-      <File FileName="TightBinding/OrbitalDesignation.cs" Line="1" Column="1" />
-      <File FileName="TightBinding/Main.cs" Line="1" Column="1" />
       <File FileName="TightBinding/tightbinding.txt" Line="1" Column="1" />
-      <File FileName="Install/script/fplobweights" Line="1" Column="1" />
-      <File FileName="Install/script/fplowannierconverter" Line="1" Column="20" />
-      <File FileName="ErikMath/ErikMath/AlgLib/blas.cs" Line="89" Column="17" />
-      <File FileName="ErikMath/ErikMath/AlgLib/ap.cs" Line="23" Column="19" />
-      <File FileName="ErikMath/ErikMath/Graph.cs" Line="2118" Column="1" />
+      <File FileName="TightBinding/TightBinding.cs" Line="102" Column="5" />
+      <File FileName="TightBinding/Orbital.cs" Line="1" Column="1" />
+      <File FileName="TightBinding/Output.cs" Line="1" Column="1" />
+      <File FileName="TightBinding/Lattice.cs" Line="1" Column="1" />
+      <File FileName="TightBinding/HoppingPair.cs" Line="1" Column="1" />
+      <File FileName="TightBinding/InputReader.cs" Line="31" Column="4" />
+      <File FileName="TightBinding/Symmetry.cs" Line="1" Column="1" />
+      <File FileName="TightBinding/SymmetryList.cs" Line="1" Column="1" />
+      <File FileName="TightBinding/Tetrahedron.cs" Line="1" Column="1" />
+      <File FileName="RPA/RPA.cs" Line="169" Column="5" />
+      <File FileName="PlotGreen/PlotGreenProgram.cs" Line="27" Column="1" />
+      <File FileName="BandPath/Main.cs" Line="91" Column="38" />
+      <File FileName="RPA/RpaParams.cs" Line="6" Column="28" />
+      <File FileName="BandPath/AssemblyInfo.cs" Line="1" Column="1" />
+      <File FileName="Install/install" Line="1" Column="1" />
+      <File FileName="Install/script/bandpath" Line="2" Column="1" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
         <State expanded="True">
+          <Node name="BandPath" expanded="True" />
           <Node name="Install" expanded="True">
             <Node name="script" expanded="True" />
-            <Node name="tests" expanded="True" />
             <Node name="install" selected="True" />
           </Node>
+          <Node name="PlotGreen" expanded="True" />
           <Node name="RPA" expanded="True" />
           <Node name="TightBinding" expanded="True" />
         </State>
@@ -44,4 +41,8 @@
       </Pad>
     </Pads>
   </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches ctype="PinnedWatchStore" />
 </Properties>

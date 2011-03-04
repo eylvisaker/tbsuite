@@ -29,7 +29,8 @@ namespace TightBindingSuite
 				tb.LoadTB(inputfile);
 
 				RpaParams p = new RpaParams(0, Vector3.Zero, tb.TemperatureMesh[0], tb.FrequencyMesh[0], tb.MuMesh[0]);
-				KptList kmesh = KptList.GenerateMesh(tb.KMesh.Mesh, null, true);
+				KptList kmesh = KptList.GenerateMesh(
+					tb.Lattice, tb.KMesh.Mesh, null, tb.Symmetries, true);
 
 				Matrix[] green = CalcGreenFunction(tb, p, kmesh);
 
@@ -118,9 +119,9 @@ namespace TightBindingSuite
 			Vector3 orig = Vector3.Parse(origin);
 
 			Vector3 closestKpt = Vector3.Zero;
-			double closestDistance = double.MaxValue;
+			double closestDistance = 999999999;
 
-			foreach (var kpt in kmesh.Kpts)
+			foreach (var kpt in kmesh.AllKpts)
 			{
 				double distance = (kpt.Value - orig).MagnitudeSquared;
 
@@ -139,15 +140,15 @@ namespace TightBindingSuite
 				tdir += closestKpt;
 			}
 
-			KptPlane plane = KptPlane.GeneratePlane(
-				tb.Lattice, new Vector3[] { orig, sdir, tdir }, kmesh);
+			KptList plane = KptList.GeneratePlane(
+				tb.Lattice, new Vector3[] { orig, sdir, tdir }, tb.Symmetries, kmesh);
 
 			string tr_filename = string.Format("green.tr.pln");
 			StreamWriter tr = new StreamWriter(tr_filename);
 
 			double lastt = double.MinValue;
 
-			for (int k = 0; k < plane.Kpts.Count; k++)
+			for (int k = 0; k < plane.AllKpts.Count; k++)
 			{
 				Complex trValue = new Complex();
 
@@ -155,13 +156,13 @@ namespace TightBindingSuite
 				{
 					trValue += green[k][i, i];
 				}
-				Vector3 kpt = plane.Kpts[k].Value;
+				Vector3 kpt = plane.AllKpts[k].Value;
 				List<int> orbitalMap;
 				double s, t;
 
-				plane.GetPlaneST(plane.Kpts[k], out s, out t);
+				plane.GetPlaneST(plane.AllKpts[k], out s, out t);
 
-				int kindex = kmesh.IrreducibleIndex(kpt, tb.Lattice, tb.SpaceGroup.Symmetries, out orbitalMap);
+				int kindex = kmesh.IrreducibleIndex(kpt, tb.Lattice, tb.Symmetries, out orbitalMap);
 
 				if (Math.Abs(t - lastt) > 1e-6)
 				{
@@ -190,15 +191,15 @@ namespace TightBindingSuite
 					{
 						lastt = double.MaxValue;
 
-						for (int k = 0; k < plane.Kpts.Count; k++)
+						for (int k = 0; k < plane.AllKpts.Count; k++)
 						{
-							Vector3 kpt = plane.Kpts[k].Value;
+							Vector3 kpt = plane.AllKpts[k].Value;
 							List<int> orbitalMap;
 							double s, t;
 
-							plane.GetPlaneST(plane.Kpts[k], out s, out t);
+							plane.GetPlaneST(plane.AllKpts[k], out s, out t);
 
-							int kindex = kmesh.IrreducibleIndex(kpt, tb.Lattice, tb.SpaceGroup.Symmetries, out orbitalMap);
+							int kindex = kmesh.IrreducibleIndex(kpt, tb.Lattice, tb.Symmetries, out orbitalMap);
 
 							if (Math.Abs(t - lastt) > 1e-6)
 							{
