@@ -57,7 +57,7 @@ Global
 		{EDDCC91B-663A-412C-8B91-0F597A310981}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
-		StartupItem = TightBinding\TightBinding.csproj
+		StartupItem = BandPath\BandPath.csproj
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
