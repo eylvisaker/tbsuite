@@ -9,6 +9,10 @@ if [ "$?" -ne "0" ]; then
     exit 1
 fi
 
-mono exe/Install.exe
+if [ -e Install.exe ]; then
+	mono Install.exe
+else
+	mono exe/Install.exe
+fi
 
 echo
