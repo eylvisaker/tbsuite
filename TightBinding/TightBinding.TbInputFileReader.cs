@@ -93,7 +93,7 @@ namespace TightBindingSuite
 
 			private void GenerateKmesh()
 			{
-				tb.kmesh = KptList.GenerateMesh(tb.lattice, tb.kgrid, tb.shift, tb.symmetries, false);
+				tb.kmesh = KptList.GenerateMesh(tb.lattice, tb.kgrid, tb.kshift, tb.symmetries, false);
 
 				Output.WriteLine("Applied {0} symmetries to get {1} irreducible kpoints from {2}.",
 					tb.symmetries.Count, tb.kmesh.Kpts.Count, tb.kmesh.AllKpts.Count);
@@ -108,6 +108,15 @@ namespace TightBindingSuite
 					}
 				}
 
+				if (tb.UseQPlane == false)
+				{
+					tb.qmesh = KptList.GenerateMesh(tb.lattice, tb.qgrid, tb.qshift,
+					                                tb.symmetries, false);
+					
+					Output.WriteLine("Found {0} qpoints in the zone.", tb.qmesh.Kpts.Count);
+
+				}
+				
 				if (tb.setQplane)
 				{
 					tb.qplane = KptList.GeneratePlane(tb.lattice, tb.qplaneDef, tb.symmetries, tb.qgrid, null);
@@ -128,7 +137,7 @@ namespace TightBindingSuite
 			}
 
 			protected override void ReadSection(string sectionName)
-			{
+			{				
 				switch (sectionName)
 				{
 					case "Lattice":
@@ -160,11 +169,17 @@ namespace TightBindingSuite
 						break;
 
 					case "KMesh":
-						ReadKMeshSection("KMesh", tb.kgrid);
+						ReadKMeshSection("KMesh", tb.kgrid, tb.kshift);
 						break;
 
+					case "QMesh":
+						ReadKMeshSection("QMesh", tb.qgrid, tb.qshift);
+						tb.UseQPlane = false;
+						break;
+					
 					case "QPlane":
 						ReadQPlaneSection();
+						tb.UseQPlane = true;
 						break;
 
 					case "Poles":
@@ -341,7 +356,7 @@ namespace TightBindingSuite
 					ReadNextLine();
 				}
 			}
-			void ReadKMeshSection(string section, int[] kgrid)
+			void ReadKMeshSection(string section, int[] kgrid, int[] shift)
 			{
 				char[] array = new char[] { ' ' };
 				string[] vals = Line.Split(array, StringSplitOptions.RemoveEmptyEntries);
@@ -353,15 +368,15 @@ namespace TightBindingSuite
 
 				for (int i = 0; i < 3; i++)
 				{
-					tb.kgrid[i] = int.Parse(vals[i]);
-					if (tb.kgrid[i] == 0)
+					kgrid[i] = int.Parse(vals[i]);
+					if (kgrid[i] == 0)
 						ThrowEx("Invalid k-mesh data.");
 				}
 
 				if (vals.Length == 6)
 				{
 					for (int i = 0; i < 3; i++)
-						tb.shift[i] = int.Parse(vals[i + 3]);
+						shift[i] = int.Parse(vals[i + 3]);
 				}
 
 				ReadNextLine();

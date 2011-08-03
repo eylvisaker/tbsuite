@@ -68,8 +68,9 @@ namespace TightBindingSuite
 			return dx * l.G1 + dy * l.G2 + dz * l.G3;
 		}
 
-		public int[] Mesh { get { return mesh; } }
-
+		public int[] Mesh { get { return mesh; } set { mesh = value; } }
+		public int[] Shift { get { return shift; } set { shift = value; } }
+		
 		public int IndexOf(Vector3 kpt, int start)
 		{
 			for (int i = start; i < kpts.Count; i++)

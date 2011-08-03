@@ -3,37 +3,33 @@
   <MonoDevelop.Ide.DebuggingService>
     <BreakpointStore />
   </MonoDevelop.Ide.DebuggingService>
-  <MonoDevelop.Ide.Workbench ActiveDocument="BandPath/Main.cs" ctype="Workbench">
+  <MonoDevelop.Ide.Workbench ActiveDocument="TightBinding/TightBinding.TbInputFileReader.cs" ctype="Workbench">
     <Files>
       <File FileName="TightBinding/tightbinding.txt" Line="1" Column="1" />
-      <File FileName="TightBinding/TightBinding.cs" Line="102" Column="5" />
+      <File FileName="TightBinding/TightBinding.cs" Line="78" Column="35" />
       <File FileName="TightBinding/Orbital.cs" Line="1" Column="1" />
       <File FileName="TightBinding/Output.cs" Line="24" Column="1" />
       <File FileName="TightBinding/Lattice.cs" Line="1" Column="1" />
       <File FileName="TightBinding/HoppingPair.cs" Line="1" Column="1" />
-      <File FileName="TightBinding/InputReader.cs" Line="31" Column="4" />
+      <File FileName="TightBinding/InputReader.cs" Line="30" Column="4" />
       <File FileName="TightBinding/Symmetry.cs" Line="1" Column="1" />
       <File FileName="TightBinding/SymmetryList.cs" Line="1" Column="1" />
       <File FileName="TightBinding/Tetrahedron.cs" Line="1" Column="1" />
-      <File FileName="RPA/RPA.cs" Line="19" Column="1" />
+      <File FileName="RPA/RPA.cs" Line="91" Column="3" />
       <File FileName="PlotGreen/PlotGreenProgram.cs" Line="27" Column="1" />
-      <File FileName="BandPath/Main.cs" Line="105" Column="33" />
+      <File FileName="BandPath/Main.cs" Line="105" Column="6" />
       <File FileName="RPA/RpaParams.cs" Line="6" Column="28" />
       <File FileName="BandPath/AssemblyInfo.cs" Line="1" Column="1" />
       <File FileName="Install/install" Line="1" Column="1" />
       <File FileName="Install/script/bandpath" Line="2" Column="1" />
-      <File FileName="TightBinding/TightBinding.TbInputFileReader.cs" Line="385" Column="12" />
+      <File FileName="TightBinding/TightBinding.TbInputFileReader.cs" Line="364" Column="46" />
       <File FileName="TightBinding/Main.cs" Line="24" Column="18" />
+      <File FileName="TightBinding/KptList.cs" Line="27" Column="4" />
+      <File FileName="TightBinding/BootStrap.cs" Line="86" Column="6" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
-        <State expanded="True">
-          <Node name="BandPath" expanded="True" selected="True" />
-          <Node name="Install" expanded="True">
-            <Node name="script" expanded="True" />
-          </Node>
-          <Node name="PlotGreen" expanded="True" />
-          <Node name="RPA" expanded="True" />
+        <State expanded="True" selected="True">
           <Node name="TightBinding" expanded="True" />
         </State>
       </Pad>
@@ -46,4 +42,20 @@
     <BreakpointStore />
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches ctype="PinnedWatchStore" />
+  <MonoDevelop.Ide.ItemProperties.RPA ctype="Properties">
+    <MonoDevelop.Ide.CustomExecutionModes ctype="CustomExecutionModes">
+      <Data Name="Default (Custom)" Id="55906a31-1e67-431c-bc5a-adb1a85c794d" ModeId="Default" PromptForParameters="True">
+        <CommandData>
+          <Item Key="MonoDevelop.Ide.Execution.CustomArgsCustomizer">
+            <Value Arguments="tb.in" WorkingDirectory="/home/eylvisaker/Calculations/rpa/LiH/6/shorttb" ctype="CustomArgsExecutionModeData">
+              <EnvironmentVariables />
+            </Value>
+          </Item>
+          <Item Key="MonoDevelop.Ide.Execution.MonoExecutionCustomizer">
+            <Value ctype="MonoExecutionParameters" />
+          </Item>
+        </CommandData>
+      </Data>
+    </MonoDevelop.Ide.CustomExecutionModes>
+  </MonoDevelop.Ide.ItemProperties.RPA>
 </Properties>

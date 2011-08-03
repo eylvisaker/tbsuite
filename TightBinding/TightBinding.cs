@@ -13,7 +13,7 @@ namespace TightBindingSuite
 		OrbitalList sites;
 		HoppingPairList hoppings;
 		KptList kpath, kmesh;
-		KptList qplane;
+		KptList qplane, qmesh;
 		List<int> poles = new List<int>();
 
 		public Lattice Lattice { get { return lattice; } }
@@ -22,21 +22,24 @@ namespace TightBindingSuite
 		public KptList KPath { get { return kpath; } }
 		public KptList KMesh { get { return kmesh; } }
 		public KptList QPlane { get { return qplane; } }
+		public KptList QMesh { get { return qmesh; } }
 		public double[] FrequencyMesh { get; private set; }
 		public double[] TemperatureMesh { get; private set; }
 		public double[] MuMesh { get; private set; }
 		public List<int> PoleStates { get { return poles; } }
 		public SymmetryList Symmetries { get { return symmetries; } }
 		public double[] Nelec { get; private set; }
-
+		public bool UseQPlane { get; set; }
+		
 		public InteractionList Interactions { get; private set; }
 
 		int[] kgrid = new int[3];
-		int[] shift = new int[] { 1, 1, 1 };
+		int[] kshift = new int[] { 1, 1, 1 };
 		SymmetryList symmetries = new SymmetryList();
 
 
 		int[] qgrid = new int[3];
+		int[] qshift = new int[3];
 		Vector3[] qplaneDef = new Vector3[3];
 		bool setQplane = false;
 		bool specifiedNelec = false;
@@ -53,7 +56,8 @@ namespace TightBindingSuite
 			retval.hoppings = hoppings.Clone();
 			retval.kpath = kpath.Clone();
 			retval.kmesh = kmesh.Clone();
-			retval.qplane = qplane.Clone();
+			if (qmesh != null) retval.qmesh = qmesh.Clone();
+			if (qplane != null)	retval.qplane = qplane.Clone();
 			retval.poles.AddRange(poles);
 			retval.FrequencyMesh = (double[])FrequencyMesh.Clone();
 			retval.TemperatureMesh = (double[])TemperatureMesh.Clone();
@@ -62,9 +66,11 @@ namespace TightBindingSuite
 
 			retval.Interactions = Interactions.Clone();
 			retval.kgrid = (int[])kgrid.Clone();
-			retval.shift = (int[])shift.Clone();
+			retval.kshift = (int[])kshift.Clone();
+			
 			retval.symmetries = symmetries.Clone();
 			retval.qgrid = (int[])qgrid.Clone();
+			retval.qshift = (int[])qshift.Clone();
 			retval.qplaneDef = (Vector3[])qplaneDef.Clone();
 			retval.setQplane = setQplane;
 			retval.specifiedNelec = specifiedNelec;
@@ -98,6 +104,10 @@ namespace TightBindingSuite
 			KptList ks = KMesh;
 			using (StreamWriter w = new StreamWriter("eigenvalues.k"))
 			{
+				w.WriteLine("# Grid");
+				w.WriteLine("{0}  {1}  {2}  {3}  {4}  {5}", ks.Mesh[0], ks.Mesh[1], ks.Mesh[2],
+				            ks.Shift[0], ks.Shift[1], ks.Shift[2]);
+				
 				w.WriteLine("# Eigenvalues");
 				
 				for (int i = 0; i < ks.AllKpts.Count; i++)

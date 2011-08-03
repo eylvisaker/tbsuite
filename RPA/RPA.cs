@@ -35,9 +35,14 @@ namespace TightBindingSuite
 
 			SetCpus();
 
-			if (tb.QPlane != null && tb.QPlane.Kpts.Count > 0)
+			if (tb.UseQPlane && tb.QPlane != null && tb.QPlane.Kpts.Count > 0)
 			{
-				RunRpa(tb, tb.QPlane);
+				RunRpa(tb, tb.QPlane, true);
+				ranRPA = true;
+			}
+			if (tb.QMesh != null)
+			{
+				RunRpa(tb, tb.QMesh, false);
 				ranRPA = true;
 			}
 
@@ -69,19 +74,59 @@ namespace TightBindingSuite
 			}
 		}
 
-		public void RunRpa(TightBinding tb, KptList qpts)
+		public void RunRpa(TightBinding tb, KptList qpts, bool plane)
 		{
 			List<KPoint> QMesh = qpts.Kpts;
 			List<RpaParams> rpa = CreateRpaParameterList(tb, QMesh);
 
+			Output.WriteLine("Calculating susceptibility for {0} q-points.", QMesh.Count);
+			
 			CalcSusceptibility(tb, qpts, rpa);
 
-			SaveMatricesQPlane(tb, QMesh, rpa, x => x.X0, "chi_0");
-			SaveMatricesQPlane(tb, QMesh, rpa, x => x.Xs, "chi_s");
-			SaveMatricesQPlane(tb, QMesh, rpa, x => x.Xc, "chi_c");
-
+			if (plane)
+			{
+				SaveMatricesQPlane(tb, QMesh, rpa, x => x.X0, "chi_0");
+				SaveMatricesQPlane(tb, QMesh, rpa, x => x.Xs, "chi_s");
+				SaveMatricesQPlane(tb, QMesh, rpa, x => x.Xc, "chi_c");
+			}
+			else
+			{
+				OutputBands(tb, qpts, rpa, CalcX0 => CalcX0.X0, "chi_0");
+			}
 		}
-
+		
+		void OutputBands(TightBinding tb, KptList ks, 
+		                 List<RpaParams> rpa, MatrixGetter g, string name)
+		{
+			
+			using (StreamWriter w = new StreamWriter("eigenvalues." + name + ".q"))
+			{
+				w.WriteLine("# Grid");
+				w.WriteLine("{0}  {1}  {2}  {3}  {4}  {5}", ks.Mesh[0], ks.Mesh[1], ks.Mesh[2],
+				            ks.Shift[0], ks.Shift[1], ks.Shift[2]);
+				
+				w.WriteLine("# Eigenvalues");
+				
+				foreach(var rpa_i in rpa)
+				{
+					var qpt = rpa_i.QptValue;
+					
+					w.Write("{0}    {1}    {2}             ",
+					        qpt.X, qpt.Y, qpt.Z);
+					
+					Matrix chi = g(rpa_i);
+					Matrix evalues = chi.EigenValues();
+					
+					for (int j = 0; j < evalues.Rows; j++)
+					{
+						w.Write("{0}   ", evalues[j, 0].RealPart);
+					}
+					
+					w.WriteLine();
+				}
+			}
+		}		
+		
 		public List<RpaParams> CreateRpaParameterList(TightBinding tb, List<KPoint> QMesh)
 		{
 			double[] FrequencyMesh = tb.FrequencyMesh;
@@ -129,15 +174,6 @@ namespace TightBindingSuite
 
 			Matrix[] S, C;
 			CalcSpinChargeMatrices(tb, rpa, out S, out C);
-
-
-#if DEBUG
-			for (int i = 0; i < S.Length; i++)
-			{
-				VerifySymmetry(tb, S[i], 0, 1);
-				VerifySymmetry(tb, C[i], 0, 1);
-			}
-#endif
 
 			Output.WriteLine("Calculating X0...");
 
@@ -206,22 +242,13 @@ namespace TightBindingSuite
 				Matrix s_denom = (ident - S[i] * rpa[i].X0);
 				Matrix c_denom = (ident + C[i] * rpa[i].X0);
 
-				VerifySymmetry(tb, s_denom, 0, 1);
-				VerifySymmetry(tb, c_denom, 0, 1);
-
 				Matrix s_inv = s_denom.Invert();
 				Matrix c_inv = c_denom.Invert();
 
 				System.Diagnostics.Debug.Assert((s_denom * s_inv).IsIdentity);
 
-				VerifySymmetry(tb, s_inv, 0, 1);
-				VerifySymmetry(tb, c_inv, 0, 1);
-
 				rpa[i].Xs = rpa[i].X0 * s_inv;
 				rpa[i].Xc = rpa[i].X0 * c_inv;
-
-				VerifySymmetry(tb, rpa[i].Xs, 0, 1);
-				VerifySymmetry(tb, rpa[i].Xc, 0, 1);
 
 				for (int l1 = 0; l1 < tb.Orbitals.Count; l1++)
 				{
@@ -297,7 +324,27 @@ namespace TightBindingSuite
 							var diff = S[i, j] - S[ii, jj];
 
 							if (diff.Magnitude > 1e-8)
-								throw new Exception("blah");
+							{
+								Output.WriteLine("ERROR: Failed to verify symmetry.");
+								Output.WriteLine("  a = {0}   b = {1}", a, b);
+								Output.WriteLine("  L = {0}{1}{2}{3}", l1, l2, l3, l4);
+								Output.WriteLine("  A = {0}{1}{2}{3}", a1, a2, a3, a4);
+								Output.WriteLine("  ij = {0},{1}      {2},{3}", i, j, ii, jj);
+								
+								Output.WriteLine("  M[i,j] = {0}        {1}", S[i,j], S[ii,jj]);
+								Output.WriteLine("  diff = {0}", diff.Magnitude);
+								
+								try
+								{
+									throw new Exception("blah");	
+								}
+								catch(Exception e)
+								{
+									Output.WriteLine(e.StackTrace);	
+								}
+								
+								Environment.Exit(4);
+							}
 						}
 					}
 				}
@@ -340,11 +387,9 @@ namespace TightBindingSuite
 					long time = watch.ElapsedTicks * rpa.Count;
 					TimeSpan s = new TimeSpan(time);
 
-					Output.WriteLine("Estimated total time {0:+hh.mm.ss}", s);
+					Output.WriteLine("Estimated total time {0:+hh.mm}", s);
 				}
-				Complex val = rpa[i].X0.Trace();
-
-				VerifySymmetry(tb, rpa[i].X0, 0, 1);
+				Complex val = rpa[i].X0.Trace();
 				
 				Output.Write("q = {0}, T = {1:0.000}, mu = {2:0.000}, omega = {3:0.0000}",
 					rpa[i].Qindex + 1, rpa[i].Temperature, rpa[i].ChemicalPotential, rpa[i].Frequency);

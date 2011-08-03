@@ -21,8 +21,7 @@ namespace TightBindingSuite
 				}
 			
 				string inputfile = b.GetInputFile("Band Path code", "bandpath", args);
-
-				TightBinding tb = new TightBinding( args[0]);
+				TightBinding tb = new TightBinding(inputfile);
 				
 				var argsList = args.ToList();
 				argsList.RemoveAt(0);
@@ -41,61 +40,79 @@ namespace TightBindingSuite
 			}
 		}
 		
+		BandTetrahedron GetTetrahedron (TightBinding tb, KPoint kpt, KptList kpts)
+		{
+			List<Pair<int, double>> lst = new List<Pair<int, double>>();
+			
+			double[] weights = new double[kpts.Kpts.Count];
+			for (int j = 0; j < kpts.Kpts.Count; j++)
+			{
+				double distance = CalcDistance(tb, kpts.Kpts[j].Value, kpt.Value);
+				
+				weights[j] = 1 / (distance + 0.00001);
+			}
+			
+			for (int j = 0; j < weights.Length; j++)
+			{
+				lst.Add(new Pair<int, double>(j, weights[j]));
+			}
+			
+			lst.Sort((x,y) => { return y.Second.CompareTo(x.Second); });
+			
+			lst.RemoveRange(4, lst.Count - 4);
+			List<int> ilist = lst.Select(x => x.First).ToList();
+			
+			BandTetrahedron retval = new BandTetrahedron(tb, kpt.Value, kpts, ilist);
+			
+			return retval;
+		}
+
+		double CalcDistance(TightBinding tb, Vector3 v1, Vector3 v2)
+		{
+			Vector3 delta = v1 - v2;
+			
+			ShiftDelta(ref delta, tb.Lattice.G1);
+			ShiftDelta(ref delta, tb.Lattice.G2);
+			ShiftDelta(ref delta, tb.Lattice.G3);
+			
+			return delta.Magnitude;
+		}
+		
+		void ShiftDelta(ref Vector3 delta, Vector3 G)
+		{
+			if ((delta - G).Magnitude < delta.Magnitude)
+			{
+				delta -= G;	
+			}
+			if ((delta + G).Magnitude < delta.Magnitude)
+			{
+				delta += G;	
+			}
+		}
+
 		void WriteBands (TightBinding tb, KptList kpts, StreamWriter w)
 		{
 			int bandCount = kpts.Kpts[0].Wavefunctions.Count;
+		
 			
-			double[] weights = new double[kpts.Kpts.Count];
+			BandTetrahedron tet = null;
 			
 			for (int i = 0; i < tb.KPath.Kpts.Count; i++)
 			{
 				var kpt = tb.KPath.Kpts[i];
 			
+				if (tet == null || tet.Contains(kpt) == false)
+				{
+					GetTetrahedron(tb, kpt, kpts);
+				}
+				
 				w.Write(i);
 				w.Write("   ");
 				
-				for (int j = 0; j < kpts.Kpts.Count; j++)
-				{
-					Vector3 delta = kpt.Value - kpts.Kpts[j].Value;
-					
-					double distance = delta.Magnitude;
-					
-					weights[j] = 1 / (distance + 0.00001);
-				}
-				
-				MaximizeWeights(weights);
-				int count;
-				do
-				{
-					count = CountWeights(weights);
-					DropWeakValues(weights);
-					MaximizeWeights(weights);
-				} while (count != CountWeights(weights));
-			
-				NormalizeWeights(weights);
-				
-				List<Pair<int, double>> weightList = new List<Pair<int, double>>();
-				for (int j = 0; j < weights.Length; j++)
-				{
-					if (weights[j] > 0)
-						weightList.Add(new Pair<int, double>(j, weights[j]));
-				}
-				
-				Console.WriteLine("Using {0} k-points for {1}, {2}, {3}.", weightList.Count,
-				                  kpt.Value.X, kpt.Value.Y, kpt.Value.Z );
-				
 				for (int band = 0; band < bandCount; band++)
 				{
-					double energy = 0;
-					
-					foreach(var weight in weightList)
-					{
-						var srcKpt = kpts.Kpts[weight.First];
-						
-						energy += srcKpt.Wavefunctions[band].Energy * 
-								  weight.Second;
-					}
-					
+					double energy = tet.Interpolate(kpt);
+										
 					w.Write("{0}  ", energy);
 				}
 				
@@ -125,6 +142,15 @@ namespace TightBindingSuite
 			for (int i = 0; i < weights.Length; i++)
 				weights[i] /= total;
 		}
+		void NormalizeWeights(List<Pair<int,double>> weights)
+		{
+			double total = weights.Sum(x => x.Second);
+			
+			foreach(var x in weights)
+			{
+				x.Second /= total;	
+			}
+		}
 		void NormalizeWeights(double[] weights)
 		{
 			double total = weights.Sum();
@@ -133,11 +159,35 @@ namespace TightBindingSuite
 				weights[i] /= total;
 		}
 
+		void ParseGrid (int[] grid, int[] shift, string line)
+		{
+			string[] elements = line.Split(new char[] { ' '}, StringSplitOptions.RemoveEmptyEntries );
+			
+			for (int i = 0; i < 3; i++)
+				grid[i] = int.Parse(elements[i]);
+			
+			for (int i = 0; i < 3; i++)
+				shift[i] = int.Parse(elements[3+i]);
+		}
+
 		void CreateBands(TightBinding tb, string name)
 		{
 			using (StreamReader r = new StreamReader(name))
 			{
 				string line = r.ReadLine();
+				
+				if (line != "# Grid")
+				{
+					Console.WriteLine("Not an eigenvalues file!");
+					System.Environment.Exit(3);
+				}
+				
+				int[] grid = new int[3];
+				int[] shift = new int[3];
+				
+				
+				ParseGrid(grid, shift, line);
+				
 				if (line != "# Eigenvalues")
 				{
 					Console.WriteLine("Not an eigenvalues file!");
@@ -145,6 +195,8 @@ namespace TightBindingSuite
 				}
 				
 				KptList kpts = new KptList();
+				kpts.Mesh = grid;
+				kpts.Shift = shift;
 				
 				while (r.EndOfStream == false)
 				{
@@ -166,6 +218,7 @@ namespace TightBindingSuite
 					kpts.Kpts.Add(kpt);
 				}
 				
+				CreateTetrahedronMesh(kpts);
 				string outputfile = name + ".bands";
 				
 				using (StreamWriter w = new StreamWriter(outputfile))
@@ -173,6 +226,11 @@ namespace TightBindingSuite
 					WriteBands(tb, kpts, w);
 				}
 			}
+		}
+		
+		void CreateTetrahedronMesh(KptList kpts)
+		{
+			
 		}
 	}
 }

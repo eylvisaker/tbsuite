@@ -42,6 +42,7 @@
   <ItemGroup>
     <Compile Include="Main.cs" />
     <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="BandTetrahedron.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ErikMath\ErikMath\ErikMath.csproj">
