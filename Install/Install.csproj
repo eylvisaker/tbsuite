@@ -53,6 +53,8 @@
     <None Include="script\bandpath">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="script\fplobweights" />
+    <None Include="script\coeffbrowser" />
   </ItemGroup>
   <ItemGroup>
     <None Include="tests\bcc.in">

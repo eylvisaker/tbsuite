@@ -13,7 +13,7 @@ namespace FploWannierConverter
 		static Atom()
 		{
 			string at = Resources.Atoms;
-			string[] lines = at.Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
+			string[] lines = at.Split(new string[] { "\r\n", "\n", "\r" }, StringSplitOptions.RemoveEmptyEntries);
 
 			char[] splitters = new char[] {' ', '\r', '\t', '\n'};
 			foreach (var line in lines)

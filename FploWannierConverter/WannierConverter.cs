@@ -17,6 +17,11 @@ namespace FploWannierConverter
 
 		private void Run(string[] args)
 		{
+			if (args.Length > 0)
+			{
+				Directory.SetCurrentDirectory(args[0]);
+			}
+			
 			WannierData data = ReadData();
 			WriteData(data);
 		}
@@ -335,6 +340,8 @@ namespace FploWannierConverter
 			foreach (var wan in data.WannierFunctions)
 			{
 				string filename = string.Format("wan{0}.xsf", wan.Name);
+				filename = filename.Replace(" ", "_");
+				
 				Grid grid = data.Grid;
 
 				Console.WriteLine("Writing data to {0}", filename);
