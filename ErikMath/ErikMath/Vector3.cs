@@ -232,12 +232,13 @@ namespace ERY.EMath
 				double.Parse(y),
 				double.Parse(z));
 		}
-		
+
 		public static Vector3 SphericalPolar(double r, double theta, double phi)
 		{
-			return new Vector3(r * Math.Sin(theta) * Math.Cos(phi),
-			                   r * Math.Sin(theta) * Math.Sin(phi),
-			                   r * Math.Cos(theta));
+			return new Vector3(
+				r * Math.Sin(theta) * Math.Cos(phi),
+				r * Math.Sin(theta) * Math.Sin(phi),
+				r * Math.Cos(theta));
 		}
 	}
 }
