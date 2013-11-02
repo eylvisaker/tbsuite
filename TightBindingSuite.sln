@@ -1,6 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TightBinding", "TightBinding\TightBinding.csproj", "{9FED8E91-28E2-459D-B6FE-163087ECD8E5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ErikMath", "ErikMath\ErikMath\ErikMath.csproj", "{9B79B5F7-1EEC-4473-B3CA-93A2FBB05E51}"
@@ -25,47 +25,47 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{4A9B27AF-76FC-4521-B807-218F19A74CA7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4A9B27AF-76FC-4521-B807-218F19A74CA7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4A9B27AF-76FC-4521-B807-218F19A74CA7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4A9B27AF-76FC-4521-B807-218F19A74CA7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{73C6A888-F9E6-4D1D-A7FD-0D5C78DCBDE3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{73C6A888-F9E6-4D1D-A7FD-0D5C78DCBDE3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{73C6A888-F9E6-4D1D-A7FD-0D5C78DCBDE3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{73C6A888-F9E6-4D1D-A7FD-0D5C78DCBDE3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9B79B5F7-1EEC-4473-B3CA-93A2FBB05E51}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9B79B5F7-1EEC-4473-B3CA-93A2FBB05E51}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9B79B5F7-1EEC-4473-B3CA-93A2FBB05E51}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9B79B5F7-1EEC-4473-B3CA-93A2FBB05E51}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9FED8E91-28E2-459D-B6FE-163087ECD8E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9FED8E91-28E2-459D-B6FE-163087ECD8E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9FED8E91-28E2-459D-B6FE-163087ECD8E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9FED8E91-28E2-459D-B6FE-163087ECD8E5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{ACB39091-6E45-414E-8A7F-7B27F9D10FB6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{ACB39091-6E45-414E-8A7F-7B27F9D10FB6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{ACB39091-6E45-414E-8A7F-7B27F9D10FB6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{ACB39091-6E45-414E-8A7F-7B27F9D10FB6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B9841ADA-664D-43D9-9A50-EB0F6BB5043B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B9841ADA-664D-43D9-9A50-EB0F6BB5043B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B9841ADA-664D-43D9-9A50-EB0F6BB5043B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B9841ADA-664D-43D9-9A50-EB0F6BB5043B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{BA1CA50F-CCFE-46FE-8726-6F41B72202EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BA1CA50F-CCFE-46FE-8726-6F41B72202EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BA1CA50F-CCFE-46FE-8726-6F41B72202EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BA1CA50F-CCFE-46FE-8726-6F41B72202EE}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C2269DB4-6591-448B-96C0-3679A230724F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C2269DB4-6591-448B-96C0-3679A230724F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C2269DB4-6591-448B-96C0-3679A230724F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C2269DB4-6591-448B-96C0-3679A230724F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9B79B5F7-1EEC-4473-B3CA-93A2FBB05E51}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9B79B5F7-1EEC-4473-B3CA-93A2FBB05E51}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9B79B5F7-1EEC-4473-B3CA-93A2FBB05E51}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9B79B5F7-1EEC-4473-B3CA-93A2FBB05E51}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EDDCC91B-663A-412C-8B91-0F597A310981}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{EDDCC91B-663A-412C-8B91-0F597A310981}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EDDCC91B-663A-412C-8B91-0F597A310981}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EDDCC91B-663A-412C-8B91-0F597A310981}.Release|Any CPU.Build.0 = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(MonoDevelopProperties) = preSolution
-		StartupItem = FploWannierConverter\FploWannierConverter.csproj
+		{ACB39091-6E45-414E-8A7F-7B27F9D10FB6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ACB39091-6E45-414E-8A7F-7B27F9D10FB6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ACB39091-6E45-414E-8A7F-7B27F9D10FB6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ACB39091-6E45-414E-8A7F-7B27F9D10FB6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{73C6A888-F9E6-4D1D-A7FD-0D5C78DCBDE3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{73C6A888-F9E6-4D1D-A7FD-0D5C78DCBDE3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{73C6A888-F9E6-4D1D-A7FD-0D5C78DCBDE3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{73C6A888-F9E6-4D1D-A7FD-0D5C78DCBDE3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C2269DB4-6591-448B-96C0-3679A230724F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2269DB4-6591-448B-96C0-3679A230724F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2269DB4-6591-448B-96C0-3679A230724F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2269DB4-6591-448B-96C0-3679A230724F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BA1CA50F-CCFE-46FE-8726-6F41B72202EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BA1CA50F-CCFE-46FE-8726-6F41B72202EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BA1CA50F-CCFE-46FE-8726-6F41B72202EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BA1CA50F-CCFE-46FE-8726-6F41B72202EE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4A9B27AF-76FC-4521-B807-218F19A74CA7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4A9B27AF-76FC-4521-B807-218F19A74CA7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4A9B27AF-76FC-4521-B807-218F19A74CA7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4A9B27AF-76FC-4521-B807-218F19A74CA7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B9841ADA-664D-43D9-9A50-EB0F6BB5043B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9841ADA-664D-43D9-9A50-EB0F6BB5043B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9841ADA-664D-43D9-9A50-EB0F6BB5043B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9841ADA-664D-43D9-9A50-EB0F6BB5043B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		StartupItem = FploWannierConverter\FploWannierConverter.csproj
 	EndGlobalSection
 EndGlobal
