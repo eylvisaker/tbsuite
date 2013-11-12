@@ -73,7 +73,9 @@
     <None Include="script\bandpath">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="script\fplobweights" />
+    <None Include="script\fplobweights">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="script\coeffbrowser" />
   </ItemGroup>
   <ItemGroup>
