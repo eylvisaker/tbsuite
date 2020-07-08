@@ -1,18 +1,8 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.30729</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{9FED8E91-28E2-459D-B6FE-163087ECD8E5}</ProjectGuid>
+    <TargetFramework>net472</TargetFramework>
     <OutputType>Exe</OutputType>
-    <AssemblyName>TightBinding</AssemblyName>
-    <FileUpgradeFlags>
-    </FileUpgradeFlags>
     <OldToolsVersion>3.5</OldToolsVersion>
-    <UpgradeBackupLocation>
-    </UpgradeBackupLocation>
     <RootNamespace>TightBindingSuite</RootNamespace>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
@@ -29,52 +19,21 @@
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
     <OutputPath>..\out\exe\</OutputPath>
-    <DefineConstants>DEBUG</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
     <Commandlineparameters>/home/eylvisaker/Calculations/HI/tb.in /home/eylvisaker/Calculations/HI/tb.out</Commandlineparameters>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>none</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\out\exe\</OutputPath>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core">
+    <Reference Update="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="AgrWriter.cs" />
-    <Compile Include="BootStrap.cs" />
-    <Compile Include="InteractionPair.cs" />
-    <Compile Include="Main.cs" />
-    <Compile Include="AssemblyInfo.cs" />
-    <Compile Include="InputReader.cs" />
-    <Compile Include="Output.cs" />
-    <Compile Include="Symmetry.cs" />
-    <Compile Include="SymmetryList.cs" />
-    <Compile Include="TightBinding.TbInputFileReader.cs" />
-    <Compile Include="Lattice.cs" />
-    <Compile Include="Orbital.cs" />
-    <Compile Include="HoppingPair.cs" />
-    <Compile Include="KptList.cs" />
-    <Compile Include="KPoint.cs" />
-    <Compile Include="Tetrahedron.cs" />
-    <Compile Include="TightBinding.cs" />
-    <Compile Include="Wavefunction.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
@@ -104,16 +63,20 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ErikMath\ErikMath\ErikMath.csproj">
-      <Project>{9B79B5F7-1EEC-4473-B3CA-93A2FBB05E51}</Project>
-      <Name>ErikMath</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\ErikMath\ErikMath\ErikMath.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="tightbinding.txt" />
     <Content Include="TODO.txt" />
   </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <ItemGroup>
+    <Compile Remove="BZonePlane.cs" />
+    <Compile Remove="KptPlane.cs" />
+    <Compile Remove="OrbitalDesignation.cs" />
+    <Compile Remove="OrbitalMap.cs" />
+    <Compile Remove="Properties\Resources.Designer.cs" />
+    <Compile Remove="Spacegroup.cs" />
+  </ItemGroup>
   <ProjectExtensions>
     <VisualStudio />
   </ProjectExtensions>
