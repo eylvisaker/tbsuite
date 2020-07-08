@@ -1,23 +1,23 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TightBinding", "TightBinding\TightBinding.csproj", "{9FED8E91-28E2-459D-B6FE-163087ECD8E5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TightBinding", "src\TightBinding\TightBinding.csproj", "{9FED8E91-28E2-459D-B6FE-163087ECD8E5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ErikMath", "ErikMath\ErikMath\ErikMath.csproj", "{9B79B5F7-1EEC-4473-B3CA-93A2FBB05E51}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ErikMath", "src\ErikMath\ErikMath\ErikMath.csproj", "{9B79B5F7-1EEC-4473-B3CA-93A2FBB05E51}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlotGreen", "PlotGreen\PlotGreen.csproj", "{EDDCC91B-663A-412C-8B91-0F597A310981}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlotGreen", "src\PlotGreen\PlotGreen.csproj", "{EDDCC91B-663A-412C-8B91-0F597A310981}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RPA", "RPA\RPA.csproj", "{ACB39091-6E45-414E-8A7F-7B27F9D10FB6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RPA", "src\RPA\RPA.csproj", "{ACB39091-6E45-414E-8A7F-7B27F9D10FB6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RPA_Analyze", "RPAAnalyze\RPA_Analyze.csproj", "{73C6A888-F9E6-4D1D-A7FD-0D5C78DCBDE3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RPA_Analyze", "src\RPAAnalyze\RPA_Analyze.csproj", "{73C6A888-F9E6-4D1D-A7FD-0D5C78DCBDE3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FploWannierConverter", "FploWannierConverter\FploWannierConverter.csproj", "{C2269DB4-6591-448B-96C0-3679A230724F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FploWannierConverter", "src\FploWannierConverter\FploWannierConverter.csproj", "{C2269DB4-6591-448B-96C0-3679A230724F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Install", "Install\Install.csproj", "{BA1CA50F-CCFE-46FE-8726-6F41B72202EE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Install", "src\Install\Install.csproj", "{BA1CA50F-CCFE-46FE-8726-6F41B72202EE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BandPath", "BandPath\BandPath.csproj", "{4A9B27AF-76FC-4521-B807-218F19A74CA7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BandPath", "src\BandPath\BandPath.csproj", "{4A9B27AF-76FC-4521-B807-218F19A74CA7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FploBandWeights", "FploBandWeights\FploBandWeights.csproj", "{B9841ADA-664D-43D9-9A50-EB0F6BB5043B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FploBandWeights", "src\FploBandWeights\FploBandWeights.csproj", "{B9841ADA-664D-43D9-9A50-EB0F6BB5043B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
