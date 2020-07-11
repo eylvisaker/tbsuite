@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -127,27 +128,34 @@ namespace Installation
 
 		public void TestLapackPresence(string assemblyDir)
 		{
-			Assembly ass = Assembly.LoadFrom(assemblyDir + "/ErikMath.dll");
-			if (ass == null)
+			ProcessStartInfo startInfo = new ProcessStartInfo
 			{
-				Console.WriteLine("Could not find ErikMath.dll assembly.  Something is wrong!");
+				FileName = "mono",
+				Arguments = $"{assemblyDir}/TestMath.exe --diagonalizer",				
+				UseShellExecute = false,
+				CreateNoWindow = true,
+				RedirectStandardOutput = true
+			};
+
+			string result;
+
+			try 
+			{
+				using (Process proc = Process.Start(startInfo)) 
+				{
+					proc.WaitForExit();
+					result = proc.StandardOutput.ReadToEnd();
+				}
+			}
+			catch (Exception e)
+			{
+				Console.WriteLine("Error while running TestMath:");
+				Console.WriteLine(e.ToString());
+
+				return;
 			}
 
-			Type tp = ass.GetType("ERY.EMath.MatrixDiagonalizers.DiagonalizerFactory");
-			if (tp == null)
-			{
-				Console.WriteLine("Could not load diagonalizer factory.  It seems ErikMath.dll is too new.");
-			}
-
-			PropertyInfo p = tp.GetProperty("PrimaryDiagonalizer",
-				BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-			if (p == null)
-			{
-				Console.WriteLine("The PrimaryDiagonalizer property could not be found.");
-			}
-
-			object value = p.GetValue(null, null);
-			string diag = value.ToString();
+			string diag = result.Trim();
 
 			Console.WriteLine("Using the {0} matrix diagonalizer.", diag);
 

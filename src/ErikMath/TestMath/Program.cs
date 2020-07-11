@@ -10,7 +10,7 @@ namespace TestMath
 {
 	class Program
 	{
-		public static  void Main(string[] args)
+		public static void Main(string[] args)
 		{
 			new Program().Run(args);
 		}
@@ -19,6 +19,12 @@ namespace TestMath
 
 		void Run(string[] args)
 		{
+			if (args[0] == "--diagonalizer") 
+			{
+				Console.WriteLine(ERY.EMath.MatrixDiagonalizers.DiagonalizerFactory.PrimaryDiagonalizer);
+				return;
+			}
+
 			bool done = false;
 			Console.WriteLine("Math tester");
 			Console.WriteLine();
