@@ -64,4 +64,12 @@ class Build : NukeBuild
                 .SetNodeReuse(IsLocalBuild));
         });
 
+    Target Install => _ => _
+        .DependsOn(Compile)
+        .Executes(() => 
+        {
+            var installer = new Installation.Installer();
+
+            installer.Run();
+        });
 }

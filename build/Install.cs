@@ -6,16 +6,11 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Install
+namespace Installation
 {
-	class Install
+	class Installer
 	{
-		static void Main(string[] args)
-		{
-			new Install().Run(args);
-		}
-
-		void Run(string[] args)
+		public void Run()
 		{
 			Console.WriteLine("Tight Binding Suite Installer");
 			Console.WriteLine();
@@ -34,8 +29,7 @@ namespace Install
 
 		private void DoUnixInstall()
 		{
-			string installdir = GetInstallDir();
-			string bindir = installdir + "/bin";
+			string bindir = GetInstallDir();
 			string assemblyDir = bindir + "/tbsuite";
 
 			try
@@ -54,7 +48,16 @@ namespace Install
 				Console.WriteLine("Installing scripts to {0}", bindir);
 				List<string> scripts = new List<string>();
 
-				foreach (string script in Directory.GetFiles("script"))
+				List<string> filesToCopy = new List<string>();
+
+				filesToCopy.AddRange(Directory.GetFiles("artifacts", "*.exe"));
+				filesToCopy.AddRange(Directory.GetFiles("artifacts", "*.dll"));
+				filesToCopy.AddRange(Directory.GetFiles("artifacts", "*.dll.config"));
+
+				if (filesToCopy.Count == 0) 
+					throw new InvalidOperationException("TBSuite has not been built. Please run make or build.sh to build the project.");
+
+				foreach (string script in Directory.GetFiles("build/script"))
 				{
 					string filename = Path.GetFileName(script);
 					string destfile = bindir + "/" + filename;
@@ -75,12 +78,6 @@ namespace Install
 
 					SetExecutePermission(destfile);
 				}
-
-				List<string> filesToCopy = new List<string>();
-
-				filesToCopy.AddRange(Directory.GetFiles("exe", "*.exe"));
-				filesToCopy.AddRange(Directory.GetFiles("exe", "*.dll"));
-				filesToCopy.AddRange(Directory.GetFiles("exe", "*.dll.config"));
 
 				Console.WriteLine("Installing assemblies to {0}", assemblyDir);
 
@@ -120,15 +117,15 @@ namespace Install
 			catch (UnauthorizedAccessException)
 			{
 				Console.WriteLine();
-				Console.WriteLine("You do not have permissions to write to " + installdir);
+				Console.WriteLine("You do not have permissions to write to " + bindir);
 				Console.WriteLine("To install in this directory, run install with elevated permissions, like:");
-				Console.WriteLine("    sudo ./install");
+				Console.WriteLine("    sudo ./build.sh install");
 
 				return;
 			}
 		}
 
-		private void TestLapackPresence(string assemblyDir)
+		public void TestLapackPresence(string assemblyDir)
 		{
 			Assembly ass = Assembly.LoadFrom(assemblyDir + "/ErikMath.dll");
 			if (ass == null)
@@ -178,11 +175,13 @@ namespace Install
 
 		private static string GetInstallDir()
 		{
-			Console.Write("Enter install directory (/usr/local): ");
+			const string defaultInstallDir = "/usr/local/bin";
+
+			Console.Write($"Enter install directory ({defaultInstallDir}): ");
 			string installdir = Console.ReadLine();
 
 			if (string.IsNullOrEmpty(installdir))
-				installdir = "/usr/local";
+				installdir = defaultInstallDir;
 
 			while (installdir.EndsWith("/"))
 				installdir = installdir.Substring(installdir.Length - 1);
