@@ -389,7 +389,8 @@ namespace TightBindingSuite
 
 					Output.WriteLine("Estimated total time {0:+hh.mm}", s);
 				}
-				Complex val = rpa[i].X0.Trace();
+				Complex val = rpa[i].X0.Trace();
+
 				
 				Output.Write("q = {0}, T = {1:0.000}, mu = {2:0.000}, omega = {3:0.0000}",
 					rpa[i].Qindex + 1, rpa[i].Temperature, rpa[i].ChemicalPotential, rpa[i].Frequency);
