@@ -1,13 +1,29 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.21022</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{4A9B27AF-76FC-4521-B807-218F19A74CA7}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>TightBindingSuite</RootNamespace>
+    <AssemblyName>BandPath</AssemblyName>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
     <OldToolsVersion>3.5</OldToolsVersion>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
     <OutputPath>..\out\exe\</OutputPath>
+    <DefineConstants>DEBUG</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
     <Externalconsole>true</Externalconsole>
     <CustomCommands>
       <CustomCommands>
@@ -20,10 +36,28 @@
     <DebugType>none</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\out\exe\</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
     <Externalconsole>true</Externalconsole>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ErikMath\ErikMath\ErikMath.csproj" />
-    <ProjectReference Include="..\TightBinding\TightBinding.csproj" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Main.cs" />
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="BandTetrahedron.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ErikMath\ErikMath\ErikMath.csproj">
+      <Project>{9B79B5F7-1EEC-4473-B3CA-93A2FBB05E51}</Project>
+      <Name>ErikMath</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TightBinding\TightBinding.csproj">
+      <Project>{9FED8E91-28E2-459D-B6FE-163087ECD8E5}</Project>
+      <Name>TightBinding</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

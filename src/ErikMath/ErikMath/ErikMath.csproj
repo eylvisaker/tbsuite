@@ -1,53 +1,123 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <PropertyGroup>
-    <TargetFramework>net20</TargetFramework>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.21022</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{9B79B5F7-1EEC-4473-B3CA-93A2FBB05E51}</ProjectGuid>
     <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>ERY.EMath</RootNamespace>
+    <AssemblyName>ErikMath</AssemblyName>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
     <OldToolsVersion>3.5</OldToolsVersion>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\x86\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <OutputPath>bin\x86\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Update="AxisEditor.cs">
+    <Compile Include="AGRWriter.cs" />
+    <Compile Include="AlgLib\ap.cs" />
+    <Compile Include="AlgLib\blas.cs" />
+    <Compile Include="AlgLib\hessenberg.cs" />
+    <Compile Include="AlgLib\hsschur.cs" />
+    <Compile Include="AlgLib\nsevd.cs" />
+    <Compile Include="AlgLib\reflections.cs" />
+    <Compile Include="AlgLib\rotations.cs" />
+    <Compile Include="AxisEditor.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="AxisEditor.Designer.cs">
+    <Compile Include="AxisEditor.Designer.cs">
       <DependentUpon>AxisEditor.cs</DependentUpon>
     </Compile>
-    <Compile Update="DataSetEditor.cs">
+    <Compile Include="Complex.cs" />
+    <Compile Include="DataImporter.cs" />
+    <Compile Include="DataSetEditor.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="DataSetEditor.Designer.cs">
+    <Compile Include="DataSetEditor.Designer.cs">
       <DependentUpon>DataSetEditor.cs</DependentUpon>
     </Compile>
-    <Compile Update="Graph.cs">
+    <Compile Include="GeneralMatrix\CholeskyDecomposition.cs" />
+    <Compile Include="GeneralMatrix\EigenvalueDecomposition.cs" />
+    <Compile Include="GeneralMatrix\GeneralMatrix.cs" />
+    <Compile Include="GeneralMatrix\LUDecomposition.cs" />
+    <Compile Include="GeneralMatrix\QRDecomposition.cs" />
+    <Compile Include="GeneralMatrix\SingularValueDecomposition.cs" />
+    <Compile Include="GraphDataSet.cs" />
+    <Compile Include="Graph.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Update="Graph.designer.cs">
+    <Compile Include="Graph.designer.cs">
       <DependentUpon>Graph.cs</DependentUpon>
     </Compile>
+    <Compile Include="GridBuilder.cs" />
+    <Compile Include="Matrix.cs" />
+    <Compile Include="MatrixDiagonalizers\BuiltInDiagonalizer.cs" />
+    <Compile Include="MatrixDiagonalizers\DiagonalizerFactory.cs" />
+    <Compile Include="MatrixDiagonalizers\IMatrixDiagonalizer.cs" />
+    <Compile Include="MatrixDiagonalizers\LaPack.cs" />
+    <Compile Include="Pair.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Functions.cs" />
+    <Compile Include="Vector3.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Update="AxisEditor.resx">
+    <EmbeddedResource Include="AxisEditor.resx">
       <DependentUpon>AxisEditor.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <EmbeddedResource Update="DataSetEditor.resx">
+    <EmbeddedResource Include="DataSetEditor.resx">
       <DependentUpon>DataSetEditor.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <EmbeddedResource Update="Graph.resx">
+    <EmbeddedResource Include="Graph.resx">
       <DependentUpon>Graph.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
@@ -58,15 +128,16 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <None Update="ErikMath.dll.config">
+    <None Include="ErikMath.dll.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <Compile Remove="GeneralMatrix\AssemblyInfo.cs" />
-    <Compile Remove="GeneralMatrix\Example\AssemblyInfo.cs" />
-    <Compile Remove="GeneralMatrix\Example\MagicSquareExample.cs" />
-    <Compile Remove="GeneralMatrix\Test\AssemblyInfo.cs" />
-    <Compile Remove="GeneralMatrix\Test\TestMatrix.cs" />
-  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
 </Project>
