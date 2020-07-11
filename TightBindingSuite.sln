@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30204.135
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TightBinding", "src\TightBinding\TightBinding.csproj", "{9FED8E91-28E2-459D-B6FE-163087ECD8E5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ErikMath", "src\ErikMath\ErikMath\ErikMath.csproj", "{9B79B5F7-1EEC-4473-B3CA-93A2FBB05E51}"
@@ -12,8 +14,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RPA_Analyze", "src\RPAAnalyze\RPA_Analyze.csproj", "{73C6A888-F9E6-4D1D-A7FD-0D5C78DCBDE3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FploWannierConverter", "src\FploWannierConverter\FploWannierConverter.csproj", "{C2269DB4-6591-448B-96C0-3679A230724F}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Install", "src\Install\Install.csproj", "{BA1CA50F-CCFE-46FE-8726-6F41B72202EE}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BandPath", "src\BandPath\BandPath.csproj", "{4A9B27AF-76FC-4521-B807-218F19A74CA7}"
 EndProject
@@ -27,8 +27,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{2709454E-E1ED-452E-BE88-C3DABAC2CB7A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2709454E-E1ED-452E-BE88-C3DABAC2CB7A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9FED8E91-28E2-459D-B6FE-163087ECD8E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9FED8E91-28E2-459D-B6FE-163087ECD8E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9FED8E91-28E2-459D-B6FE-163087ECD8E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -53,10 +51,6 @@ Global
 		{C2269DB4-6591-448B-96C0-3679A230724F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C2269DB4-6591-448B-96C0-3679A230724F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C2269DB4-6591-448B-96C0-3679A230724F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{BA1CA50F-CCFE-46FE-8726-6F41B72202EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BA1CA50F-CCFE-46FE-8726-6F41B72202EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BA1CA50F-CCFE-46FE-8726-6F41B72202EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BA1CA50F-CCFE-46FE-8726-6F41B72202EE}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4A9B27AF-76FC-4521-B807-218F19A74CA7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4A9B27AF-76FC-4521-B807-218F19A74CA7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4A9B27AF-76FC-4521-B807-218F19A74CA7}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -65,9 +59,14 @@ Global
 		{B9841ADA-664D-43D9-9A50-EB0F6BB5043B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B9841ADA-664D-43D9-9A50-EB0F6BB5043B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B9841ADA-664D-43D9-9A50-EB0F6BB5043B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2709454E-E1ED-452E-BE88-C3DABAC2CB7A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2709454E-E1ED-452E-BE88-C3DABAC2CB7A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {00FBD028-3EC3-4B8F-87C4-3D9B83499059}
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
 		StartupItem = FploWannierConverter\FploWannierConverter.csproj
